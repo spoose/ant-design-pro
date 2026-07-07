@@ -25,23 +25,46 @@ import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
+const selectEntryPath = '/user/select-entry';
+const userPublicPaths = [
+  loginPath,
+  selectEntryPath,
+  '/user/register',
+  '/user/register-result',
+];
+
+type LoginEntry = {
+  id: string;
+  name: string;
+  type: 'department' | 'system';
+  systemName: string;
+  code?: string;
+  entryUrl?: string;
+};
+
+type CurrentUserWithLoginEntry = API.CurrentUser & {
+  currentLoginEntry?: LoginEntry;
+};
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
-  currentUser?: API.CurrentUser;
+  currentUser?: CurrentUserWithLoginEntry;
+  selectedLoginEntry?: LoginEntry;
   loading?: boolean;
-  fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
+  fetchUserInfo?: () => Promise<CurrentUserWithLoginEntry | undefined>;
   settingDrawerOpen?: boolean;
 }> {
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (): Promise<
+    CurrentUserWithLoginEntry | undefined
+  > => {
     try {
       const msg = await queryCurrentUser({
         skipErrorHandler: true,
       });
-      return msg.data;
+      return msg.data as CurrentUserWithLoginEntry;
     } catch (_error) {
       const { pathname, search, hash } = history.location;
       history.replace(
@@ -52,15 +75,12 @@ export async function getInitialState(): Promise<{
   };
   // 如果不是登录页面，执行
   const { location } = history;
-  if (
-    ![loginPath, '/user/register', '/user/register-result'].includes(
-      location.pathname,
-    )
-  ) {
+  if (!userPublicPaths.includes(location.pathname)) {
     const currentUser = await fetchUserInfo();
     return {
       fetchUserInfo,
       currentUser,
+      selectedLoginEntry: currentUser?.currentLoginEntry,
       settings: defaultSettings as Partial<LayoutSettings>,
       settingDrawerOpen: false,
     };
@@ -110,12 +130,26 @@ export const layout: RunTimeLayoutConfig = ({
     //   content: initialState?.currentUser?.name,
     // },
     footerRender: () => <Footer />,
+    //每次页面变化时检查用户是否已登录 负责兜底页面保护
     onPageChange: () => {
       const { location } = history;
+      const currentPath = location.pathname;
+      const currentUrl = currentPath + location.search + location.hash;
+      const isPublicPath = userPublicPaths.includes(currentPath);
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && location.pathname !== loginPath) {
+      if (!initialState?.currentUser && !isPublicPath) {
         history.replace(
-          `${loginPath}?redirect=${encodeURIComponent(location.pathname + location.search + location.hash)}`,
+          `${loginPath}?redirect=${encodeURIComponent(currentUrl)}`,
+        );
+        return;
+      }
+      if (
+        initialState?.currentUser &&
+        !initialState.selectedLoginEntry &&
+        !isPublicPath
+      ) {
+        history.replace(
+          `${selectEntryPath}?redirect=${encodeURIComponent(currentUrl)}`,
         );
       }
     },

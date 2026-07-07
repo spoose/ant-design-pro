@@ -21,6 +21,11 @@ export default [
         component: './user/login',
       },
       {
+        path: '/user/select-entry',
+        name: 'select-entry',
+        component: './user/select-entry',
+      },
+      {
         path: '/user',
         redirect: '/user/login',
       },

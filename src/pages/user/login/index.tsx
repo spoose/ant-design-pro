@@ -31,18 +31,19 @@ import Settings from '../../../../config/defaultSettings';
  * Validate redirect URL to prevent open redirect attacks.
  * Only allow same-origin relative paths starting with '/'.
  */
-const getSafeRedirectUrl = (redirect: string | null): string => {
-  if (!redirect?.startsWith('/')) return '/';
+// const getSafeRedirectUrl = (redirect: string | null): string => {
+//   if (!redirect?.startsWith('/')) return '/';
+//   if (redirect.startsWith('//')) return '/';
+//   try {
+//     const parsed = new URL(redirect, window.location.origin);
+//     if (parsed.origin !== window.location.origin) return '/';
+//     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+//   } catch {
+//     return '/';
+//   }}
 
-  if (redirect.startsWith('//')) return '/';
-
-  try {
-    const parsed = new URL(redirect, window.location.origin);
-    if (parsed.origin !== window.location.origin) return '/';
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    return '/';
-  }
+const getSelectEntryUrl = () => {
+  return '/user/select-entry';
 };
 
 const useStyles = createStyles(({ token }) => {
@@ -158,9 +159,10 @@ const Login: React.FC = () => {
         });
         message.success(defaultLoginSuccessMessage);
         await fetchUserInfo();
-        const urlParams = new URL(window.location.href).searchParams;
-        const redirectUrl = getSafeRedirectUrl(urlParams.get('redirect'));
-        window.location.href = redirectUrl;
+        // const urlParams = new URL(window.location.href).searchParams;
+        // const redirectUrl = getSafeRedirectUrl(urlParams.get('redirect'));
+        // window.location.href = redirectUrl;
+        window.location.href = getSelectEntryUrl();
         return;
       }
       // 如果失败去设置用户错误信息

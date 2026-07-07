@@ -10,6 +10,35 @@ const { ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION } = process.env;
  */
 let access = ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION === 'site' ? 'admin' : '';
 
+const loginEntries = [
+  {
+    id: 'pro-product',
+    name: 'dep1',
+    type: 'department',
+    systemName: 'Sys1',
+    code: 'PRODUCT',
+    entryUrl: 'https://a.domain1',
+  },
+  {
+    id: 'pro-operations',
+    name: 'dep2',
+    type: 'department',
+    systemName: 'Sys1',
+    code: 'OPERATIONS',
+    entryUrl: 'https://a.domain1',
+  },
+  {
+    id: 'new-system-department',
+    name: 'dep21',
+    type: 'system',
+    systemName: 'sys2',
+    code: 'NEW',
+    entryUrl: 'https://b.domain1',
+  },
+] as const;
+
+let currentLoginEntry: (typeof loginEntries)[number] | undefined;
+
 const getAccess = () => {
   return access;
 };
@@ -34,7 +63,47 @@ export default {
       data: {
         ...defaultUser,
         access: getAccess(),
+        currentLoginEntry,
       },
+    });
+  },
+  'GET /api/loginEntries': (_req: Request, res: Response) => {
+    if (!getAccess()) {
+      res.status(401).send({
+        errorCode: '401',
+        errorMessage: '请先登录！',
+        success: false,
+      });
+      return;
+    }
+    res.send({
+      success: true,
+      data: loginEntries,
+    });
+  },
+  'POST /api/currentLoginEntry': (req: Request, res: Response) => {
+    if (!getAccess()) {
+      res.status(401).send({
+        errorCode: '401',
+        errorMessage: '请先登录！',
+        success: false,
+      });
+      return;
+    }
+    const { entryId } = req.body;
+    const loginEntry = loginEntries.find((item) => item.id === entryId);
+    if (!loginEntry) {
+      res.status(400).send({
+        errorCode: '400',
+        errorMessage: '登录入口不存在',
+        success: false,
+      });
+      return;
+    }
+    currentLoginEntry = loginEntry;
+    res.send({
+      success: true,
+      data: loginEntry,
     });
   },
   // GET POST 可省略
@@ -61,6 +130,7 @@ export default {
   'POST /api/login/account': async (req: Request, res: Response) => {
     const { password, username, type } = req.body;
     await waitTime(2000);
+    currentLoginEntry = undefined;
     if (password === 'ant.design' && username === 'admin') {
       res.send({
         status: 'ok',
@@ -98,6 +168,7 @@ export default {
   },
   'POST /api/login/outLogin': (_req: Request, res: Response) => {
     access = '';
+    currentLoginEntry = undefined;
     res.send({ data: {}, success: true });
   },
   'GET /api/500': (_req: Request, res: Response) => {

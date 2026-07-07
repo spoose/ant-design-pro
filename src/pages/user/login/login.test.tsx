@@ -80,8 +80,8 @@ describe('Login Page', () => {
 
     await (await rootContainer.findByText('Login')).click();
 
-    // Wait for login to succeed and navigate to home page
-    await rootContainer.findByText(/Ant Design Pro/, undefined, {
+    // Wait for login to succeed and navigate to entry selection.
+    await rootContainer.findByText('选择登录入口', undefined, {
       timeout: 10000,
     });
 

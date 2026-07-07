@@ -105,6 +105,22 @@ describe('app getInitialState', () => {
     expect(state.fetchUserInfo).toBeDefined();
   });
 
+  it('should not fetch currentUser on select entry page', async () => {
+    const { getInitialState } = await import('./app');
+    mockHistory.location = {
+      pathname: '/user/select-entry',
+      search: '',
+      hash: '',
+    };
+
+    const state = await getInitialState();
+
+    expect(mockQueryCurrentUser).not.toHaveBeenCalled();
+    expect(state.currentUser).toBeUndefined();
+    expect(state.selectedLoginEntry).toBeUndefined();
+    expect(state.fetchUserInfo).toBeDefined();
+  });
+
   it('should encode redirect path correctly on 401', async () => {
     const { getInitialState } = await import('./app');
     mockHistory.location = {
@@ -142,5 +158,133 @@ describe('app getInitialState', () => {
 
     const user = await state.fetchUserInfo?.();
     expect(user).toEqual({ name: 'Fetched User', access: 'user' });
+  });
+
+  it('should include selectedLoginEntry from currentUser', async () => {
+    const { getInitialState } = await import('./app');
+    const currentLoginEntry = {
+      id: 'new-system-department',
+      name: '新业务部门',
+      type: 'system',
+      systemName: 'New System',
+      entryUrl: 'https://b.domain1',
+    };
+    mockQueryCurrentUser.mockResolvedValue({
+      data: {
+        name: 'Fetched User',
+        access: 'user',
+        currentLoginEntry,
+      },
+    });
+
+    const state = await getInitialState();
+
+    expect(state.selectedLoginEntry).toEqual(currentLoginEntry);
+  });
+});
+
+describe('app layout guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHistory.location = {
+      pathname: '/welcome',
+      search: '',
+      hash: '',
+    };
+  });
+
+  it('should redirect unauthenticated users to login', async () => {
+    const { layout } = await import('./app');
+    const runtimeLayout = layout({
+      initialState: {},
+      setInitialState: vi.fn(),
+    } as any);
+
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/user/login?redirect=${encodeURIComponent('/welcome')}`,
+    );
+  });
+
+  it('should redirect authenticated users without entry to select entry', async () => {
+    const { layout } = await import('./app');
+    mockHistory.location = {
+      pathname: '/dashboard/analysis',
+      search: '?tab=sales',
+      hash: '#today',
+    };
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          name: 'Fetched User',
+          access: 'user',
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/user/select-entry?redirect=${encodeURIComponent('/dashboard/analysis?tab=sales#today')}`,
+    );
+  });
+
+  it('should not redirect authenticated users with entry', async () => {
+    const { layout } = await import('./app');
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          name: 'Fetched User',
+          access: 'user',
+        },
+        selectedLoginEntry: {
+          id: 'pro-product',
+          name: '产品研发部',
+          type: 'department',
+          systemName: 'Ant Design Pro',
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('should not redirect on user public pages', async () => {
+    const { layout } = await import('./app');
+    const runtimeLayout = layout({
+      initialState: {},
+      setInitialState: vi.fn(),
+    } as any);
+
+    mockHistory.location = {
+      pathname: '/user/login',
+      search: '',
+      hash: '',
+    };
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    mockHistory.location = {
+      pathname: '/user/select-entry',
+      search: '',
+      hash: '',
+    };
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });
