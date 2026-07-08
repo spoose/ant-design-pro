@@ -93,6 +93,9 @@ export async function getInitialState(): Promise<{
 }
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
+//告诉整个应用的后台布局怎么渲染、怎么跳转、顶部右侧放什么、头像区怎么显示、页面切换时怎么做权限检查。
+//initialState：就是 getInitialState() 返回的数据，比如 currentUser、settings、selectedLoginEntry
+//setInitialState：更新全局状态的方法
 export const layout: RunTimeLayoutConfig = ({
   initialState,
   setInitialState,
@@ -121,7 +124,7 @@ export const layout: RunTimeLayoutConfig = ({
     },
     avatarProps: {
       src: initialState?.currentUser?.avatar,
-      title: 'ProUser',
+      title: initialState?.currentUser?.name,
       render: (_, avatarChildren) => (
         <AvatarDropdown>{avatarChildren}</AvatarDropdown>
       ),

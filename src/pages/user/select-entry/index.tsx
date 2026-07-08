@@ -186,11 +186,11 @@ const SelectEntry = () => {
           {Settings.title && ` - ${Settings.title}`}
         </title>
       </Helmet>
-      <Lang />
+      {/* <Lang /> */}
       <div className={styles.content}>
         <div className={styles.main}>
           <div className={styles.header}>
-            <img alt="logo" className={styles.logo} src="/logo.svg" />
+            {/* <img alt="logo" className={styles.logo} src="/logo.svg" /> */}
             <h1 className={styles.title}>选择登录入口</h1>
             <div className={styles.subtitle}>
               请选择本次登录使用的系统或部门
@@ -257,7 +257,7 @@ const SelectEntry = () => {
           )}
         </div>
       </div>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

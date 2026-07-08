@@ -110,9 +110,9 @@ export default {
   'GET /api/users': [
     {
       key: '1',
-      name: 'John Brown',
+      name: 'Zhihe',
       age: 32,
-      address: 'New York No. 1 Lake Park',
+      address: 'Los Angeles No. 1 Lake Park',
     },
     {
       key: '2',
