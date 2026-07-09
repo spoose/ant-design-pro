@@ -21,6 +21,7 @@ import {
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
+import { SysSwitch } from './components/RightContent/SysSwitch';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -117,6 +118,7 @@ export const layout: RunTimeLayoutConfig = ({
       const localeEnabled =
         (initialState?.settings as { locale?: boolean })?.locale !== false;
       return [
+        <SysSwitch key="switch" />,
         <DocLink key="doc" />,
         <VersionDropdown key="version" />,
         localeEnabled && <LangDropdown key="lang" />,

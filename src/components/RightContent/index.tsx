@@ -9,7 +9,7 @@ import { VersionDropdown } from './VersionDropdown';
 export const DocLink: React.FC = () => {
   const { styles } = useHeaderActionStyles();
   return (
-    <Tooltip title="使用文档">
+    <Tooltip title="使用文档t">
       <Button
         type="text"
         className={styles.action}
