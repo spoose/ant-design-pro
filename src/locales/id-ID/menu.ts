@@ -2,6 +2,7 @@ export default {
   'menu.welcome': 'Selamat Datang',
   'menu.more-blocks': 'Blocks Lainnya',
   'menu.home': 'Halaman Awal',
+  'menu.examples': 'Contoh Template',
   'menu.admin': 'Admin',
   'menu.admin.sub-page': 'Sub-Halaman',
   'menu.login': 'Masuk',

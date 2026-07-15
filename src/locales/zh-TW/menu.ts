@@ -2,6 +2,7 @@ export default {
   'menu.welcome': '歡迎',
   'menu.more-blocks': '更多區塊',
   'menu.home': '首頁',
+  'menu.examples': '範本範例',
   'menu.admin': '权限',
   'menu.admin.sub-page': '二级管理页',
   'menu.login': '登錄',

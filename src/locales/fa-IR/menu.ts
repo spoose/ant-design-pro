@@ -2,6 +2,7 @@ export default {
   'menu.welcome': 'خوش آمدید',
   'menu.more-blocks': 'بلوک های بیشتر',
   'menu.home': 'خانه',
+  'menu.examples': 'نمونه‌های الگو',
   'menu.admin': 'مدیر',
   'menu.admin.sub-page': 'زیر صفحه',
   'menu.login': 'ورود',

@@ -2,6 +2,7 @@ export default {
   'menu.welcome': 'ようこそ',
   'menu.more-blocks': 'その他のブロック',
   'menu.home': 'ホーム',
+  'menu.examples': 'テンプレート例',
   'menu.admin': '管理者',
   'menu.admin.sub-page': 'サブページ',
   'menu.login': 'ログイン',

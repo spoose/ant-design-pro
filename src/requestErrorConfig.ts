@@ -2,6 +2,8 @@
 import type { RequestConfig } from '@umijs/max';
 import { getIntl } from '@umijs/max';
 import { message, notification } from 'antd';
+import { getAccessToken } from '@/utils/authToken';
+import { getCurrentContextId } from '@/utils/currentContext';
 
 // 错误处理方案： 错误类型
 enum ErrorShowType {
@@ -99,6 +101,21 @@ export const errorConfig: RequestConfig = {
       // if (token) {
       //   config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
       // }
+      const token = getAccessToken();
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+      // 当前系统只保存于本标签页；业务 API 由后端使用该 ID 校验系统范围和权限。
+      const currentContextId = getCurrentContextId();
+      if (currentContextId) {
+        config.headers = {
+          ...config.headers,
+          'X-Context-Id': currentContextId,
+        };
+      }
       return config;
     },
   ],

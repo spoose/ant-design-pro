@@ -2,6 +2,7 @@ export default {
   'menu.welcome': 'স্বাগতম',
   'menu.more-blocks': 'আরও ব্লক',
   'menu.home': 'নীড়',
+  'menu.examples': 'টেমপ্লেট উদাহরণ',
   'menu.admin': 'অ্যাডমিন',
   'menu.admin.sub-page': 'উপ-পৃষ্ঠা',
   'menu.login': 'প্রবেশ',

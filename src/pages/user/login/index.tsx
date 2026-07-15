@@ -15,16 +15,19 @@ import {
 import {
   FormattedMessage,
   Helmet,
+  history,
   SelectLang,
   useIntl,
   useModel,
 } from '@umijs/max';
 import { Alert, App, Button, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
-import React, { startTransition, useState } from 'react';
+import React, { useState } from 'react';
 import { Footer } from '@/components';
-import { login } from '@/services/ant-design-pro/api';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
+import { loginWithPassword } from '@/services/auth';
+import { setAccessToken } from '@/utils/authToken';
+import { resolveCurrentContextId } from '@/utils/currentContext';
 import Settings from '../../../../config/defaultSettings';
 
 /**
@@ -42,9 +45,8 @@ import Settings from '../../../../config/defaultSettings';
 //     return '/';
 //   }}
 
-const getSelectEntryUrl = () => {
-  return '/user/select-entry';
-};
+const homePath = '/home';
+const selectEntryPath = '/user/select-entry';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -138,41 +140,48 @@ const Login: React.FC = () => {
 
   const fetchUserInfo = async () => {
     const userInfo = await initialState?.fetchUserInfo?.();
-    if (userInfo) {
-      startTransition(() => {
-        setInitialState((s) => ({
-          ...s,
-          currentUser: userInfo,
-        }));
-      });
-    }
+    if (!userInfo) throw new Error('登录成功但未获取到用户信息');
+
+    const currentContextId = resolveCurrentContextId(
+      userInfo.contexts,
+      userInfo.defaultContextId,
+    );
+    setInitialState((state) => ({
+      ...state,
+      currentUser: userInfo,
+      currentContextId,
+    }));
+    return currentContextId;
   };
 
   const handleSubmit = async (values: API.LoginParams) => {
     try {
       // 登录
-      const msg = await login({ ...values, type });
+      const msg = await loginWithPassword({ ...values, type });
       if (msg.status === 'ok') {
+        if (!msg.accessToken) {
+          throw new Error('登录接口未返回 accessToken');
+        }
+        setAccessToken(msg.accessToken);
         const defaultLoginSuccessMessage = intl.formatMessage({
           id: 'pages.login.success',
           defaultMessage: '登录成功！',
         });
         message.success(defaultLoginSuccessMessage);
-        await fetchUserInfo();
-        // const urlParams = new URL(window.location.href).searchParams;
-        // const redirectUrl = getSafeRedirectUrl(urlParams.get('redirect'));
-        // window.location.href = redirectUrl;
-        window.location.href = getSelectEntryUrl();
+        const currentContextId = await fetchUserInfo();
+        history.replace(currentContextId ? homePath : selectEntryPath);
         return;
       }
       // 如果失败去设置用户错误信息
       setUserLoginState(msg);
-    } catch {
+    } catch (error) {
       const defaultLoginFailureMessage = intl.formatMessage({
         id: 'pages.login.failure',
         defaultMessage: '登录失败，请重试！',
       });
-      message.error(defaultLoginFailureMessage);
+      message.error(
+        error instanceof Error ? error.message : defaultLoginFailureMessage,
+      );
     }
   };
   const { status, type: loginType } = userLoginState;
@@ -246,7 +255,7 @@ const Login: React.FC = () => {
             <LoginMessage
               content={intl.formatMessage({
                 id: 'pages.login.accountLogin.errorMessage',
-                defaultMessage: '账户或密码错误(admin/ant.design)',
+                defaultMessage: '账户或密码错误',
               })}
             />
           )}
@@ -260,7 +269,7 @@ const Login: React.FC = () => {
                 }}
                 placeholder={intl.formatMessage({
                   id: 'pages.login.username.placeholder',
-                  defaultMessage: '用户名: admin or user',
+                  defaultMessage: '用户名: admin, user or operator',
                 })}
                 rules={[
                   {

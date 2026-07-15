@@ -7,7 +7,10 @@ import { history, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
 import React, { startTransition } from 'react';
-import { outLogin } from '@/services/ant-design-pro/api';
+// import { outLogin } from '@/services/ant-design-pro/api';
+import { logout } from '@/services/auth';
+import { clearAccessToken } from '@/utils/authToken';
+import { clearCurrentContextId } from '@/utils/currentContext';
 import HeaderDropdown from '../HeaderDropdown';
 
 type GlobalHeaderRightProps = {
@@ -37,9 +40,12 @@ const menuItems: MenuProps['items'] = [
 
 const loginOut = async () => {
   try {
-    await outLogin();
+    await logout();
   } catch {
     // Local logout has already cleared user state; redirect should still proceed.
+  } finally {
+    clearAccessToken();
+    clearCurrentContextId();
   }
   const { search, pathname } = window.location;
   const urlParams = new URL(window.location.href).searchParams;
@@ -64,7 +70,11 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     const { key } = event;
     if (key === 'logout') {
       startTransition(() => {
-        setInitialState((s) => ({ ...s, currentUser: undefined }));
+        setInitialState((s) => ({
+          ...s,
+          currentUser: undefined,
+          currentContextId: undefined,
+        }));
       });
       loginOut();
       return;

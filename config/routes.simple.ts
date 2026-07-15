@@ -11,6 +11,13 @@ export default [
     ],
   },
   {
+    path: '/home',
+    name: '首页',
+    icon: 'home',
+    component: './Home',
+    access: 'canHome',
+  },
+  {
     path: '/welcome',
     name: '欢迎',
     icon: 'smile',
@@ -41,7 +48,7 @@ export default [
   },
   {
     path: '/',
-    redirect: '/welcome',
+    redirect: '/home',
   },
   {
     component: './exception/404',

@@ -49,9 +49,16 @@ export default [
     ],
   },
   {
+    path: '/home',
+    name: 'home',
+    icon: 'home',
+    component: './Home',
+    access: 'canHome',
+  },
+  {
     path: '/welcome',
     name: 'welcome',
-    icon: 'home',
+    icon: 'smile',
     component: './Welcome',
   },
   {
@@ -79,24 +86,28 @@ export default [
       {
         path: '/dashboard',
         redirect: '/dashboard/analysis',
+        access: 'canDashboardAnalysis',
       },
       {
         name: 'analysis',
         icon: 'barChart',
         path: '/dashboard/analysis',
         component: './dashboard/analysis',
+        access: 'canDashboardAnalysis',
       },
       {
         name: 'monitor',
         icon: 'monitor',
         path: '/dashboard/monitor',
         component: './dashboard/monitor',
+        access: 'canDashboardMonitor',
       },
       {
         name: 'workplace',
         icon: 'desktop',
         path: '/dashboard/workplace',
         component: './dashboard/workplace',
+        access: 'canDashboardWorkplace',
       },
     ],
   },
@@ -114,6 +125,7 @@ export default [
         icon: 'form',
         path: '/form/basic-form',
         component: './form/basic-form',
+        access: 'canOperationsConfig',
       },
       {
         name: 'step-form',
@@ -290,10 +302,17 @@ export default [
     name: 'chatbot',
     icon: 'robot',
     component: './chatbot',
+    access: 'canAiAssistant',
+  },
+  {
+    path: '/examples',
+    name: 'examples',
+    icon: 'experiment',
+    redirect: '/welcome',
   },
   {
     path: '/',
-    redirect: '/dashboard/analysis',
+    redirect: '/home',
   },
   {
     component: './exception/404',

@@ -1,6 +1,11 @@
 import { message, notification } from 'antd';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorConfig } from './requestErrorConfig';
+import { clearAccessToken, setAccessToken } from './utils/authToken';
+import {
+  clearCurrentContextId,
+  setCurrentContextId,
+} from './utils/currentContext';
 
 vi.mock('antd', () => ({
   message: {
@@ -26,6 +31,8 @@ describe('requestErrorConfig', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAccessToken();
+    clearCurrentContextId();
   });
 
   describe('errorThrower', () => {
@@ -242,7 +249,8 @@ describe('requestErrorConfig', () => {
     const interceptor = errorConfig.requestInterceptors?.[0] as (config: {
       url?: string;
       method?: string;
-    }) => { url?: string };
+      headers?: Record<string, string>;
+    }) => { url?: string; headers?: Record<string, string> };
 
     it('should pass through config without modification', () => {
       const config = {
@@ -252,9 +260,38 @@ describe('requestErrorConfig', () => {
 
       const result = interceptor(config);
 
-      // Token attachment is intentionally commented out in the source;
-      // interceptor currently returns config as-is
       expect(result.url).toBe('https://api.example.com/users');
+      expect(result.headers).toBeUndefined();
+    });
+
+    it('should attach bearer token when access token exists', () => {
+      setAccessToken('access-token');
+
+      const result = interceptor({
+        url: 'https://api.example.com/users',
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+
+      expect(result.headers).toEqual({
+        Accept: 'application/json',
+        Authorization: 'Bearer access-token',
+      });
+    });
+
+    it('should attach the current context for backend authorization', () => {
+      setCurrentContextId('ctx-s1-g1');
+
+      const result = interceptor({
+        url: 'https://api.example.com/users',
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+
+      expect(result.headers).toEqual({
+        Accept: 'application/json',
+        'X-Context-Id': 'ctx-s1-g1',
+      });
     });
 
     it('should handle URL without config', () => {

@@ -20,6 +20,13 @@ import {
   VersionDropdown,
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
+import type { AuthCurrentUser } from '@/services/auth';
+import { clearAccessToken } from '@/utils/authToken';
+import {
+  clearCurrentContextId,
+  resolveCurrentContextId,
+} from '@/utils/currentContext';
+import { groupTemplateExampleMenus } from '@/utils/menuData';
 import defaultSettings from '../config/defaultSettings';
 import { SysSwitch } from './components/RightContent/SysSwitch';
 import { errorConfig } from './requestErrorConfig';
@@ -27,46 +34,36 @@ import { errorConfig } from './requestErrorConfig';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 const selectEntryPath = '/user/select-entry';
-const userPublicPaths = [
-  loginPath,
-  selectEntryPath,
-  '/user/register',
-  '/user/register-result',
-];
+const authFreePaths = [loginPath, '/user/register', '/user/register-result'];
+const userFlowPaths = [...authFreePaths, selectEntryPath];
 
-type LoginEntry = {
-  id: string;
-  name: string;
-  type: 'department' | 'system';
-  systemName: string;
-  code?: string;
-  entryUrl?: string;
-};
-
-type CurrentUserWithLoginEntry = API.CurrentUser & {
-  currentLoginEntry?: LoginEntry;
-};
+const isUnauthorizedError = (error: unknown) =>
+  (error as { response?: { status?: number } })?.response?.status === 401;
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
-  currentUser?: CurrentUserWithLoginEntry;
-  selectedLoginEntry?: LoginEntry;
+  currentUser?: AuthCurrentUser;
+  currentContextId?: string;
   loading?: boolean;
-  fetchUserInfo?: () => Promise<CurrentUserWithLoginEntry | undefined>;
+  fetchUserInfo?: () => Promise<AuthCurrentUser | undefined>;
   settingDrawerOpen?: boolean;
 }> {
-  const fetchUserInfo = async (): Promise<
-    CurrentUserWithLoginEntry | undefined
-  > => {
+  const fetchUserInfo = async (): Promise<AuthCurrentUser | undefined> => {
     try {
       const msg = await queryCurrentUser({
         skipErrorHandler: true,
       });
-      return msg.data as CurrentUserWithLoginEntry;
-    } catch (_error) {
+      return msg.data as AuthCurrentUser;
+    } catch (error) {
+      if (!isUnauthorizedError(error)) throw error;
+
+      // RefreshTokenResult 和 refreshAccessToken 暂时保留在 auth service；
+      // 当前 access-token-only 链路不自动刷新，后端接口就绪后再接入重试。
+      clearAccessToken();
+      clearCurrentContextId();
       const { pathname, search, hash } = history.location;
       history.replace(
         `${loginPath}?redirect=${encodeURIComponent(pathname + search + hash)}`,
@@ -74,14 +71,20 @@ export async function getInitialState(): Promise<{
     }
     return undefined;
   };
-  // 如果不是登录页面，执行
+
   const { location } = history;
-  if (!userPublicPaths.includes(location.pathname)) {
+  if (!authFreePaths.includes(location.pathname)) {
     const currentUser = await fetchUserInfo();
+    const currentContextId = currentUser
+      ? resolveCurrentContextId(
+          currentUser.contexts,
+          currentUser.defaultContextId,
+        )
+      : undefined;
     return {
       fetchUserInfo,
       currentUser,
-      selectedLoginEntry: currentUser?.currentLoginEntry,
+      currentContextId,
       settings: defaultSettings as Partial<LayoutSettings>,
       settingDrawerOpen: false,
     };
@@ -95,13 +98,14 @@ export async function getInitialState(): Promise<{
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
 //告诉整个应用的后台布局怎么渲染、怎么跳转、顶部右侧放什么、头像区怎么显示、页面切换时怎么做权限检查。
-//initialState：就是 getInitialState() 返回的数据，比如 currentUser、settings、selectedLoginEntry
+//initialState：就是 getInitialState() 返回的数据，比如 currentUser、settings、currentContextId
 //setInitialState：更新全局状态的方法
 export const layout: RunTimeLayoutConfig = ({
   initialState,
   setInitialState,
 }) => {
   return {
+    menuDataRender: groupTemplateExampleMenus,
     menuItemRender: (item, dom) => {
       if (item.path) {
         return (
@@ -140,9 +144,9 @@ export const layout: RunTimeLayoutConfig = ({
       const { location } = history;
       const currentPath = location.pathname;
       const currentUrl = currentPath + location.search + location.hash;
-      const isPublicPath = userPublicPaths.includes(currentPath);
+      const isUserFlowPath = userFlowPaths.includes(currentPath);
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && !isPublicPath) {
+      if (!initialState?.currentUser && !isUserFlowPath) {
         history.replace(
           `${loginPath}?redirect=${encodeURIComponent(currentUrl)}`,
         );
@@ -150,8 +154,8 @@ export const layout: RunTimeLayoutConfig = ({
       }
       if (
         initialState?.currentUser &&
-        !initialState.selectedLoginEntry &&
-        !isPublicPath
+        !initialState.currentContextId &&
+        !isUserFlowPath
       ) {
         history.replace(
           `${selectEntryPath}?redirect=${encodeURIComponent(currentUrl)}`,
