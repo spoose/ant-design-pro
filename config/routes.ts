@@ -52,8 +52,44 @@ export default [
     path: '/home',
     name: 'home',
     icon: 'home',
+    component: './workspace/landing',
+    hideInMenu: true,
+    layout: false,
+  },
+  {
+    path: '/workspace/platform/apps/:appKey/*',
+    component: './workspace/app',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/platform/:platformPageKey',
+    component: './workspace/platform',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/home',
     component: './Home',
-    access: 'canHome',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/members',
+    component: './workspace/members',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/roles',
+    component: './workspace/roles',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/settings',
+    component: './workspace/settings',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/apps/:appKey/*',
+    component: './workspace/app',
+    wrappers: ['@/wrappers/workspaceAccess'],
   },
   {
     path: '/welcome',
@@ -311,8 +347,15 @@ export default [
     redirect: '/welcome',
   },
   {
+    path: '/workspace-tabs-demo',
+    component: './workspace-tabs-demo',
+    icon: 'setting',
+    layout: false,
+  },
+  {
     path: '/',
-    redirect: '/home',
+    component: './workspace/landing',
+    layout: false,
   },
   {
     component: './exception/404',

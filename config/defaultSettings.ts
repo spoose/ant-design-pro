@@ -9,6 +9,10 @@ const Settings: ProLayoutProps & {
   navTheme: 'light',
   colorPrimary: '#1677ff',
   layout: 'mix',
+  siderWidth: 248,
+  menu: {
+    collapsedWidth: 64,
+  },
   contentWidth: 'Fluid',
   fixedHeader: false,
   fixSiderbar: true,

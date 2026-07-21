@@ -10,7 +10,11 @@ describe('skillRegistry', () => {
     ]);
     expect(getSkillDefinition('file-review')).toMatchObject({
       title: '文件审查',
-      path: '/chatbot?skill=file-review',
+      navigation: [
+        { pathSegment: 'overview', title: '审查工作台' },
+        { pathSegment: 'queue', title: '待审文件' },
+        { pathSegment: 'history', title: '审查记录' },
+      ],
     });
   });
 

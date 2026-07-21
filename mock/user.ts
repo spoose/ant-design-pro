@@ -3,36 +3,45 @@ import { waitTime, defaultUser } from './utils';
 
 const { ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION } = process.env;
 
-const contextCatalog = {
-  'ctx-s1-g1': {
-    id: 'ctx-s1-g1',
-    systemId: 'system-1',
-    systemCode: 'SYS1',
-    systemName: 'System 1',
-    scopeType: 'department',
-    scopeId: 'group-1',
-    scopeName: 'Group 1',
+const organizationCatalog = {
+  'organization-1': {
+    organizationId: 'organization-1',
+    organizationCode: 'ORG1',
+    organizationName: '组织一',
+    defaultDataScopeId: 'department-1',
+    dataScopes: [
+      {
+        dataScopeId: 'department-1',
+        dataScopeCode: 'GROUP1',
+        dataScopeName: 'Group 1',
+        type: 'department',
+      },
+      {
+        dataScopeId: 'department-2',
+        dataScopeCode: 'GROUP2',
+        dataScopeName: 'Group 2',
+        type: 'department',
+      },
+    ],
   },
-  'ctx-s1-g2': {
-    id: 'ctx-s1-g2',
-    systemId: 'system-1',
-    systemCode: 'SYS1',
-    systemName: 'System 1',
-    scopeType: 'department',
-    scopeId: 'group-2',
-    scopeName: 'Group 2',
-  },
-  'ctx-s2': {
-    id: 'ctx-s2',
-    systemId: 'system-2',
-    systemCode: 'SYS2',
-    systemName: 'System 2',
-    scopeType: 'system',
+  'organization-2': {
+    organizationId: 'organization-2',
+    organizationCode: 'ORG2',
+    organizationName: '组织二',
+    defaultDataScopeId: 'organization-2',
+    dataScopes: [
+      {
+        dataScopeId: 'organization-2',
+        dataScopeCode: 'ORG2',
+        dataScopeName: '组织二',
+        type: 'organization',
+      },
+    ],
   },
 } as const;
 
-type ContextId = keyof typeof contextCatalog;
-type MockUsername = 'admin' | 'operator' | 'user';
+type OrganizationId = keyof typeof organizationCatalog;
+type MockUsername = 'admin' | 'operator' | 'user' | 'users2';
 
 type MockGrant = {
   permissions: readonly string[];
@@ -43,7 +52,10 @@ type MockAccount = {
   password: string;
   currentAuthority: 'admin' | 'user';
   accessToken: string;
-  defaultContextId?: ContextId;
+  // Platform 授权与下面逐 Organization grants 独立。
+  platformPermissions: readonly string[];
+  platformSkillCodes: readonly string[];
+  defaultOrganizationId?: OrganizationId;
   profile: {
     userid: string;
     username: MockUsername;
@@ -51,8 +63,8 @@ type MockAccount = {
     email: string;
     title: string;
   };
-  // 当前 mock 直接描述用户在各 Context 的授权，不建立职位到权限的固定映射。
-  grants: Partial<Record<ContextId, MockGrant>>;
+  // 当前 mock 直接描述用户在各 Organization 的有效授权，不在前端合并 DataScope 权限。
+  grants: Partial<Record<OrganizationId, MockGrant>>;
 };
 
 const mockAccounts: Record<MockUsername, MockAccount> = {
@@ -60,7 +72,16 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     password: 'ant.design',
     currentAuthority: 'admin',
     accessToken: 'mock-admin-access-token',
-    defaultContextId: 'ctx-s1-g1',
+    platformPermissions: [
+      'platform:organization:create',
+      'platform:organization:update',
+      'platform:organization:delete',
+      'platform:user:manage',
+      'platform:permission:grant',
+      'platform:audit:view',
+    ],
+    platformSkillCodes: ['knowledge-search'],
+    defaultOrganizationId: 'organization-1',
     profile: {
       userid: '00000001',
       username: 'admin',
@@ -69,9 +90,12 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
       title: 'Administrator',
     },
     grants: {
-      'ctx-s1-g1': {
+      'organization-1': {
         permissions: [
-          'page:home',
+          'organization:user:manage',
+          'organization:role:manage',
+          'organization:permission:grant',
+          'organization:settings:update',
           'page:dashboard-analysis',
           'page:dashboard-workplace',
           'page:ai-assistant',
@@ -83,20 +107,10 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'knowledge-search',
         ],
       },
-      'ctx-s1-g2': {
+      'organization-2': {
         permissions: [
-          'page:home',
-          'page:dashboard-analysis',
-          'page:dashboard-monitor',
-          'page:operations-config',
-          'page:ai-assistant',
-          'page:admin',
-        ],
-        skillCodes: ['document-summary', 'knowledge-search'],
-      },
-      'ctx-s2': {
-        permissions: [
-          'page:home',
+          'organization:user:manage',
+          'organization:role:manage',
           'page:dashboard-analysis',
           'page:dashboard-monitor',
           'page:ai-assistant',
@@ -110,6 +124,10 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     password: 'ant.design',
     currentAuthority: 'user',
     accessToken: 'mock-user-access-token',
+    platformPermissions: [],
+    platformSkillCodes: [],
+    // 普通用户登录后直接进入后端指定的默认 Organization 首页。
+    defaultOrganizationId: 'organization-1',
     profile: {
       userid: '00000002',
       username: 'user',
@@ -118,21 +136,41 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
       title: 'User',
     },
     grants: {
-      'ctx-s1-g1': {
+      'organization-1': {
         permissions: [
-          'page:home',
           'page:dashboard-analysis',
           'page:dashboard-workplace',
           'page:ai-assistant',
         ],
         skillCodes: ['file-review', 'document-summary'],
       },
-      'ctx-s2': {
+      'organization-2': {
         permissions: [
-          'page:home',
           'page:dashboard-analysis',
           'page:ai-assistant',
         ],
+        skillCodes: ['knowledge-search'],
+      },
+    },
+  },
+  users2: {
+    password: 'ant.design',
+    currentAuthority: 'user',
+    accessToken: 'mock-users2-access-token',
+    platformPermissions: [],
+    platformSkillCodes: [],
+    defaultOrganizationId: 'organization-2',
+    profile: {
+      userid: '00000004',
+      username: 'users2',
+      name: 'Organization 2 User',
+      email: 'users2@example.com',
+      title: 'Organization Member',
+    },
+    // 该账号只属于 organization-2，用于验证单组织用户的默认落点与权限隔离。
+    grants: {
+      'organization-2': {
+        permissions: ['page:dashboard-analysis', 'page:ai-assistant'],
         skillCodes: ['knowledge-search'],
       },
     },
@@ -141,7 +179,9 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     password: 'ant.design',
     currentAuthority: 'user',
     accessToken: 'mock-operator-access-token',
-    defaultContextId: 'ctx-s1-g2',
+    platformPermissions: [],
+    platformSkillCodes: [],
+    defaultOrganizationId: 'organization-1',
     profile: {
       userid: '00000003',
       username: 'operator',
@@ -150,9 +190,10 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
       title: 'Operator',
     },
     grants: {
-      'ctx-s1-g2': {
+      'organization-1': {
         permissions: [
-          'page:home',
+          'organization:user:manage',
+          'organization:role:manage',
           'page:dashboard-analysis',
           'page:dashboard-monitor',
           'page:operations-config',
@@ -168,10 +209,12 @@ const accessTokenUsers: Record<string, MockUsername> = {
   'mock-admin-access-token': 'admin',
   'mock-user-access-token': 'user',
   'mock-operator-access-token': 'operator',
+  'mock-users2-access-token': 'users2',
 };
 
-// 选择默认系统属于服务端用户偏好；mock 以用户名为键模拟数据库持久化。
-const defaultContextIds: Partial<Record<MockUsername, ContextId>> = {};
+// 默认组织属于服务端用户偏好；mock 以用户名为键模拟数据库持久化。
+const defaultOrganizationIds: Partial<Record<MockUsername, OrganizationId>> =
+  {};
 
 export const getMockUsernameByAccessToken = (accessToken?: string) =>
   accessToken ? accessTokenUsers[accessToken] : undefined;
@@ -187,27 +230,32 @@ const getAuthenticatedUsername = (req: Request) =>
     ? 'admin'
     : undefined);
 
-const getContexts = (username: MockUsername) => {
+const getOrganizations = (username: MockUsername) => {
   const grants = mockAccounts[username].grants;
-  return (Object.entries(grants) as [ContextId, MockGrant][]).map(
-    ([contextId, grant]) => ({
-      ...contextCatalog[contextId],
+  return (Object.entries(grants) as [OrganizationId, MockGrant][]).map(
+    ([organizationId, grant]) => ({
+      ...organizationCatalog[organizationId],
       permissions: [...grant.permissions],
       skillCodes: [...grant.skillCodes],
+      dataScopes: organizationCatalog[organizationId].dataScopes.map(
+        (dataScope) => ({ ...dataScope }),
+      ),
     }),
   );
 };
 
-// GET /api/currentUser 的 mock 数据由 Bearer token 对应账户和逐 Context 授权共同生成。
+// GET /api/currentUser 的 mock 数据由 Bearer token、Platform 与 Organization 授权共同生成。
 export const buildMockCurrentUser = (username: MockUsername) => {
   const account = mockAccounts[username];
   return {
     ...defaultUser,
     ...account.profile,
     access: account.currentAuthority,
-    contexts: getContexts(username),
-    defaultContextId:
-      defaultContextIds[username] ?? account.defaultContextId,
+    platformPermissions: [...account.platformPermissions],
+    platformSkillCodes: [...account.platformSkillCodes],
+    organizations: getOrganizations(username),
+    defaultOrganizationId:
+      defaultOrganizationIds[username] ?? account.defaultOrganizationId,
   };
 };
 
@@ -232,7 +280,7 @@ export default {
       data: buildMockCurrentUser(username),
     });
   },
-  'PUT /api/users/me/default-entry': (req: Request, res: Response) => {
+  'PUT /api/users/me/default-organization': (req: Request, res: Response) => {
     const username = getAuthenticatedUsername(req);
     if (!username) {
       res.status(401).send({
@@ -242,20 +290,22 @@ export default {
       });
       return;
     }
-    const { entryId } = req.body;
-    const context = getContexts(username).find((item) => item.id === entryId);
-    if (!context) {
+    const { organizationId } = req.body;
+    const organization = getOrganizations(username).find(
+      (item) => item.organizationId === organizationId,
+    );
+    if (!organization) {
       res.status(400).send({
         errorCode: '400',
-        errorMessage: '系统上下文不存在',
+        errorMessage: '组织不存在或当前用户无权进入',
         success: false,
       });
       return;
     }
-    defaultContextIds[username] = context.id;
+    defaultOrganizationIds[username] = organization.organizationId;
     res.send({
       success: true,
-      data: { defaultContextId: context.id },
+      data: { defaultOrganizationId: organization.organizationId },
     });
   },
   // GET POST 可省略
@@ -313,23 +363,6 @@ export default {
   'POST /api/login/outLogin': (_req: Request, res: Response) => {
     // Bearer-only mock 不维护服务端会话；前端退出时清除本地 token。
     res.send({ data: {}, success: true });
-  },
-  'POST /api/auth/refresh': (req: Request, res: Response) => {
-    const username = getAuthenticatedUsername(req);
-    if (!username) {
-      res.status(401).send({
-        errorCode: '401',
-        errorMessage: '登录态已失效',
-        success: false,
-      });
-      return;
-    }
-    const account = mockAccounts[username];
-    res.send({
-      accessToken: account.accessToken,
-      expiresIn: 900,
-      user: buildMockCurrentUser(username),
-    });
   },
   'GET /api/500': (_req: Request, res: Response) => {
     res.status(500).send({

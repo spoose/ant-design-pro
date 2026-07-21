@@ -1,46 +1,54 @@
-# 后端认证与权限 API 清单（Bearer Only）
+# 后端认证、Workspace Scope 与权限 API 契约（Bearer Only）
 
-## 1. 选型
+> 状态：新需求基线，前后端实现以本文件为准
+>
+> 更新日期：2026-07-20
+>
+> 替代：旧 `System / Context / X-Context-Id` 工作区协议
 
-- 只使用 access JWT，不使用 Cookie 和 refresh token。
-- 登录成功后，后端在 JSON 中返回 access token。
-- 前端将 access token 保存到 localStorage。
-- 后续请求通过 `Authorization: Bearer <jwt>` 认证。
-- JWT 过期后后端返回 `401`，前端清理 token 并重新登录。
-- 注册只需要用户名、密码和可选邮箱，不使用验证码。
-- 注册成功后不自动登录、不返回 access token。
-- `/api/currentUser` 一次返回用户、可访问系统和各系统权限。
-- `/api/currentUser` 的每个 Context 返回 `page:*` 页面权限和后端过滤后的可用 `skillCodes`。
-- 当前系统由前端管理，业务请求携带 `X-Context-Id`。
+## 1. 已确认原则
+
+- 认证只使用 access JWT，不使用 Cookie 和 refresh token。
+- Platform 与 Organization 都是可切换的 `WorkspaceScope`，但属于不同授权域。
+- 同一浏览器页面同一时刻只运行一个 Scope；不同 Organization 不能同时运行或同时显示标签。
+- Platform 不属于普通 Organization，不使用 Organization 权限或请求 Header。
+- Group、Department 等范围是 Organization 内的 `DataScope`，不是 WorkspaceScope、组织入口或标签。
+- 后端直接返回 Organization 级有效权限；前端不得合并多个 DataScope 的权限。
+- Platform App 使用 `platformSkillCodes`；Organization App 使用该组织的 `skillCodes`。
+- Organization 业务请求携带 `X-Organization-Id`；Platform 请求不得继承最近访问的 Organization。
+- 前端权限只控制可见性，后端必须依据 JWT、Scope 和实时权限再次鉴权。
 
 MVP 暂不实现：
 
-- `POST /api/auth/refresh`
-- `GET /api/csrf`
-- `GET /api/login/captcha`
-- `GET /api/loginEntries`
-- 手机验证码登录
+- Cookie 与 `GET /api/csrf`。
+- `GET /api/login/captcha` 和手机验证码登录。
+- 多个 Organization 在同一页面运行。
+- DataScope 作为全局切换器或顶栏标签。
+- 前端提交权限码参与鉴权。
 
 ## 2. 接口总表
 
 | 方法 | 路径 | 认证 | 用途 |
 | --- | --- | --- | --- |
 | `POST` | `/api/register` | 否 | 创建账户，不签发 JWT |
-| `POST` | `/api/login/account` | 否 | 账号密码登录并返回 JWT |
-| `GET` | `/api/currentUser` | Bearer JWT | 获取用户、系统上下文和权限 |
-| `PUT` | `/api/users/me/default-entry` | Bearer JWT | 首次选择后保存长期默认系统 |
+| `POST` | `/api/login/account` | 否 | 账号密码登录并返回 access JWT |
+| `GET` | `/api/currentUser` | Bearer JWT | 获取用户、Platform Access 和可进入的 Organization Access |
+| `PUT` | `/api/users/me/default-organization` | Bearer JWT | 保存非 Platform 用户的长期默认组织 |
+| `GET` | `/api/platform/organizations` | Bearer JWT + Platform 权限 | 获取 Super Admin 可管理的组织目录 |
 | `POST` | `/api/login/outLogin` | Bearer JWT | 可选的注销审计 |
-| 按业务定义 | 业务接口 | Bearer JWT | JWT + `X-Context-Id` 鉴权 |
+| 按业务定义 | Platform API | Bearer JWT | 使用 Platform 权限，不携带 Organization Header |
+| 按业务定义 | Organization API | Bearer JWT + `X-Organization-Id` | 使用指定 Organization 的权限和数据范围 |
+
+`/api/currentUser.organizations` 只表示用户可以进入的组织，不能替代 Super Admin 的平台组织目录。Super Admin 管理全部组织时使用 `/api/platform/organizations`。
 
 项目中已有但 MVP 不使用的认证接口：
 
 | 方法 | 路径 | 当前来源 | MVP 处理 |
 | --- | --- | --- | --- |
-| `GET` | `/api/login/captcha` | 原手机号登录表单 | 不调用、不要求后端实现 |
-| `POST` | `/api/auth/refresh` | 当前阶段性鉴权代码 | 删除调用，不要求后端实现 |
-| `GET` | `/api/loginEntries` | 当前系统选择代码 | 合并进 `/api/currentUser` |
+| `GET` | `/api/login/captcha` | 原手机号登录表单 | 本期不调用、不要求后端实现；不是永久删除验证码登录能力 |
+| `GET` | `/api/csrf` | Cookie 会话方案 | Bearer-only MVP 不调用、不要求后端实现 |
 
-## 3. 通用结构
+## 3. 通用响应
 
 ```ts
 type ApiSuccess<T> = {
@@ -55,68 +63,99 @@ type ApiError = {
   errorMessage: string;
   traceId: string;
 };
+```
 
-type LoginRequest = {
-  username: string;
-  password: string;
-  type: 'account';
-  autoLogin?: boolean;
-};
+- `401/403` 必须使用对应 HTTP 状态，不能返回 `HTTP 200 + success: false`。
+- `traceId` 用于链路排查，不包含 JWT、密码或权限敏感数据。
+- 后端错误信息可以展示，但不能泄露用户无权访问的组织是否存在。
 
-type RegisterRequest = {
-  username: string;
-  password: string;
-  email?: string;
-};
+## 4. 核心访问结构
 
-type RegisterData = {
-  userId: string;
-  username: string;
-  email: string | null;
-  status: 'ok';
-};
-
-type LoginResult = {
-  status: 'ok';
-  type: 'account';
-  currentAuthority: string;
-  accessToken: string;
-  tokenType: 'Bearer';
-  expiresIn: number;
-  expiresAt: string;
-  traceId: string;
-};
-
+```ts
 type AuthCurrentUser = {
   userid: string;
   username: string;
   name: string;
   avatar: string | null;
   email: string | null;
-  access?: string;
-  defaultContextId?: string;
-  contexts: AccessContext[];
+
+  // Platform 控制面权限；不能由 Organization 权限合并得到。
+  platformPermissions: string[];
+  // Platform Scope 内可打开的 App/Skill 白名单。
+  platformSkillCodes: string[];
+
+  // 非 Platform 用户登录后的长期默认组织。
+  defaultOrganizationId?: string;
+  // 当前用户可以真正“进入”的组织，不代表 Platform 可管理组织全集。
+  organizations: OrganizationAccess[];
 };
 
-type AccessContext = {
-  id: string;
-  systemId: string;
-  systemCode: string;
-  systemName: string;
-  scopeType: 'system' | 'department';
-  scopeId?: string;
-  scopeName?: string;
+type OrganizationAccess = {
+  organizationId: string;
+  organizationCode: string;
+  organizationName: string;
+
+  // 后端计算后的组织级有效权限，前端不得从 DataScope 聚合生成。
   permissions: string[];
+  // 后端按用户和组织过滤后的 App/Skill 白名单。
   skillCodes: string[];
+
+  // 用户在组织内可以使用的数据范围。
+  dataScopes: DataScope[];
+  defaultDataScopeId?: string;
 };
 
+type DataScope = {
+  dataScopeId: string;
+  dataScopeCode: string;
+  dataScopeName: string;
+  type: 'organization' | 'department' | 'team' | 'project' | 'custom';
+};
 ```
 
-## 4. 注册
+关系：
 
-MVP 复用项目已有的 `/api/register`。注册成功只创建账户，用户随后通过 `/api/login/account` 登录。
+```text
+AuthCurrentUser
+├── platformPermissions[]
+├── platformSkillCodes[]
+├── defaultOrganizationId?
+└── organizations[]
+    ├── permissions[]
+    ├── skillCodes[]
+    └── dataScopes[]
+```
+
+规则：
+
+- `organizationId` 是 URL、Storage Scope Key 和 `X-Organization-Id` 的唯一组织标识。
+- `dataScopeId` 只能用于组织内部的数据过滤，不得替代 `organizationId`。
+- `permissions` 与 `skillCodes` 是并列的派生结果，不互相推导。
+- Role 可用于后台配置、展示和审计，但前后端不能只根据 `role === 'admin'` 放行。
+- `platformPermissions` 和 Organization `permissions` 使用不同命名空间。
+
+权限码示例：
+
+```text
+platform:organization:create
+platform:organization:update
+platform:organization:delete
+platform:user:manage
+platform:permission:grant
+platform:audit:view
+
+organization:settings:update
+organization:user:manage
+organization:role:manage
+organization:permission:grant
+app:file-review:use
+```
+
+## 5. 注册与登录
 
 ### `POST /api/register`
+
+MVP 复用项目已有的 `/api/register`。注册成功只创建账户，不自动登录，也不返回 access token；用户随后通过 `/api/login/account` 登录。
 
 请求：
 
@@ -131,6 +170,21 @@ Content-Type: application/json
   "password": "example-password",
   "email": "user1@example.com"
 }
+```
+
+```ts
+type RegisterRequest = {
+  username: string;
+  password: string;
+  email?: string;
+};
+
+type RegisterData = {
+  userId: string;
+  username: string;
+  email: string | null;
+  status: 'ok';
+};
 ```
 
 响应：
@@ -158,8 +212,6 @@ Content-Type: application/json
 
 前端可以保留 `confirm` 字段校验两次密码一致，但不发送给后端。后端必须独立校验用户名、密码强度和可选邮箱。MVP 不发送手机或邮箱验证码，也不包含邮箱激活流程。
 
-## 5. 登录
-
 ### `POST /api/login/account`
 
 请求：
@@ -176,6 +228,26 @@ Content-Type: application/json
   "type": "account",
   "autoLogin": true
 }
+```
+
+```ts
+type LoginRequest = {
+  username: string;
+  password: string;
+  type: 'account';
+  autoLogin?: boolean;
+};
+
+type LoginResult = {
+  status: 'ok';
+  type: 'account';
+  currentAuthority: string;
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  expiresAt: string;
+  traceId: string;
+};
 ```
 
 成功响应头：
@@ -200,8 +272,6 @@ Pragma: no-cache
 }
 ```
 
-字段：
-
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `status` | `"ok"` | 是 | 兼容现有前端登录成功判断 |
@@ -212,7 +282,7 @@ Pragma: no-cache
 | `expiresIn` | `number` | 是 | 剩余有效秒数 |
 | `expiresAt` | `string` | 是 | 过期时间，ISO 8601 UTC |
 
-`autoLogin` 是现有登录表单字段。由于 MVP 不使用 refresh token，后端可以接收但忽略该字段。
+access token 保存到 `localStorage`，后续通过 `Authorization: Bearer <jwt>` 发送。JWT 过期后端返回 `401`，前端清理 token 并重新登录。`autoLogin` 是现有登录表单字段；由于 MVP 不使用 refresh token，后端可以接收但忽略该字段。
 
 登录失败：
 
@@ -229,18 +299,16 @@ HTTP/1.1 401 Unauthorized
 }
 ```
 
-## 6. 获取用户、系统和权限
+## 6. 获取用户与访问范围
 
 ### `GET /api/currentUser`
-
-请求：
 
 ```http
 GET /api/currentUser
 Authorization: Bearer <jwt>
 ```
 
-响应：
+示例响应：
 
 ```json
 {
@@ -251,40 +319,29 @@ Authorization: Bearer <jwt>
     "name": "用户一",
     "avatar": null,
     "email": "user1@example.com",
-    "access": "user",
-    "defaultContextId": "ctx-user1-sys1",
-    "contexts": [
+    "platformPermissions": [],
+    "platformSkillCodes": [],
+    "defaultOrganizationId": "org-1",
+    "organizations": [
       {
-        "id": "ctx-user1-sys1",
-        "systemId": "sys1",
-        "systemCode": "SYS1",
-        "systemName": "系统一",
-        "scopeType": "system",
+        "organizationId": "org-1",
+        "organizationCode": "ORG1",
+        "organizationName": "组织一",
         "permissions": [
-          "page:home",
-          "page:dashboard-analysis",
-          "page:dashboard-workplace",
-          "page:ai-assistant"
+          "organization:user:manage",
+          "organization:role:manage",
+          "app:file-review:use"
         ],
-        "skillCodes": [
-          "file-review",
-          "document-summary",
-          "knowledge-search"
+        "skillCodes": ["file-review", "knowledge-search"],
+        "defaultDataScopeId": "department-east",
+        "dataScopes": [
+          {
+            "dataScopeId": "department-east",
+            "dataScopeCode": "EAST",
+            "dataScopeName": "华东部门",
+            "type": "department"
+          }
         ]
-      },
-      {
-        "id": "ctx-user1-sys2",
-        "systemId": "sys2",
-        "systemCode": "SYS2",
-        "systemName": "系统二",
-        "scopeType": "system",
-        "permissions": [
-          "page:home",
-          "page:dashboard-analysis",
-          "page:dashboard-monitor",
-          "page:ai-assistant"
-        ],
-        "skillCodes": ["file-review", "knowledge-search"]
       }
     ]
   },
@@ -292,117 +349,172 @@ Authorization: Bearer <jwt>
 }
 ```
 
-要求：
+Super Admin 示例差异：
 
-- `data` 直接是当前用户对象，兼容现有前端的 `msg.data` 读取方式。
-- `userid` 沿用当前 `API.CurrentUser` 字段名。
-- `contexts` 只返回当前用户可访问的上下文。
-- `permissions` 当前只使用 `page:*` 权限码；一个权限码对应一个完整页面访问权，同时控制菜单、静态路由和该页面对应的业务接口。
-- `skillCodes` 表示后端根据当前用户和 Context 过滤后的 AI Skill 占位，不返回用户不可用的 Skill。
-- `permissions` 与 `skillCodes` 是 `AccessContext` 的并列字段，不把 Skill 嵌套进某一个 Permission。
-- Skill 当前只用于前端展示，并统一跳转项目 AI 助手；业务接口仍必须按 `permissions` 做后端鉴权，不能因为请求携带 Skill Code 就放行。
-- `defaultContextId` 是跨标签页、跨登录使用的长期默认系统，可由默认系统接口修改。
-- `currentUser` 不返回、不重新签发 access token。
-
-### Skill 数据约定
-
-当前阶段不增加独立 Skill 接口，`permissions` 和 `skillCodes` 随 `/api/currentUser` 一次返回。前端切换 Context 后，直接读取该 Context 已返回的数据，不需要再次请求后端。
-
-```text
-currentUser
-  └── contexts[]
-        ├── permissions[]
-        └── skillCodes[]
+```json
+{
+  "platformPermissions": [
+    "platform:organization:create",
+    "platform:organization:update",
+    "platform:user:manage",
+    "platform:permission:grant",
+    "platform:audit:view"
+  ],
+  "platformSkillCodes": ["platform-assistant"],
+  "organizations": []
+}
 ```
 
-后端数据库可以继续规范化拆分 `permissions`、`skills`、Scope 与 Skill 的关联；这里只约束 API 聚合响应，不要求将 Skill 物理存入用户表或 Context 表。
+Super Admin 即使可以管理全部组织，也不要求 `organizations` 返回所有组织。只有明确允许“进入组织业务工作区”的组织才进入该数组。
 
-前端静态 Skill Registry 根据 `skillCode` 补充名称和图标，并在当前阶段统一跳转项目 AI 助手。后端只返回稳定、唯一的 Skill Code，不返回 React 组件路径，也不信任前端提交的 Skill Code 作为授权依据。
+## 7. Platform 与 Organization Access
 
-当单个用户的 Context 或 Skill 数量明显增大，或者权限需要频繁刷新时，再考虑拆为一个聚合接口：
+### Platform Access
+
+- 任一有效 `platform:*` 权限允许进入受限管理中心。
+- Platform Sidebar、页面和操作只从 `platformPermissions` 计算。
+- Platform App 只从 `platformSkillCodes` 生成入口。
+- Platform API 不读取、继承或组合任何 Organization 权限。
+- Platform API 请求不得携带 `X-Organization-Id`。
+
+### Organization Access
+
+- Organization 必须存在于 `currentUser.organizations`，前端才允许生成入口。
+- Organization Sidebar、页面、按钮和 App 只读取该 OrganizationAccess。
+- 同一用户可在不同 Organization 拥有不同权限和 Skill。
+- 后端必须根据 JWT 和 `X-Organization-Id` 查询实时权限，不能信任前端缓存。
+
+### 权限与 Skill 更新
+
+- 登录、整页刷新和 Organization 切换都会重新请求 `/api/currentUser`。
+- 权限发生变化时，可以显式重新请求 `/api/currentUser` 更新界面。
+- 已失去 Organization 或 Skill 权限时，前端移除相应入口和恢复记录；后端同时返回 `403`。
+
+## 8. 默认组织与登录落点
+
+### `PUT /api/users/me/default-organization`
 
 ```http
-GET /api/contexts/{contextId}/access
-```
-
-该扩展接口应一次返回当前 Context 的 `permissions` 和 `skillCodes`，避免拆成两个请求造成状态不同步；MVP 不实现该接口。
-
-JWT 缺失、无效或过期时返回 `401`，前端删除 localStorage token 并转到登录页。
-
-## 7. 设置默认系统
-
-### `PUT /api/users/me/default-entry`
-
-该路径沿用项目已有命名。用户首次没有默认系统时，选择页调用一次；首页顶部的临时系统切换不调用此接口。
-
-请求：
-
-```http
-PUT /api/users/me/default-entry
+PUT /api/users/me/default-organization
 Authorization: Bearer <jwt>
 Content-Type: application/json
 ```
 
 ```json
 {
-  "entryId": "ctx-user1-sys1"
+  "organizationId": "org-1"
 }
 ```
-
-响应：
 
 ```json
 {
   "success": true,
   "data": {
-    "defaultContextId": "ctx-user1-sys1"
+    "defaultOrganizationId": "org-1"
   },
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
 ```
 
-要求：
+后端必须验证该 Organization 位于当前用户可进入的 `organizations` 中。
 
-- 后端必须确认 `entryId` 属于 JWT `sub` 对应用户。
-- 成功响应必须回传最终保存的 `defaultContextId`。
-- 前端只把当前标签页选择存入 sessionStorage；刷新优先使用该值，再使用后端默认值。
+登录落点优先级：
 
-## 8. 业务接口
+1. 拥有 Platform Access：进入 `/workspace/platform/overview`。
+2. 没有 Platform Access，但 `defaultOrganizationId` 仍有效：进入该 Organization 首页。
+3. 只有一个可进入 Organization：直接进入该 Organization 首页。
+4. 多个 Organization 且没有有效默认值：进入组织选择页。
+5. 没有 Platform Access 且没有 Organization：进入无授权状态。
 
-请求示例：
+右上角临时切换 WorkspaceScope 不修改 `defaultOrganizationId`。只有用户在默认组织设置或首次选择流程中明确确认时才调用本接口。
+
+## 9. WorkspaceScope 与 URL
+
+最终 URL：
+
+```text
+/workspace/platform/overview
+/workspace/platform/organizations
+/workspace/platform/apps/:appKey
+
+/workspace/org/:organizationId/home
+/workspace/org/:organizationId/members
+/workspace/org/:organizationId/roles
+/workspace/org/:organizationId/settings
+/workspace/org/:organizationId/apps/:appKey/*
+```
+
+切换规则：
+
+- Platform 与 Organization 使用同一个 Workspace 切换器。
+- 切换 Scope 使用整页导航，重新加载用户与权限。
+- Platform、不同 Organization 的组件、请求和标签不能同时运行。
+- Platform 与每个 Organization 可以拥有各自隔离的标签恢复快照，但任意时刻只读取当前 Scope 的快照。
+- URL 是当前 Scope、当前标签和 Sidebar 的唯一导航依据，不持久化独立 `sidebarState`。
+
+## 10. 业务请求
+
+### Platform 请求
 
 ```http
-GET /api/dashboard/summary
+GET /api/platform/organizations
 Authorization: Bearer <jwt>
-X-Context-Id: ctx-user1-sys1
 ```
 
-响应示例：
+后端校验：JWT → Platform 实时权限 → 具体操作权限。
 
-```json
-{
-  "success": true,
-  "data": {
-    "systemCode": "SYS1",
-    "total": 12
-  },
-  "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
-}
+### Organization 请求
+
+```http
+GET /api/files?dataScopeId=department-east
+Authorization: Bearer <jwt>
+X-Organization-Id: org-1
 ```
 
-后端必须按顺序校验：
+后端依次校验：
 
 1. JWT 签名、`exp`、`iss` 和 `aud`。
 2. 从 JWT `sub` 获取用户 ID。
-3. `X-Context-Id` 属于该用户。
-4. 后端数据库或可信缓存中的当前权限。
-5. 当前业务操作所需权限。
+3. 用户是否可以进入 `X-Organization-Id` 指定的 Organization。
+4. 后端数据库或可信缓存中的 Organization 实时权限。
+5. 业务操作所需权限。
+6. 请求中的 `dataScopeId` 是否属于该用户在当前 Organization 的可用 DataScope。
 
-前端不向后端传递权限码。
+前端不发送权限码。`skillCode` 也不能作为后端放行依据。
 
-## 8. 注销
+### DataScope 传递规则
 
-Bearer-only MVP 的注销由前端完成：
+- DataScope 不是全局 WorkspaceScope，不使用全局切换器。
+- 列表和查询接口通过查询参数传递 `dataScopeId`。
+- 创建、更新、任务启动等命令通过路径参数或请求体传递 `dataScopeId`。
+- 不使用全局 `X-Data-Scope-Id`，避免不同 App 或并发请求误用同一 DataScope。
+- 接口不需要 DataScope 时不传；需要但缺少时返回 `DATA_SCOPE_REQUIRED`。
+
+## 11. 标签恢复边界
+
+标签快照按以下 Key 隔离：
+
+```text
+workspace-tabs:{version}:{userId}:platform
+workspace-tabs:{version}:{userId}:organization:{organizationId}
+```
+
+只保存：
+
+- 固定首页和已打开 App 标签。
+- App Key、标题、最后 URL 和顺序。
+
+不保存：
+
+- React 组件实例、接口数据和 React Query 全部缓存。
+- Token、权限数组或 DataScope 授权结果。
+- 表单值、上传文件或敏感草稿。
+
+恢复时以最新 `/api/currentUser` 为准，删除已撤权 Organization 或 App 的记录。
+
+## 12. 注销
+
+Bearer-only MVP 的注销由前端清除本地 access token 完成：
 
 ```ts
 localStorage.removeItem('accessToken');
@@ -427,38 +539,50 @@ Authorization: Bearer <jwt>
 
 纯无状态 JWT 无法立即撤销已签发 token。如需强制下线，后续增加 `jti` 黑名单或用户 `tokenVersion`。
 
-## 9. 错误码
+## 13. 错误码
 
 | HTTP | `errorCode` | 含义 |
 | --- | --- | --- |
 | `400` | `VALIDATION_ERROR` | 请求字段不合法 |
-| `400` | `CONTEXT_REQUIRED` | 缺少 `X-Context-Id` |
-| `409` | `ACCOUNT_ALREADY_EXISTS` | 用户名已存在，或填写的邮箱已被占用 |
+| `400` | `ORGANIZATION_REQUIRED` | Organization API 缺少 `X-Organization-Id` |
+| `400` | `DATA_SCOPE_REQUIRED` | 当前接口要求 DataScope，但请求未提供 |
+| `409` | `ACCOUNT_ALREADY_EXISTS` | 用户名或邮箱已存在 |
 | `401` | `BAD_CREDENTIALS` | 用户名或密码错误 |
 | `401` | `ACCESS_TOKEN_MISSING` | 未携带 Bearer token |
 | `401` | `ACCESS_TOKEN_INVALID` | JWT 签名或 Claims 无效 |
-| `401` | `ACCESS_TOKEN_EXPIRED` | JWT 过期，需重新登录 |
-| `403` | `CONTEXT_FORBIDDEN` | 用户无权使用指定上下文 |
-| `403` | `PERMISSION_DENIED` | 当前上下文缺少功能权限 |
+| `401` | `ACCESS_TOKEN_EXPIRED` | JWT 已过期 |
+| `403` | `PLATFORM_PERMISSION_DENIED` | 缺少 Platform 操作权限 |
+| `403` | `ORGANIZATION_FORBIDDEN` | 用户不能进入指定 Organization |
+| `403` | `DATA_SCOPE_FORBIDDEN` | DataScope 不属于当前用户和 Organization |
+| `403` | `PERMISSION_DENIED` | 当前 Scope 缺少具体操作权限 |
 | `500` | `INTERNAL_ERROR` | 后端异常 |
 
-## 10. 后端配置要求
+## 14. 后端配置与安全要求
 
 - Spring Security 使用 `SessionCreationPolicy.STATELESS`。
 - 从 `Authorization` Header 提取 Bearer JWT。
-- JWT 不得记录到服务器日志、链路字段或错误信息。
-- 密码不得写入日志。
-- CORS 只允许 `https://app.example.com`，不使用 `*`。
-- CORS 允许 `Content-Type`、`Authorization` 和 `X-Context-Id` Header。
+- CORS 仅允许受信任前端域名，不使用 `*`。
+- CORS 允许 `Content-Type`、`Authorization` 和 `X-Organization-Id`。
 - `OPTIONS` 预检请求不要求登录。
+- Platform API 不能因为携带某个 Organization ID 而获得或扩大权限。
+- Organization API 必须校验用户、Organization、DataScope 与权限的完整关系。
+- JWT、密码和权限敏感数据不得进入日志或错误信息。
 - Bearer Header 不会被浏览器自动携带，MVP 不需要 CSRF Token。
-- 建议配置严格 CSP 并限制第三方脚本，降低 localStorage token 被 XSS 窃取的风险。
+- 建议配置严格 CSP，降低 localStorage token 被 XSS 窃取的风险。
 
-## 11. 前端系统上下文规则
+## 15. 旧协议迁移
 
-- 前端使用当前标签页 `sessionStorage` 保存 `currentContextId`。
-- 刷新时优先使用仍存在于 `contexts` 的已存储 ID。
-- 无有效存储 ID 时使用 `currentUser.defaultContextId`。
-- 两者都不存在时显示系统选择页。
-- 切换系统只更新前端 `currentContextId`，不调用后端切换接口。
-- MVP 不保存跨标签页、跨设备的新默认系统。
+| 旧字段/行为 | 新字段/行为 |
+| --- | --- |
+| `contexts[]` | `organizations[]` |
+| `AccessContext` | `OrganizationAccess` + `DataScope[]` |
+| `systemId` | `organizationId` |
+| `systemCode` | `organizationCode` |
+| `systemName` | `organizationName` |
+| `defaultContextId` | `defaultOrganizationId` |
+| `X-Context-Id` | `X-Organization-Id` |
+| `sessionStorage.currentContextId` | URL 中的 `organizationId` |
+| System/Context 切换不刷新 | WorkspaceScope 切换执行整页导航 |
+| 多 System 标签同时存在 | 仅当前 Scope 的 Home/App 标签运行 |
+
+迁移期间可以在 API Adapter 层兼容旧响应，但旧 Context 字段不得继续进入 Workspace、标签、Sidebar 和权限核心模型。

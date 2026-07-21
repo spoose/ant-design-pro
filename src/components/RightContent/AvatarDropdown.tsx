@@ -10,7 +10,6 @@ import React, { startTransition } from 'react';
 // import { outLogin } from '@/services/ant-design-pro/api';
 import { logout } from '@/services/auth';
 import { clearAccessToken } from '@/utils/authToken';
-import { clearCurrentContextId } from '@/utils/currentContext';
 import HeaderDropdown from '../HeaderDropdown';
 
 type GlobalHeaderRightProps = {
@@ -45,7 +44,6 @@ const loginOut = async () => {
     // Local logout has already cleared user state; redirect should still proceed.
   } finally {
     clearAccessToken();
-    clearCurrentContextId();
   }
   const { search, pathname } = window.location;
   const urlParams = new URL(window.location.href).searchParams;
@@ -73,7 +71,6 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
         setInitialState((s) => ({
           ...s,
           currentUser: undefined,
-          currentContextId: undefined,
         }));
       });
       loginOut();

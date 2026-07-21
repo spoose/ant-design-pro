@@ -6,7 +6,11 @@ type RouteItem = {
   name?: string;
   icon?: string;
   redirect?: string;
+  component?: string;
+  hideInMenu?: boolean;
+  layout?: boolean;
   access?: string;
+  wrappers?: string[];
   routes?: RouteItem[];
 };
 
@@ -25,22 +29,67 @@ const findRoute = (
 describe('main routes', () => {
   const appRoutes = routes as RouteItem[];
 
-  it('places home first in the authenticated menu', () => {
+  it('keeps /home as a hidden compatibility landing route', () => {
     expect(appRoutes[1]).toMatchObject({
       path: '/home',
-      name: 'home',
-      icon: 'home',
+      component: './workspace/landing',
+      hideInMenu: true,
+      layout: false,
     });
   });
 
-  it('redirects the root path to home', () => {
+  it('uses the dynamic Workspace landing page for the root path', () => {
     expect(appRoutes.find((route) => route.path === '/')).toMatchObject({
-      redirect: '/home',
+      component: './workspace/landing',
+      layout: false,
     });
+  });
+
+  it('mounts Platform and Organization pages under the URL namespace', () => {
+    expect(
+      findRoute(appRoutes, '/workspace/platform/:platformPageKey'),
+    ).toMatchObject({ component: './workspace/platform' });
+    expect(
+      findRoute(appRoutes, '/workspace/platform/apps/:appKey/*'),
+    ).toMatchObject({ component: './workspace/app' });
+    expect(
+      findRoute(appRoutes, '/workspace/org/:organizationId/home'),
+    ).toMatchObject({ component: './Home' });
+    expect(
+      findRoute(appRoutes, '/workspace/org/:organizationId/members'),
+    ).toMatchObject({ component: './workspace/members' });
+    expect(
+      findRoute(appRoutes, '/workspace/org/:organizationId/roles'),
+    ).toMatchObject({
+      component: './workspace/roles',
+    });
+    expect(
+      findRoute(appRoutes, '/workspace/org/:organizationId/settings'),
+    ).toMatchObject({ component: './workspace/settings' });
+    expect(
+      findRoute(appRoutes, '/workspace/org/:organizationId/apps/:appKey/*'),
+    ).toMatchObject({ component: './workspace/app' });
+  });
+
+  it('guards every formal Workspace route with the shared route boundary', () => {
+    const workspacePaths = [
+      '/workspace/platform/apps/:appKey/*',
+      '/workspace/platform/:platformPageKey',
+      '/workspace/org/:organizationId/home',
+      '/workspace/org/:organizationId/members',
+      '/workspace/org/:organizationId/roles',
+      '/workspace/org/:organizationId/settings',
+      '/workspace/org/:organizationId/apps/:appKey/*',
+    ];
+
+    for (const path of workspacePaths) {
+      expect(findRoute(appRoutes, path)?.wrappers).toEqual([
+        '@/wrappers/workspaceAccess',
+      ]);
+    }
   });
 
   it.each([
-    ['/home', 'canHome'],
     ['/admin', 'canAdmin'],
     ['/dashboard/analysis', 'canDashboardAnalysis'],
     ['/dashboard/monitor', 'canDashboardMonitor'],

@@ -15,20 +15,18 @@ import {
   DocLink,
   ErrorBoundary,
   Footer,
-  LangDropdown,
   OfflineBanner,
-  VersionDropdown,
+  WorkspaceTabsHeader,
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import type { AuthCurrentUser } from '@/services/auth';
-import { clearAccessToken } from '@/utils/authToken';
+import { clearAccessToken, getAccessToken } from '@/utils/authToken';
 import {
-  clearCurrentContextId,
-  resolveCurrentContextId,
-} from '@/utils/currentContext';
-import { groupTemplateExampleMenus } from '@/utils/menuData';
+  groupTemplateExampleMenus,
+  resolveWorkspaceMenuDescriptor,
+} from '@/utils/menuData';
 import defaultSettings from '../config/defaultSettings';
-import { SysSwitch } from './components/RightContent/SysSwitch';
+import { OrganizationSwitch } from './components/RightContent/OrganizationSwitch';
 import { errorConfig } from './requestErrorConfig';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -46,7 +44,6 @@ const isUnauthorizedError = (error: unknown) =>
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
   currentUser?: AuthCurrentUser;
-  currentContextId?: string;
   loading?: boolean;
   fetchUserInfo?: () => Promise<AuthCurrentUser | undefined>;
   settingDrawerOpen?: boolean;
@@ -60,10 +57,7 @@ export async function getInitialState(): Promise<{
     } catch (error) {
       if (!isUnauthorizedError(error)) throw error;
 
-      // RefreshTokenResult 和 refreshAccessToken 暂时保留在 auth service；
-      // 当前 access-token-only 链路不自动刷新，后端接口就绪后再接入重试。
       clearAccessToken();
-      clearCurrentContextId();
       const { pathname, search, hash } = history.location;
       history.replace(
         `${loginPath}?redirect=${encodeURIComponent(pathname + search + hash)}`,
@@ -75,16 +69,9 @@ export async function getInitialState(): Promise<{
   const { location } = history;
   if (!authFreePaths.includes(location.pathname)) {
     const currentUser = await fetchUserInfo();
-    const currentContextId = currentUser
-      ? resolveCurrentContextId(
-          currentUser.contexts,
-          currentUser.defaultContextId,
-        )
-      : undefined;
     return {
       fetchUserInfo,
       currentUser,
-      currentContextId,
       settings: defaultSettings as Partial<LayoutSettings>,
       settingDrawerOpen: false,
     };
@@ -98,14 +85,236 @@ export async function getInitialState(): Promise<{
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
 //告诉整个应用的后台布局怎么渲染、怎么跳转、顶部右侧放什么、头像区怎么显示、页面切换时怎么做权限检查。
-//initialState：就是 getInitialState() 返回的数据，比如 currentUser、settings、currentContextId
+// initialState 是 getInitialState() 返回的 currentUser 与 settings；当前 Scope 只从 URL 派生。
 //setInitialState：更新全局状态的方法
 export const layout: RunTimeLayoutConfig = ({
   initialState,
   setInitialState,
 }) => {
+  // 当前地址来自 Umi Browser Router；仅 Workspace 路由使用无外边距的应用壳布局。
+  const isWorkspaceRoute = history.location.pathname.startsWith('/workspace/');
+
   return {
-    menuDataRender: groupTemplateExampleMenus,
+    menuDataRender: (menuData) => {
+      // URL 是当前 Scope、标签和 Sidebar 的唯一来源。
+      const { pathname } = history.location;
+      const workspaceMenu = resolveWorkspaceMenuDescriptor(
+        initialState?.currentUser,
+        pathname,
+      );
+      if (workspaceMenu) return workspaceMenu.items;
+      // 无权或无效的 Workspace URL 不回退到模板菜单，避免误导用户离开当前壳层。
+      if (pathname.startsWith('/workspace/')) return [];
+      return groupTemplateExampleMenus(menuData);
+    },
+    // 标签直接进入 ProLayout 顶栏；路由页面不再需要 WorkspaceLayout/WorkspaceShell 包裹。
+    headerContentRender: (_, defaultDom) =>
+      isWorkspaceRoute ? <WorkspaceTabsHeader /> : defaultDom,
+    menuExtraRender: ({ collapsed }) => {
+      const workspaceMenu = resolveWorkspaceMenuDescriptor(
+        initialState?.currentUser,
+        history.location.pathname,
+      );
+      if (!workspaceMenu) return null;
+
+      return (
+        <div
+          className={`flex h-11 items-center border-b border-zinc-200 px-3 dark:border-zinc-800 ${
+            collapsed ? 'justify-center' : 'gap-2'
+          }`}
+        >
+          {/* Badge 始终保留；展开时只补充 Organization/App 名称，不显示范围副标题。 */}
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-blue-50 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+            {workspaceMenu.badge}
+          </span>
+          {!collapsed && (
+            <strong className="min-w-0 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {workspaceMenu.title}
+            </strong>
+          )}
+        </div>
+      );
+    },
+    stylish: {
+      /**
+       * Workspace 顶栏视觉链路：
+       * defaultSettings.siderWidth(248) -> Logo 区宽度 -> 标签从 Sidebar 右缘开始；
+       * 640px 以下才把 56px 操作行与 48px 标签行组合成 104px 顶栏。
+       */
+      header: ({
+        antCls,
+        colorBgContainer,
+        colorBorder,
+        colorBorderSecondary,
+        margin,
+        paddingXS,
+        proComponentsCls,
+      }) => {
+        // 来源：antd 的 colorBgContainer；70% 保留顶栏层次，同时继续适配明暗主题。
+        const workspaceHeaderBackground = `color-mix(in srgb, ${colorBgContainer} 70%, transparent)`;
+
+        return {
+          ...(isWorkspaceRoute
+            ? {
+                height: 56,
+                backgroundColor: colorBgContainer,
+                background: workspaceHeaderBackground,
+                borderBlockEnd: `1px solid ${colorBorder}`,
+                [`${proComponentsCls}-global-header`]: {
+                  marginInline: 0,
+                  paddingInlineEnd: margin,
+                  backgroundColor: colorBgContainer,
+                  background: workspaceHeaderBackground,
+                  // headerContentRender 的匿名容器承载 WorkspaceTabsHeader；允许它在窄宽度内收缩。
+                  '> div:not([class])': {
+                    minWidth: 0,
+                    height: '100%',
+                  },
+                  '@media (min-width: 768px)': {
+                    [`${proComponentsCls}-global-header-logo-mix`]: {
+                      boxSizing: 'border-box',
+                      width: 248,
+                      height: '100%',
+                      marginInlineEnd: 0,
+                      paddingInline: margin,
+                      flex: '0 0 248px',
+                      backgroundColor: colorBgContainer,
+                      background: workspaceHeaderBackground,
+                      borderInlineEnd: `1px solid ${colorBorderSecondary}`,
+                    },
+                  },
+                },
+                '@media (max-width: 767px)': {
+                  height: 56,
+                  lineHeight: 'normal',
+                  [`${proComponentsCls}-global-header`]: {
+                    height: 56,
+                    marginInline: 0,
+                    paddingInline: paddingXS,
+                    alignItems: 'center',
+                    backgroundColor: colorBgContainer,
+                    background: workspaceHeaderBackground,
+                    [`${proComponentsCls}-global-header-collapsed-button`]: {
+                      width: 44,
+                      height: 56,
+                      marginInlineEnd: 0,
+                      flex: '0 0 44px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    },
+                    [`${proComponentsCls}-global-header-logo-mobile`]: {
+                      width: 28,
+                      height: 56,
+                      flex: '0 0 28px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    },
+                    [`${proComponentsCls}-global-header-right-content`]: {
+                      // ProLayout 会保留桌面测得的内联尺寸；移动布局改用实际图标宽度，避免挤压标签。
+                      height: '56px !important',
+                      minWidth: '0 !important',
+                      marginInlineStart: 'auto',
+                    },
+                    [`${proComponentsCls}-global-header-header-actions-item`]: {
+                      paddingInline: 0,
+                      '> *': {
+                        minWidth: 44,
+                        minHeight: 44,
+                      },
+                    },
+                    [`${proComponentsCls}-global-header-header-actions-avatar`]:
+                      {
+                        paddingInline: 0,
+                        '> div': {
+                          minWidth: 44,
+                          minHeight: 44,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        },
+                      },
+                    // 手机只保留头像；用户名在有限宽度里隐藏，但账号菜单仍可点击。
+                    [`${proComponentsCls}-global-header-header-actions-avatar span:not(${antCls}-avatar)`]:
+                      {
+                        display: 'none',
+                      },
+                  },
+                },
+                '@media (max-width: 639px)': {
+                  height: 104,
+                  [`${proComponentsCls}-global-header`]: {
+                    height: 104,
+                    alignItems: 'flex-start',
+                    // 窄屏下标签独占第二行，避免与 Logo、全局操作争抢水平空间。
+                    '> div:not([class])': {
+                      position: 'absolute',
+                      insetBlockStart: 56,
+                      insetInline: 0,
+                      height: 48,
+                      minWidth: 0,
+                      backgroundColor: colorBgContainer,
+                      background: workspaceHeaderBackground,
+                      borderBlockStart: `1px solid ${colorBorder}`,
+                    },
+                  },
+                },
+              }
+            : {}),
+        };
+      },
+      // 将 ProLayout 默认菜单间距调整为已确认 demo 的 44px 身份栏与 40px 菜单项。
+      sider: ({
+        antCls,
+        borderRadius,
+        colorBgContainer,
+        colorBorderSecondary,
+        colorPrimary,
+        colorPrimaryBg,
+        paddingXXS,
+        paddingXS,
+      }) => ({
+        // 正式 Workspace 与 demo 使用相同的白色导航表面；暗色模式自动跟随容器 Token。
+        ...(isWorkspaceRoute
+          ? {
+              background: colorBgContainer,
+              borderInlineEnd: `1px solid ${colorBorderSecondary}`,
+              [`& ${antCls}-layout-sider-children`]: {
+                background: colorBgContainer,
+              },
+              [`${antCls}-menu`]: {
+                background: colorBgContainer,
+              },
+              [`${antCls}-menu-item-selected`]: {
+                color: colorPrimary,
+                background: colorPrimaryBg,
+              },
+              // 折叠侧栏已有 8px 外层留白；菜单再留 4px，正好容纳并居中 ProLayout 的 40px 折叠标题。
+              [`&${antCls}-pro-sider-collapsed ${antCls}-pro-sider-menu`]: {
+                paddingInline: paddingXXS,
+              },
+            }
+          : {}),
+        [`${antCls}-pro-sider-extra`]: {
+          margin: 0,
+          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
+        },
+        [`${antCls}-pro-sider-menu`]: {
+          padding: paddingXS,
+          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
+        },
+        [`${antCls}-menu-item`]: {
+          width: '100%',
+          height: 40,
+          minHeight: 40,
+          marginBlock: 2,
+          marginInline: 0,
+          borderRadius,
+        },
+      }),
+    },
+    // Workspace 页面使用自己的标题区和内容间距，不能再叠加 ProLayout 页面留白。
+    contentStyle: isWorkspaceRoute ? { margin: 0, padding: 0 } : undefined,
     menuItemRender: (item, dom) => {
       if (item.path) {
         return (
@@ -117,16 +326,8 @@ export const layout: RunTimeLayoutConfig = ({
       return dom;
     },
     actionsRender: () => {
-      // `locale: false` opts out of the language switcher. ProLayout's own
-      // `locale` prop is a locale string, so narrow to the boolean toggle here.
-      const localeEnabled =
-        (initialState?.settings as { locale?: boolean })?.locale !== false;
-      return [
-        <SysSwitch key="switch" />,
-        <DocLink key="doc" />,
-        <VersionDropdown key="version" />,
-        localeEnabled && <LangDropdown key="lang" />,
-      ].filter(Boolean);
+      // 顶栏只保留当前工作流需要的组织切换与文档入口。
+      return [<OrganizationSwitch key="switch" />, <DocLink key="doc" />];
     },
     avatarProps: {
       src: initialState?.currentUser?.avatar,
@@ -138,7 +339,7 @@ export const layout: RunTimeLayoutConfig = ({
     // waterMarkProps: {
     //   content: initialState?.currentUser?.name,
     // },
-    footerRender: () => <Footer />,
+    footerRender: isWorkspaceRoute ? false : () => <Footer />,
     //每次页面变化时检查用户是否已登录 负责兜底页面保护
     onPageChange: () => {
       const { location } = history;
@@ -146,50 +347,46 @@ export const layout: RunTimeLayoutConfig = ({
       const currentUrl = currentPath + location.search + location.hash;
       const isUserFlowPath = userFlowPaths.includes(currentPath);
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && !isUserFlowPath) {
+      // 登录成功后的首次跳转可能早于 React 提交 currentUser；此时已签发 Token 是合法的短暂交接态。
+      // 如果 Token 实际失效，fetchUserInfo() 的 401 分支会清理它并重新跳回登录页。
+      if (!initialState?.currentUser && !getAccessToken() && !isUserFlowPath) {
         history.replace(
           `${loginPath}?redirect=${encodeURIComponent(currentUrl)}`,
         );
         return;
       }
-      if (
-        initialState?.currentUser &&
-        !initialState.currentContextId &&
-        !isUserFlowPath
-      ) {
-        history.replace(
-          `${selectEntryPath}?redirect=${encodeURIComponent(currentUrl)}`,
-        );
-      }
     },
-    bgLayoutImgList: [
-      {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr',
-        left: 85,
-        bottom: 100,
-        height: '303px',
-      },
-      {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/C2TWRpJpiC0AAAAAAAAAAAAAFl94AQBr',
-        bottom: -68,
-        right: -45,
-        height: '303px',
-      },
-      {
-        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/F6vSTbj8KpYAAAAAAAAAAAAAFl94AQBr',
-        bottom: 0,
-        left: 0,
-        width: '331px',
-      },
-    ],
-    links: isDev
-      ? [
-          <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
-            <LinkOutlined />
-            <span>OpenAPI 文档</span>
-          </Link>,
-        ]
-      : [],
+    bgLayoutImgList: isWorkspaceRoute
+      ? []
+      : [
+          {
+            src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr',
+            left: 85,
+            bottom: 100,
+            height: '303px',
+          },
+          {
+            src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/C2TWRpJpiC0AAAAAAAAAAAAAFl94AQBr',
+            bottom: -68,
+            right: -45,
+            height: '303px',
+          },
+          {
+            src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/F6vSTbj8KpYAAAAAAAAAAAAAFl94AQBr',
+            bottom: 0,
+            left: 0,
+            width: '331px',
+          },
+        ],
+    links:
+      isDev && !isWorkspaceRoute
+        ? [
+            <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
+              <LinkOutlined />
+              <span>OpenAPI 文档</span>
+            </Link>,
+          ]
+        : [],
     // Replace ProLayout's default ErrorBoundary with our offline-aware version,
     // so chunk load errors show friendly messages instead of "Something went wrong."
     ErrorBoundary,
@@ -224,6 +421,8 @@ export const layout: RunTimeLayoutConfig = ({
       );
     },
     ...initialState?.settings,
+    // 仅给 Workspace 壳层增加样式作用域；URL 仍是 Scope、标签与 Sidebar 的唯一状态来源。
+    className: isWorkspaceRoute ? 'workspace-layout' : undefined,
   };
 };
 

@@ -27,26 +27,8 @@ import { Footer } from '@/components';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
 import { loginWithPassword } from '@/services/auth';
 import { setAccessToken } from '@/utils/authToken';
-import { resolveCurrentContextId } from '@/utils/currentContext';
+import { resolveLandingPath } from '@/utils/workspaceRoutes';
 import Settings from '../../../../config/defaultSettings';
-
-/**
- * Validate redirect URL to prevent open redirect attacks.
- * Only allow same-origin relative paths starting with '/'.
- */
-// const getSafeRedirectUrl = (redirect: string | null): string => {
-//   if (!redirect?.startsWith('/')) return '/';
-//   if (redirect.startsWith('//')) return '/';
-//   try {
-//     const parsed = new URL(redirect, window.location.origin);
-//     if (parsed.origin !== window.location.origin) return '/';
-//     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-//   } catch {
-//     return '/';
-//   }}
-
-const homePath = '/home';
-const selectEntryPath = '/user/select-entry';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -138,20 +120,19 @@ const Login: React.FC = () => {
   const { message } = App.useApp();
   const intl = useIntl();
 
+  /**
+   * accessToken 保存后重新请求 GET /api/currentUser，并把认证用户写入 Umi initialState。
+   * 返回 userInfo 给落点规则使用，避免依赖异步 State 更新是否已经提交。
+   */
   const fetchUserInfo = async () => {
     const userInfo = await initialState?.fetchUserInfo?.();
     if (!userInfo) throw new Error('登录成功但未获取到用户信息');
 
-    const currentContextId = resolveCurrentContextId(
-      userInfo.contexts,
-      userInfo.defaultContextId,
-    );
     setInitialState((state) => ({
       ...state,
       currentUser: userInfo,
-      currentContextId,
     }));
-    return currentContextId;
+    return userInfo;
   };
 
   const handleSubmit = async (values: API.LoginParams) => {
@@ -168,8 +149,9 @@ const Login: React.FC = () => {
           defaultMessage: '登录成功！',
         });
         message.success(defaultLoginSuccessMessage);
-        const currentContextId = await fetchUserInfo();
-        history.replace(currentContextId ? homePath : selectEntryPath);
+        // 链路：登录响应 Token -> /api/currentUser -> 单一落点门面 -> Umi URL。
+        const userInfo = await fetchUserInfo();
+        history.replace(resolveLandingPath(userInfo));
         return;
       }
       // 如果失败去设置用户错误信息
@@ -269,7 +251,7 @@ const Login: React.FC = () => {
                 }}
                 placeholder={intl.formatMessage({
                   id: 'pages.login.username.placeholder',
-                  defaultMessage: '用户名: admin, user or operator',
+                  defaultMessage: '用户名: admin, user, operator 或 users2',
                 })}
                 rules={[
                   {

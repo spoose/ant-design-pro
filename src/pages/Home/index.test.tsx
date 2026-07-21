@@ -1,32 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AccessContext } from '@/services/auth';
+import type { OrganizationAccess } from '@/services/auth';
 import Home from './index';
 
+const organization: OrganizationAccess = {
+  organizationId: 'organization-1',
+  organizationCode: 'ORG1',
+  organizationName: '组织一',
+  permissions: [],
+  skillCodes: [],
+  dataScopes: [],
+};
 const testState = vi.hoisted(() => ({
+  organizationId: 'organization-1',
   initialState: {
-    currentUser: {
-      contexts: [
-        {
-          id: 'ctx-s1-g1',
-          systemId: 'system-1',
-          systemCode: 'SYS1',
-          systemName: 'System 1',
-          scopeType: 'department' as const,
-          scopeName: 'Group 1',
-          permissions: [
-            'page:home',
-            'page:dashboard-analysis',
-            'page:dashboard-workplace',
-          ],
-          skillCodes: ['file-review', 'document-summary'],
-        },
-      ] as AccessContext[],
-    },
-    currentContextId: 'ctx-s1-g1',
+    currentUser: { organizations: [] as OrganizationAccess[] },
   },
 }));
+testState.initialState.currentUser.organizations = [organization];
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
@@ -34,40 +26,31 @@ vi.mock('@umijs/max', () => ({
       defaultMessage,
   }),
   useModel: () => ({ initialState: testState.initialState }),
-}));
-
-vi.mock('@ant-design/pro-components', () => ({
-  PageContainer: ({ children, title }: any) => (
-    <main>
-      <h1>{title}</h1>
-      {children}
-    </main>
-  ),
+  useParams: () => ({ organizationId: testState.organizationId }),
 }));
 
 vi.mock('@/components/CurrentAccessOverview', () => ({
-  CurrentAccessOverview: ({ context }: { context: AccessContext }) => (
-    <div>overview:{context.id}</div>
-  ),
+  CurrentAccessOverview: ({
+    organization: currentOrganization,
+  }: {
+    organization: OrganizationAccess;
+  }) => <div>overview:{currentOrganization.organizationId}</div>,
 }));
 
 describe('Home', () => {
   beforeEach(() => {
-    testState.initialState.currentContextId = 'ctx-s1-g1';
+    testState.organizationId = 'organization-1';
   });
 
-  it('renders the access overview for the current context', () => {
+  it('renders the Organization access overview from the URL', () => {
     render(<Home />);
-
     expect(screen.getByRole('heading', { name: '首页' })).toBeVisible();
-    expect(screen.getByText('overview:ctx-s1-g1')).toBeVisible();
+    expect(screen.getByText('overview:organization-1')).toBeVisible();
   });
 
-  it('exposes an invalid current context', () => {
-    testState.initialState.currentContextId = 'missing-context';
-
+  it('exposes an invalid Organization URL', () => {
+    testState.organizationId = 'missing';
     render(<Home />);
-
-    expect(screen.getByRole('alert')).toHaveTextContent('未找到当前系统上下文');
+    expect(screen.getByRole('alert')).toHaveTextContent('未找到当前组织');
   });
 });

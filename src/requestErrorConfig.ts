@@ -1,9 +1,9 @@
 ﻿import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
-import { getIntl } from '@umijs/max';
+import { getIntl, history } from '@umijs/max';
 import { message, notification } from 'antd';
 import { getAccessToken } from '@/utils/authToken';
-import { getCurrentContextId } from '@/utils/currentContext';
+import { getWorkspaceOrganizationId } from '@/utils/workspaceRoutes';
 
 // 错误处理方案： 错误类型
 enum ErrorShowType {
@@ -108,12 +108,27 @@ export const errorConfig: RequestConfig = {
           Authorization: `Bearer ${token}`,
         };
       }
-      // 当前系统只保存于本标签页；业务 API 由后端使用该 ID 校验系统范围和权限。
-      const currentContextId = getCurrentContextId();
-      if (currentContextId) {
+      // pathname 来自 Umi Browser Router；Organization Header 不读取额外全局 State。
+      const { pathname } = history.location;
+      // organizationId 由 /workspace/org/:organizationId/* 解析，Platform URL 返回 undefined。
+      const organizationId = getWorkspaceOrganizationId(pathname);
+      // requestPath 来自当前 request(config)，去掉 query 后用于判断 API 授权域。
+      const requestPath = config.url?.split('?')[0] ?? '';
+      // Platform API 只使用 Platform 权限，禁止携带 Organization Header。
+      const isPlatformApi = requestPath.startsWith('/api/platform/');
+      // 认证、用户身份和默认组织接口不从当前 Organization URL 继承业务范围。
+      const isScopeNeutralApi = [
+        '/api/currentUser',
+        '/api/register',
+        '/api/login/account',
+        '/api/login/outLogin',
+        '/api/users/me/default-organization',
+      ].includes(requestPath);
+      // 链路：当前 Organization URL -> organizationId -> X-Organization-Id -> 后端再次鉴权。
+      if (organizationId && !isPlatformApi && !isScopeNeutralApi) {
         config.headers = {
           ...config.headers,
-          'X-Context-Id': currentContextId,
+          'X-Organization-Id': organizationId,
         };
       }
       return config;

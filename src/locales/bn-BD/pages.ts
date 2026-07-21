@@ -5,7 +5,8 @@ export default {
   'pages.login.accountLogin.errorMessage': 'ভুল ব্যবহারকারীর নাম/পাসওয়ার্ড',
   'pages.login.failure': 'লগইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন!',
   'pages.login.success': 'সফল লগইন!',
-  'pages.login.username.placeholder': 'ব্যবহারকারীর নাম: admin, user, or operator',
+  'pages.login.username.placeholder':
+    'ব্যবহারকারীর নাম: admin, user, operator, or users2',
   'pages.login.username.required': 'আপনার ব্যবহারকারীর নাম ইনপুট করুন!',
   'pages.login.password.placeholder': 'পাসওয়ার্ড: ant.design',
   'pages.login.password.required': 'আপনার পাসওয়ার্ড ইনপুট করুন!',

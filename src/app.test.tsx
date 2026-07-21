@@ -12,31 +12,29 @@ const mockHistory = {
 };
 
 const mockQueryCurrentUser = vi.fn();
-const mockRefreshAccessToken = vi.fn();
 const mockClearAccessToken = vi.fn();
-const mockResolveCurrentContextId = vi.fn();
-const mockClearCurrentContextId = vi.fn();
+const mockGetAccessToken = vi.fn();
 
-vi.mock('@umijs/max', () => ({
-  history: mockHistory,
-  Link: ({ children }: any) => children,
-}));
+vi.mock('@umijs/max', async () => {
+  const { generatePath, matchPath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    history: mockHistory,
+    Link: ({ children }: any) => children,
+    matchPath,
+  };
+});
 
 vi.mock('@/services/ant-design-pro/api', () => ({
   currentUser: mockQueryCurrentUser,
 }));
 
-vi.mock('@/services/auth', () => ({
-  refreshAccessToken: mockRefreshAccessToken,
-}));
-
 vi.mock('@/utils/authToken', () => ({
   clearAccessToken: mockClearAccessToken,
-}));
-
-vi.mock('@/utils/currentContext', () => ({
-  clearCurrentContextId: mockClearCurrentContextId,
-  resolveCurrentContextId: mockResolveCurrentContextId,
+  getAccessToken: mockGetAccessToken,
 }));
 
 vi.mock('@/components', () => ({
@@ -47,6 +45,7 @@ vi.mock('@/components', () => ({
   LangDropdown: () => null,
   OfflineBanner: () => null,
   VersionDropdown: () => null,
+  WorkspaceTabsHeader: () => null,
 }));
 
 vi.mock('@ant-design/pro-components', () => ({
@@ -54,7 +53,25 @@ vi.mock('@ant-design/pro-components', () => ({
 }));
 
 vi.mock('@ant-design/icons', () => ({
+  AppstoreOutlined: () => null,
+  AuditOutlined: () => null,
+  DatabaseOutlined: () => null,
+  DashboardOutlined: () => null,
+  FileDoneOutlined: () => null,
+  FileSearchOutlined: () => null,
+  FileTextOutlined: () => null,
+  HistoryOutlined: () => null,
+  HomeOutlined: () => null,
+  InboxOutlined: () => null,
   LinkOutlined: () => null,
+  SafetyCertificateOutlined: () => null,
+  SearchOutlined: () => null,
+  SettingOutlined: () => null,
+  TeamOutlined: () => null,
+}));
+
+vi.mock('./components/RightContent/OrganizationSwitch', () => ({
+  OrganizationSwitch: () => null,
 }));
 
 vi.mock('./requestErrorConfig', () => ({
@@ -68,7 +85,6 @@ vi.mock('../config/defaultSettings', () => ({
 describe('app getInitialState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockResolveCurrentContextId.mockReturnValue(undefined);
     mockHistory.location = {
       pathname: '/welcome',
       search: '',
@@ -105,9 +121,7 @@ describe('app getInitialState', () => {
     expect(mockReplace).toHaveBeenCalledWith(
       expect.stringContaining('/user/login?redirect='),
     );
-    expect(mockRefreshAccessToken).not.toHaveBeenCalled();
     expect(mockClearAccessToken).toHaveBeenCalled();
-    expect(mockClearCurrentContextId).toHaveBeenCalled();
     expect(state.currentUser).toBeUndefined();
   });
 
@@ -118,9 +132,7 @@ describe('app getInitialState', () => {
 
     await expect(getInitialState()).rejects.toBe(networkError);
 
-    expect(mockRefreshAccessToken).not.toHaveBeenCalled();
     expect(mockClearAccessToken).not.toHaveBeenCalled();
-    expect(mockClearCurrentContextId).not.toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
@@ -147,17 +159,16 @@ describe('app getInitialState', () => {
       hash: '',
     };
     mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'User without default context', contexts: [] },
+      data: { name: 'User without default organization', organizations: [] },
     });
 
     const state = await getInitialState();
 
     expect(mockQueryCurrentUser).toHaveBeenCalled();
     expect(state.currentUser).toEqual({
-      name: 'User without default context',
-      contexts: [],
+      name: 'User without default organization',
+      organizations: [],
     });
-    expect(state.currentContextId).toBeUndefined();
     expect(state.fetchUserInfo).toBeDefined();
   });
 
@@ -180,7 +191,7 @@ describe('app getInitialState', () => {
   it('should include default settings in initial state', async () => {
     const { getInitialState } = await import('./app');
     mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'User', contexts: [] },
+      data: { name: 'User', organizations: [] },
     });
 
     const state = await getInitialState();
@@ -191,7 +202,7 @@ describe('app getInitialState', () => {
   it('fetchUserInfo should return user data on success', async () => {
     const { getInitialState } = await import('./app');
     mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'Fetched User', access: 'user', contexts: [] },
+      data: { name: 'Fetched User', access: 'user', organizations: [] },
     });
 
     const state = await getInitialState();
@@ -200,75 +211,15 @@ describe('app getInitialState', () => {
     expect(user).toEqual({
       name: 'Fetched User',
       access: 'user',
-      contexts: [],
+      organizations: [],
     });
-  });
-
-  it('should initialize currentContextId from the default context', async () => {
-    const { getInitialState } = await import('./app');
-    const defaultContext = {
-      id: 'ctx-s2',
-      systemId: 'system-2',
-      systemCode: 'SYS2',
-      systemName: 'System 2',
-      scopeType: 'system',
-      permissions: ['page:home'],
-    };
-    mockResolveCurrentContextId.mockReturnValue(defaultContext.id);
-    mockQueryCurrentUser.mockResolvedValue({
-      data: {
-        name: 'Fetched User',
-        access: 'user',
-        contexts: [defaultContext],
-        defaultContextId: defaultContext.id,
-      },
-    });
-
-    const state = await getInitialState();
-
-    expect(mockResolveCurrentContextId).toHaveBeenCalledWith(
-      [defaultContext],
-      defaultContext.id,
-    );
-    expect(state.currentContextId).toBe(defaultContext.id);
-  });
-
-  it('should use the context resolved for the current tab', async () => {
-    const { getInitialState } = await import('./app');
-    const defaultContext = {
-      id: 'default-entry',
-      systemId: 'default-system',
-      systemCode: 'DEFAULT',
-      systemName: 'Default System',
-      scopeType: 'department',
-      permissions: ['page:home'],
-    };
-    const storedContext = {
-      id: 'stored-entry',
-      systemId: 'stored-system',
-      systemCode: 'STORED',
-      systemName: 'Stored System',
-      scopeType: 'system',
-      permissions: ['page:home'],
-    };
-    mockResolveCurrentContextId.mockReturnValue(storedContext.id);
-    mockQueryCurrentUser.mockResolvedValue({
-      data: {
-        name: 'Fetched User',
-        contexts: [defaultContext, storedContext],
-        defaultContextId: defaultContext.id,
-      },
-    });
-
-    const state = await getInitialState();
-
-    expect(state.currentContextId).toBe(storedContext.id);
   });
 });
 
 describe('app layout guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAccessToken.mockReturnValue(undefined);
     mockHistory.location = {
       pathname: '/welcome',
       search: '',
@@ -292,7 +243,7 @@ describe('app layout guard', () => {
     );
   });
 
-  it('should redirect authenticated users without context to select entry', async () => {
+  it('should not require a duplicated active Organization state', async () => {
     const { layout } = await import('./app');
     mockHistory.location = {
       pathname: '/dashboard/analysis',
@@ -313,12 +264,31 @@ describe('app layout guard', () => {
       location: mockHistory.location,
     } as any);
 
-    expect(mockReplace).toHaveBeenCalledWith(
-      `/user/select-entry?redirect=${encodeURIComponent('/dashboard/analysis?tab=sales#today')}`,
-    );
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('should not redirect authenticated users with context', async () => {
+  it('should not bounce the first post-login navigation while currentUser is committing', async () => {
+    const { layout } = await import('./app');
+    mockGetAccessToken.mockReturnValue('new-access-token');
+    mockHistory.location = {
+      pathname: '/workspace/platform/overview',
+      search: '',
+      hash: '',
+    };
+    const runtimeLayout = layout({
+      // 复现第一次登录：Token 已保存，但 Layout 闭包仍持有提交前的空用户态。
+      initialState: {},
+      setInitialState: vi.fn(),
+    } as any);
+
+    runtimeLayout.onPageChange?.({
+      location: mockHistory.location,
+    } as any);
+
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('should not redirect authenticated users', async () => {
     const { layout } = await import('./app');
     const runtimeLayout = layout({
       initialState: {
@@ -326,7 +296,6 @@ describe('app layout guard', () => {
           name: 'Fetched User',
           access: 'user',
         },
-        currentContextId: 'ctx-s1-g1',
       },
       setInitialState: vi.fn(),
     } as any);
@@ -336,6 +305,30 @@ describe('app layout guard', () => {
     } as any);
 
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('should render the fixed Platform menu for a Super Admin workspace URL', async () => {
+    const { layout } = await import('./app');
+    mockHistory.location = {
+      pathname: '/workspace/platform/organizations',
+      search: '',
+      hash: '',
+    };
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          userid: 'super-admin',
+          platformPermissions: ['platform:organization:update'],
+          platformSkillCodes: [],
+          organizations: [],
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    expect(runtimeLayout.menuDataRender?.([]).map((item) => item.path)).toEqual(
+      ['/workspace/platform/overview', '/workspace/platform/organizations'],
+    );
   });
 
   it('should not redirect on user public pages', async () => {

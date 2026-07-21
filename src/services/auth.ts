@@ -1,61 +1,83 @@
 import { request } from '@umijs/max';
 
 /**
- * GET /api/currentUser 的 contexts 元素，描述用户在一个系统或部门范围内的权限。
- * 这是临时手写类型；后端 OpenAPI 包含 contexts 后应改用自动生成类型。
+ * GET /api/currentUser.organizations[].dataScopes 的元素。
+ * DataScope 只描述 Organization 内的数据过滤范围，不参与顶栏工作区切换。
  */
-export type AccessContext = {
-  id: string;
-  systemId: string;
-  systemCode: string;
-  systemName: string;
-  scopeType: 'department' | 'system';
-  scopeId?: string;
-  scopeName?: string;
-  // 当前阶段一个 page:* 权限码对应一个完整页面访问权，同时用于菜单和静态路由控制。
-  permissions: string[];
-  // 后端已按当前用户和 Context 过滤；当前仅作为 AI 能力占位展示。
-  skillCodes: string[];
+export type DataScope = {
+  /** 后端生成的稳定范围 ID，业务请求需要限定数据范围时使用。 */
+  dataScopeId: string;
+  /** 便于日志、配置和排查的稳定业务编码。 */
+  dataScopeCode: string;
+  /** 面向用户展示的数据范围名称。 */
+  dataScopeName: string;
+  /** 后端定义的范围层级；前端不根据该字段推导权限。 */
+  type: 'organization' | 'department' | 'team' | 'project' | 'custom';
 };
 
 /**
- * GET /api/currentUser 返回后存入 Umi initialState，在当前登录期间共享。
- * 这是对自动生成 API.CurrentUser 的临时业务扩展；后端 OpenAPI 包含这些字段后应改用生成类型。
+ * GET /api/currentUser.organizations 的元素。
+ * permissions 与 skillCodes 都由后端按用户和 Organization 计算，前端不跨组织合并。
+ */
+export type OrganizationAccess = {
+  /** Organization 的稳定 ID，也是组织 Workspace URL 的 :organizationId 来源。 */
+  organizationId: string;
+  /** 用于徽标、日志和配置的稳定业务编码。 */
+  organizationCode: string;
+  /** 组织切换菜单和页面标题使用的展示名称。 */
+  organizationName: string;
+  /** 后端计算的组织权限码；Sidebar 和页面入口只在当前组织内消费。 */
+  permissions: string[];
+  /** 后端过滤后的可用 App/Skill Code；用于首页卡片、标签与路由校验。 */
+  skillCodes: string[];
+  /** 当前组织内可用的数据范围，不会生成独立 Workspace 或标签。 */
+  dataScopes: DataScope[];
+  /** 后端保存的组织内默认数据范围；当前标签实现暂不消费。 */
+  defaultDataScopeId?: string;
+};
+
+/**
+ * GET /api/currentUser 返回后存入 Umi initialState，并在当前登录期间共享。
+ * 这是对自动生成 API.CurrentUser 的临时业务扩展；后端 OpenAPI 包含这些字段后，
+ * 应运行 `npm run openapi`，改用生成类型并删除这里对应的手写结构。
+ *
+ * 数据链路：后端 OpenAPI -> npm run openapi -> API.CurrentUser
+ * -> getInitialState.currentUser -> Workspace 规则、Sidebar、标签和业务页面。
+ * Platform 和 Organization 是两个独立授权域，不能相互推导权限。
  */
 export type AuthCurrentUser = API.CurrentUser & {
-  defaultContextId?: string;
-  contexts: AccessContext[];
+  /** Platform 控制面权限，只用于 Platform 页面、菜单和操作。 */
+  platformPermissions: string[];
+  /** Platform Scope 内可打开的 App/Skill Code。 */
+  platformSkillCodes: string[];
+  /** 非 Platform 用户的长期默认组织，由后端保存。 */
+  defaultOrganizationId?: string;
+  /** 当前用户可以真正进入的组织；不等同于 Super Admin 可管理的组织全集。 */
+  organizations: OrganizationAccess[];
 };
 
 /**
- * POST /api/login/account 的临时响应类型，只描述登录结果和 access token。
- * 用户资料统一由 /api/currentUser 获取；后端 OpenAPI 更新后应由生成的登录响应类型替代。
+ * POST /api/login/account 的临时 Bearer-only 响应类型。
+ * 登录页保存 accessToken 后重新请求 /api/currentUser；OpenAPI 就绪后改用生成类型。
  */
 export type AuthLoginResult = API.LoginResult & {
+  /** 后端签发的 Bearer Token，写入 authToken 后由请求拦截器附加到 API 请求。 */
   accessToken?: string;
+  /** 当前只接受 Bearer，避免调用方猜测认证方案。 */
   tokenType?: 'Bearer';
+  /** Token 相对有效期；当前阶段不实现自动刷新。 */
   expiresIn?: number;
+  /** 后端可选的绝对过期时间。 */
   expiresAt?: string;
 };
 
 /**
- * POST /api/auth/refresh 的预留响应类型，目前不接入应用启动或登录恢复链路。
- * 后端 refresh 接口和 OpenAPI 就绪后，再用生成类型替换并启用调用。
+ * PUT /api/users/me/default-organization 的临时响应类型；OpenAPI 就绪后改用生成类型。
  */
-export type RefreshTokenResult = {
-  accessToken?: string;
-  expiresIn?: number;
-  user?: AuthCurrentUser;
-};
-
-/**
- * PUT /api/users/me/default-entry 的临时响应类型。
- * API 路径沿用现有后端命名，前端统一使用 context 术语；OpenAPI 更新后应由生成类型替代。
- */
-export type DefaultContextResult = {
+export type DefaultOrganizationResult = {
   success?: boolean;
   data?: {
-    defaultContextId: string;
+    defaultOrganizationId: string;
   };
   errorMessage?: string;
 };
@@ -74,17 +96,6 @@ export async function loginWithPassword(
   });
 }
 
-
-//
-export async function refreshAccessToken(options?: { [key: string]: unknown }) {
-  return request<RefreshTokenResult>('/api/auth/refresh', {
-    method: 'POST',
-    withCredentials: true,
-    skipErrorHandler: true,
-    ...(options || {}),
-  });
-}
-
 export async function logout(options?: { [key: string]: unknown }) {
   return request<Record<string, unknown>>('/api/login/outLogin', {
     method: 'POST',
@@ -92,13 +103,16 @@ export async function logout(options?: { [key: string]: unknown }) {
   });
 }
 
-//默认系统选项
-export async function setDefaultContext(contextId: string) {
-  return request<DefaultContextResult>('/api/users/me/default-entry', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
+/** 只在用户明确设置长期默认组织时调用；顶栏临时切换不调用。 */
+export async function setDefaultOrganization(organizationId: string) {
+  return request<DefaultOrganizationResult>(
+    '/api/users/me/default-organization',
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: { organizationId },
     },
-    data: { entryId: contextId },
-  });
+  );
 }

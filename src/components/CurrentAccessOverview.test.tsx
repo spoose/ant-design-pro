@@ -1,82 +1,77 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import type { AccessContext } from '@/services/auth';
+import type { OrganizationAccess } from '@/services/auth';
 import { CurrentAccessOverview } from './CurrentAccessOverview';
 
-vi.mock('@umijs/max', () => ({
-  Link: ({ children, to, ...props }: any) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
-}));
+vi.mock('@umijs/max', async () => {
+  const { generatePath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    Link: ({ children, to, ...props }: any) => (
+      <a href={to} {...props}>
+        {children}
+      </a>
+    ),
+  };
+});
 
 vi.mock('antd', () => ({
   Card: ({ children }: any) => <div>{children}</div>,
+  Empty: Object.assign(({ description }: any) => <div>{description}</div>, {
+    PRESENTED_IMAGE_SIMPLE: 'simple',
+  }),
 }));
 
 vi.mock('@ant-design/icons', () => {
   const Icon = () => <span data-testid="skill-icon" />;
   return {
     AuditOutlined: Icon,
+    DatabaseOutlined: Icon,
+    FileDoneOutlined: Icon,
     FileSearchOutlined: Icon,
     FileTextOutlined: Icon,
+    HistoryOutlined: Icon,
+    InboxOutlined: Icon,
+    SearchOutlined: Icon,
   };
 });
 
-const groupContext: AccessContext = {
-  id: 'ctx-s1-g1',
-  systemId: 'system-1',
-  systemCode: 'SYS1',
-  systemName: 'System 1',
-  scopeType: 'department',
-  scopeId: 'group-1',
-  scopeName: 'Group 1',
-  permissions: [
-    'page:home',
-    'page:dashboard-analysis',
-    'page:dashboard-workplace',
-    'page:ai-assistant',
-  ],
-  skillCodes: ['file-review', 'document-summary', 'knowledge-search'],
+const organizationOne: OrganizationAccess = {
+  organizationId: 'organization-1',
+  organizationCode: 'ORG1',
+  organizationName: '组织一',
+  permissions: ['page:dashboard-workplace'],
+  skillCodes: ['file-review', 'document-summary'],
+  dataScopes: [],
 };
-
-const systemContext: AccessContext = {
-  id: 'ctx-s2',
-  systemId: 'system-2',
-  systemCode: 'SYS2',
-  systemName: 'System 2',
-  scopeType: 'system',
-  permissions: [
-    'page:home',
-    'page:dashboard-analysis',
-    'page:dashboard-monitor',
-    'page:ai-assistant',
-  ],
-  skillCodes: ['file-review', 'knowledge-search'],
+const organizationTwo: OrganizationAccess = {
+  organizationId: 'organization-2',
+  organizationCode: 'ORG2',
+  organizationName: '组织二',
+  permissions: ['page:dashboard-monitor'],
+  skillCodes: ['knowledge-search'],
+  dataScopes: [],
 };
 
 describe('CurrentAccessOverview', () => {
-  it('updates permissions and filtered skills with the current context', () => {
+  it('updates permissions and Skills with the current Organization', () => {
     const { rerender } = render(
-      <CurrentAccessOverview context={groupContext} />,
+      <CurrentAccessOverview organization={organizationOne} />,
     );
-
-    expect(screen.getByText('System 1')).toBeVisible();
+    expect(screen.getByText('组织一')).toBeVisible();
     expect(screen.getByText('page:dashboard-workplace')).toBeVisible();
     expect(screen.getByText('文档总结')).toBeVisible();
     expect(screen.getByRole('link', { name: '打开 文件审查' })).toHaveAttribute(
       'href',
-      '/chatbot?skill=file-review',
+      '/workspace/org/organization-1/apps/file-review/overview',
     );
 
-    rerender(<CurrentAccessOverview context={systemContext} />);
-
-    expect(screen.getByText('System 2')).toBeVisible();
-    expect(
-      screen.queryByText('page:dashboard-workplace'),
-    ).not.toBeInTheDocument();
+    rerender(<CurrentAccessOverview organization={organizationTwo} />);
+    expect(screen.getByText('组织二')).toBeVisible();
     expect(screen.queryByText('文档总结')).not.toBeInTheDocument();
     expect(screen.getByText('知识检索')).toBeVisible();
   });

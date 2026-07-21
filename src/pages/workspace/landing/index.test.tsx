@@ -1,0 +1,76 @@
+import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthCurrentUser } from '@/services/auth';
+import WorkspaceLandingPage from '.';
+
+// 模拟 getInitialState.currentUser，验证入口页真正消费权限规则而不是静态 /home。
+const landingTestState = vi.hoisted(() => ({
+  currentUser: undefined as AuthCurrentUser | undefined,
+}));
+
+vi.mock('@umijs/max', async () => {
+  const { generatePath, matchPath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    matchPath,
+    Navigate: ({ replace, to }: { replace: boolean; to: string }) => (
+      <div data-replace={String(replace)} data-testid="landing-target">
+        {to}
+      </div>
+    ),
+    useModel: () => ({ initialState: landingTestState }),
+  };
+});
+
+const createLandingUser = (
+  overrides: Partial<AuthCurrentUser>,
+): AuthCurrentUser =>
+  ({
+    userid: 'landing-user',
+    platformPermissions: [],
+    platformSkillCodes: [],
+    organizations: [],
+    ...overrides,
+  }) as AuthCurrentUser;
+
+describe('WorkspaceLandingPage', () => {
+  beforeEach(() => {
+    landingTestState.currentUser = undefined;
+  });
+
+  it('sends a Platform admin directly to management center', () => {
+    landingTestState.currentUser = createLandingUser({
+      platformPermissions: ['platform:user:manage'],
+    });
+
+    render(<WorkspaceLandingPage />);
+    expect(screen.getByTestId('landing-target')).toHaveTextContent(
+      '/workspace/platform/overview',
+    );
+  });
+
+  it('sends a regular user to the backend default Organization home', () => {
+    landingTestState.currentUser = createLandingUser({
+      defaultOrganizationId: 'organization-1',
+      organizations: [
+        {
+          organizationId: 'organization-1',
+          organizationCode: 'ORG1',
+          organizationName: '组织一',
+          permissions: [],
+          skillCodes: [],
+          dataScopes: [],
+        },
+      ],
+    });
+
+    render(<WorkspaceLandingPage />);
+    expect(screen.getByTestId('landing-target')).toHaveTextContent(
+      '/workspace/org/organization-1/home',
+    );
+  });
+});

@@ -1,4 +1,4 @@
 export type {
-  AccessContext,
-  DefaultContextResult,
+  DefaultOrganizationResult,
+  OrganizationAccess,
 } from '@/services/auth';

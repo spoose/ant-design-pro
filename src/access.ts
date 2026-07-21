@@ -1,20 +1,22 @@
+import { history } from '@umijs/max';
 import type { AuthCurrentUser } from '@/services/auth';
+import { getWorkspaceOrganizationId } from '@/utils/workspaceRoutes';
+import { getOrganizationAccess } from '@/utils/workspaceRules';
 
 /**
  * @see https://umijs.org/docs/max/access#access
  * */
 //权限码的补充
 export default function access(
-  initialState:
-    | { currentUser?: AuthCurrentUser; currentContextId?: string }
-    | undefined,
+  initialState: { currentUser?: AuthCurrentUser } | undefined,
 ) {
   const { currentUser } = initialState ?? {};
-  // 权限来自 GET /api/currentUser 的当前 context，只在该 context 生命周期内生效。
-  const currentContext = currentUser?.contexts.find(
-    (context) => context.id === initialState?.currentContextId,
-  );
-  const permissions = currentContext?.permissions ?? [];
+  // Organization 切换会整页加载，因此 Umi Access 可以直接从当前 URL 选择权限域。
+  const organizationId = getWorkspaceOrganizationId(history.location.pathname);
+  const permissions =
+    currentUser && organizationId
+      ? getOrganizationAccess(currentUser, organizationId).permissions
+      : [];
   const hasPermission = (permission: string) =>
     permissions.includes('*') || permissions.includes(permission);
 

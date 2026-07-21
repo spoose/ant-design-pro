@@ -6,7 +6,7 @@ export default {
   'pages.login.failure': 'Log masuk gagal, silakan coba lagi!',
   'pages.login.success': 'Login berhasil!',
   'pages.login.username.placeholder':
-    'nama pengguna: admin, user, atau operator',
+    'nama pengguna: admin, user, operator, atau users2',
   'pages.login.username.required': 'Nama pengguna harus diisi!',
   'pages.login.password.placeholder': 'kata sandi: ant.design',
   'pages.login.password.required': 'Kata sandi harus diisi!',

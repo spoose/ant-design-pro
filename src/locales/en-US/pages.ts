@@ -5,7 +5,8 @@ export default {
   'pages.login.accountLogin.errorMessage': 'Incorrect username/password',
   'pages.login.failure': 'Login failed, please try again!',
   'pages.login.success': 'Login successful!',
-  'pages.login.username.placeholder': 'Username: admin, user or operator',
+  'pages.login.username.placeholder':
+    'Username: admin, user, operator or users2',
   'pages.login.username.required': 'Please input your username!',
   'pages.login.password.placeholder': 'Password: ant.design',
   'pages.login.password.required': 'Please input your password!',

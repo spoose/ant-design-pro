@@ -2,10 +2,8 @@ import { message, notification } from 'antd';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorConfig } from './requestErrorConfig';
 import { clearAccessToken, setAccessToken } from './utils/authToken';
-import {
-  clearCurrentContextId,
-  setCurrentContextId,
-} from './utils/currentContext';
+
+const testLocation = vi.hoisted(() => ({ pathname: '/outside-workspace' }));
 
 vi.mock('antd', () => ({
   message: {
@@ -17,11 +15,20 @@ vi.mock('antd', () => ({
   },
 }));
 
-vi.mock('@umijs/max', () => ({
-  getIntl: vi.fn(() => ({
-    formatMessage: vi.fn(({ defaultMessage }) => defaultMessage),
-  })),
-}));
+vi.mock('@umijs/max', async () => {
+  const { generatePath, matchPath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    matchPath,
+    history: { location: testLocation },
+    getIntl: vi.fn(() => ({
+      formatMessage: vi.fn(({ defaultMessage }) => defaultMessage),
+    })),
+  };
+});
 
 describe('requestErrorConfig', () => {
   // biome-ignore lint/style/noNonNullAssertion: config handlers are always defined
@@ -32,7 +39,7 @@ describe('requestErrorConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearAccessToken();
-    clearCurrentContextId();
+    testLocation.pathname = '/outside-workspace';
   });
 
   describe('errorThrower', () => {
@@ -279,19 +286,37 @@ describe('requestErrorConfig', () => {
       });
     });
 
-    it('should attach the current context for backend authorization', () => {
-      setCurrentContextId('ctx-s1-g1');
+    it('should attach the Organization from the current URL', () => {
+      testLocation.pathname = '/workspace/org/organization-1/home';
 
       const result = interceptor({
-        url: 'https://api.example.com/users',
+        url: '/api/members',
         method: 'GET',
         headers: { Accept: 'application/json' },
       });
 
       expect(result.headers).toEqual({
         Accept: 'application/json',
-        'X-Context-Id': 'ctx-s1-g1',
+        'X-Organization-Id': 'organization-1',
       });
+    });
+
+    it('never attaches Organization Header to Platform APIs', () => {
+      testLocation.pathname = '/workspace/org/organization-1/home';
+      const result = interceptor({
+        url: '/api/platform/organizations',
+        method: 'GET',
+      });
+      expect(result.headers).toBeUndefined();
+    });
+
+    it('does not attach Organization Header to authentication APIs', () => {
+      testLocation.pathname = '/workspace/org/organization-1/home';
+      const result = interceptor({
+        url: '/api/currentUser',
+        method: 'GET',
+      });
+      expect(result.headers).toBeUndefined();
     });
 
     it('should handle URL without config', () => {

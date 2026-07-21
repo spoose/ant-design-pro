@@ -1,1 +1,1 @@
-export { setDefaultContext } from '@/services/auth';
+export { setDefaultOrganization } from '@/services/auth';

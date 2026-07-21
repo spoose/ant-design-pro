@@ -5,7 +5,8 @@ export default {
   'pages.login.accountLogin.errorMessage': 'usuário/senha incorreto',
   'pages.login.failure': 'Login falhou, por favor tente novamente!',
   'pages.login.success': 'Login efetuado com sucesso!',
-  'pages.login.username.placeholder': 'Usuário: admin, user ou operator',
+  'pages.login.username.placeholder':
+    'Usuário: admin, user, operator ou users2',
   'pages.login.username.required': 'Por favor insira seu usuário!',
   'pages.login.password.placeholder': 'Senha: ant.design',
   'pages.login.password.required': 'Por favor insira sua senha!',

@@ -65,6 +65,39 @@ body,
   display: none;
 }
 
+/*
+ * Workspace 继续使用 ProLayout 的 mix DOM，只在视觉上把 Logo 并入 Sidebar。
+ * 248/64 分别来自 defaultSettings.siderWidth 与 menu.collapsedWidth。
+ */
+@media (min-width: 768px) {
+  .workspace-layout:has(.ant-pro-sider-collapsed) {
+    .ant-pro-global-header-logo-mix {
+      width: 64px !important;
+      padding-inline: 0 !important;
+      flex-basis: 64px !important;
+      justify-content: center;
+
+      h1 {
+        display: none;
+      }
+    }
+  }
+}
+
+@media (max-width: 639px) {
+  /* ProLayout 的第一个 Header 是固定顶栏占位，需要和实际两行顶栏保持同高。 */
+  .workspace-layout
+    > .ant-layout
+    > .ant-pro-layout-container
+    > header.ant-layout-header,
+  .workspace-layout > .ant-layout > header.ant-layout-header,
+  .workspace-layout > header.ant-layout-header {
+    height: 104px !important;
+    min-height: 104px;
+    line-height: normal !important;
+  }
+}
+
 canvas {
   display: block;
 }

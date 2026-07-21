@@ -1,12 +1,10 @@
 import { Helmet, history, useModel } from '@umijs/max';
 import { Alert, Button, Empty, Radio } from 'antd';
 import { createStyles } from 'antd-style';
-import React, { useEffect, useState } from 'react';
-import { setCurrentContextId } from '@/utils/currentContext';
+import React, { useState } from 'react';
+import { getOrganizationHomePath } from '@/utils/workspaceRoutes';
 import Settings from '../../../../config/defaultSettings';
-import { setDefaultContext } from './service';
-
-const homePath = '/home';
+import { setDefaultOrganization } from './service';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -89,47 +87,46 @@ const useStyles = createStyles(({ token }) => {
 const SelectEntry = () => {
   const { styles } = useStyles();
   const { initialState, setInitialState } = useModel('@@initialState');
-  // contexts 由受保护的 GET /api/currentUser 提供，选择页不再发起第二次列表请求。
-  const contexts = initialState?.currentUser?.contexts ?? [];
-  const [selectedEntryId, setSelectedEntryId] = useState<string>();
+  // organizations 由 GET /api/currentUser 提供，选择页不再发起第二次列表请求。
+  const organizations = initialState?.currentUser?.organizations ?? [];
+  const [selectedOrganizationId, setSelectedOrganizationId] =
+    useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (initialState?.currentContextId) {
-      history.replace(homePath);
-    }
-  }, [initialState?.currentContextId]);
-
   const handleSubmit = async () => {
-    if (!selectedEntryId) return;
+    if (!selectedOrganizationId) return;
 
     setSubmitting(true);
     setErrorMessage('');
     try {
-      const selectedContext = contexts.find(
-        (context) => context.id === selectedEntryId,
+      const selectedOrganization = organizations.find(
+        (organization) =>
+          organization.organizationId === selectedOrganizationId,
       );
-      if (!selectedContext) {
-        throw new Error('选择的系统上下文不存在');
+      if (!selectedOrganization) {
+        throw new Error('选择的组织不存在');
       }
 
-      const result = await setDefaultContext(selectedEntryId);
+      const result = await setDefaultOrganization(selectedOrganizationId);
       if (result.success === false) {
-        throw new Error(result.errorMessage ?? '设置默认系统失败');
+        throw new Error(result.errorMessage ?? '设置默认组织失败');
       }
-      if (result.data?.defaultContextId !== selectedEntryId) {
-        throw new Error('设置默认系统接口未返回正确的上下文 ID');
+      if (result.data?.defaultOrganizationId !== selectedOrganizationId) {
+        throw new Error('设置默认组织接口未返回正确的组织 ID');
       }
-      setCurrentContextId(selectedContext.id);
       setInitialState((state) => ({
         ...state,
         currentUser: state?.currentUser
-          ? { ...state.currentUser, defaultContextId: selectedContext.id }
+          ? {
+              ...state.currentUser,
+              defaultOrganizationId: selectedOrganization.organizationId,
+            }
           : state?.currentUser,
-        currentContextId: selectedContext.id,
       }));
-      history.replace(homePath);
+      history.replace(
+        getOrganizationHomePath(selectedOrganization.organizationId),
+      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : '选择登录入口失败';
@@ -152,9 +149,7 @@ const SelectEntry = () => {
           <div className={styles.header}>
             {/* <img alt="logo" className={styles.logo} src="/logo.svg" /> */}
             <h1 className={styles.title}>选择登录入口</h1>
-            <div className={styles.subtitle}>
-              请选择本次登录使用的系统或部门
-            </div>
+            <div className={styles.subtitle}>请选择本次登录使用的组织</div>
           </div>
           {errorMessage && (
             <Alert
@@ -164,33 +159,33 @@ const SelectEntry = () => {
               type="error"
             />
           )}
-          {contexts.length > 0 ? (
+          {organizations.length > 0 ? (
             <>
               <Radio.Group
                 className={styles.radioGroup}
                 onChange={(event) => {
-                  setSelectedEntryId(event.target.value);
+                  setSelectedOrganizationId(event.target.value);
                 }}
-                value={selectedEntryId}
+                value={selectedOrganizationId}
               >
-                {contexts.map((context) => (
+                {organizations.map((organization) => (
                   <Radio
                     className={styles.option}
-                    key={context.id}
-                    value={context.id}
+                    key={organization.organizationId}
+                    value={organization.organizationId}
                   >
                     <div className={styles.optionName}>
-                      {context.scopeName ?? context.systemName}
+                      {organization.organizationName}
                     </div>
                     <div className={styles.optionMeta}>
-                      {context.systemName} · {context.systemCode}
+                      {organization.organizationCode}
                     </div>
                   </Radio>
                 ))}
               </Radio.Group>
               <Button
                 className={styles.submit}
-                disabled={!selectedEntryId}
+                disabled={!selectedOrganizationId}
                 loading={submitting}
                 onClick={handleSubmit}
                 size="large"
