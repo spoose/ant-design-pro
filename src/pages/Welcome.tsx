@@ -23,7 +23,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ title, index, desc, href }) => (
   <a href={href} target="_blank" rel="noopener noreferrer" aria-label={title}>
     <Card hoverable size="small">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#1677ff] text-base font-bold text-white">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f6d2ad] text-base font-bold text-zinc-900">
           {index}
         </div>
         <div className="min-w-0 flex-1">

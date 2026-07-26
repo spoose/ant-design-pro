@@ -143,7 +143,7 @@ const Workplace: FC = () => {
             avatar:
               'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png',
             name: '吴彦祖',
-            userid: '00000001',
+            userId: '00000001',
             email: 'antdesign@alipay.com',
             signature: '海纳百川，有容乃大',
             title: '交互专家',

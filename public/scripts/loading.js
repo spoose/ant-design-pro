@@ -43,7 +43,7 @@
           margin: 0;
           padding: 0;
           color: rgba(0, 0, 0, 0.65);
-          color: #1890ff;
+          color: #f6d2ad;
           font-size: 14px;
           font-variant: tabular-nums;
           line-height: 1.5;
@@ -80,7 +80,7 @@
           display: block;
           width: 9px;
           height: 9px;
-          background-color: #1890ff;
+          background-color: #f6d2ad;
           border-radius: 100%;
           -webkit-transform: scale(0.75);
           -ms-transform: scale(0.75);
@@ -191,11 +191,11 @@
           </div>
         </div>
         <div class="loading-title">
-          正在加载资源
+          Loading......
         </div>
-        <div class="loading-sub-title">
-          初次加载资源可能需要较多时间 请耐心等待
-        </div>
+<!--        <div class="loading-sub-title">-->
+<!--          初次加载资源可能需要较多时间 请耐心等待-->
+<!--        </div>-->
       </div>
     `;
   }

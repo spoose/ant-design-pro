@@ -36,7 +36,7 @@ const SkillPlaceholderPage = ({
       <section className="grid min-h-64 place-items-center border border-zinc-200 bg-white px-6 py-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
         <div className="grid max-w-md justify-items-center gap-3">
           {SkillIcon ? (
-            <div className="flex size-12 items-center justify-center rounded-lg bg-blue-50 text-xl text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+            <div className="flex size-12 items-center justify-center rounded-lg bg-orange-50 text-xl text-orange-700 dark:bg-orange-950 dark:text-orange-300">
               <SkillIcon aria-hidden />
             </div>
           ) : null}

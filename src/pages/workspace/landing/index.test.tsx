@@ -30,7 +30,7 @@ const createLandingUser = (
   overrides: Partial<AuthCurrentUser>,
 ): AuthCurrentUser =>
   ({
-    userid: 'landing-user',
+    userId: 'landing-user',
     platformPermissions: [],
     platformSkillCodes: [],
     organizations: [],
@@ -71,6 +71,44 @@ describe('WorkspaceLandingPage', () => {
     render(<WorkspaceLandingPage />);
     expect(screen.getByTestId('landing-target')).toHaveTextContent(
       '/workspace/org/organization-1/home',
+    );
+  });
+
+  it('uses the first accessible Organization when no default is configured', () => {
+    landingTestState.currentUser = createLandingUser({
+      defaultOrganizationId: null,
+      organizations: [
+        {
+          organizationId: 'organization-1',
+          organizationCode: 'ORG1',
+          organizationName: '组织一',
+          permissions: [],
+          skillCodes: [],
+          dataScopes: [],
+        },
+        {
+          organizationId: 'organization-2',
+          organizationCode: 'ORG2',
+          organizationName: '组织二',
+          permissions: [],
+          skillCodes: [],
+          dataScopes: [],
+        },
+      ],
+    });
+
+    render(<WorkspaceLandingPage />);
+    expect(screen.getByTestId('landing-target')).toHaveTextContent(
+      '/workspace/org/organization-1/home',
+    );
+  });
+
+  it('sends an authenticated user without access to the pending page', () => {
+    landingTestState.currentUser = createLandingUser({});
+
+    render(<WorkspaceLandingPage />);
+    expect(screen.getByTestId('landing-target')).toHaveTextContent(
+      '/workspace/access-pending',
     );
   });
 });

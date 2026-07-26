@@ -32,7 +32,7 @@ const createUser = ({
   defaultOrganizationId?: string;
 } = {}): AuthCurrentUser =>
   ({
-    userid: 'workspace-user',
+    userId: 'workspace-user',
     name: 'Workspace User',
     platformPermissions,
     platformSkillCodes,
@@ -140,7 +140,7 @@ describe('workspace landing rules', () => {
     ).toEqual({ kind: 'organization', organizationId: 'org-2' });
   });
 
-  it('enters the only Organization and asks when multiple have no default', () => {
+  it('enters the first accessible Organization when no valid default exists', () => {
     expect(
       resolveLandingWorkspace(
         createUser({ organizations: [createOrganization('org-1')] }),
@@ -155,13 +155,12 @@ describe('workspace landing rules', () => {
           ],
         }),
       ),
-    ).toEqual({ kind: 'organization-selection' });
+    ).toEqual({ kind: 'organization', organizationId: 'org-1' });
   });
 
-  it('returns an explicit unauthorized target without access', () => {
+  it('returns the authenticated pending state without any access', () => {
     expect(resolveLandingWorkspace(createUser())).toEqual({
-      kind: 'unauthorized',
-      reason: 'no-access',
+      kind: 'access-pending',
     });
   });
 });

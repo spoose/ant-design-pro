@@ -77,7 +77,7 @@ const WorkspaceTabsHeader = () => {
    * URL -> Scope/App -> 授权校验 -> homeTab/activeTab/scopeKey -> useWorkspaceTabs。
    */
   const routeState = useMemo(() => {
-    if (!currentUser?.userid) return undefined;
+    if (!currentUser?.userId) return undefined;
 
     const appKey = getWorkspaceAppKey(pathname);
     if (isPlatformWorkspacePath(pathname)) {
@@ -106,7 +106,7 @@ const WorkspaceTabsHeader = () => {
         activeTab,
         homeTab,
         scopeKey: buildWorkspaceScopeKey({ kind: 'platform' }),
-        userId: currentUser.userid,
+        userId: currentUser.userId,
       };
     }
 
@@ -142,7 +142,7 @@ const WorkspaceTabsHeader = () => {
         kind: 'organization',
         organizationId: organization.organizationId,
       }),
-      userId: currentUser.userid,
+      userId: currentUser.userId,
     };
   }, [currentUrl, currentUser, pathname]);
 

@@ -10,17 +10,14 @@
  * @doc https://umijs.org/docs/guides/proxy
  */
 export default {
-  // 如果需要自定义本地开发服务器  请取消注释按需调整
-  // dev: {
-  //   // localhost:8000/api/** -> https://preview.pro.ant.design/api/**
-  //   '/api/': {
-  //     // 要代理的地址
-  //     target: 'https://preview.pro.ant.design',
-  //     // 配置了这个可以从 http 代理到 https
-  //     // 依赖 origin 的功能可能需要这个，比如 cookie
-  //     changeOrigin: true,
-  //   },
-  // },
+  dev: {
+    // 无 mock 开发模式下，将前端 /api 请求转发到本地 Express 服务。
+    '/api/': {
+      target: 'http://127.0.0.1:3000',
+      // 保留浏览器的 localhost:8000 Origin，交由 Express CORS Allowlist 校验。
+      changeOrigin: false,
+    },
+  },
   /**
    * @name 详细的代理配置
    * @doc https://github.com/chimurai/http-proxy-middleware

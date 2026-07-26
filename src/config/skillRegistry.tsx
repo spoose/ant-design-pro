@@ -6,9 +6,17 @@ import {
   FileTextOutlined,
   HistoryOutlined,
   InboxOutlined,
+  OllamaFilled,
+  RobotOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import type React from 'react';
+import { lazy } from 'react';
+
+export type SkillPageProps = {
+  /** Skill 内部页面 Key，来源于 Workspace App URL。 */
+  pageKey?: string;
+};
 
 export type SkillNavigationItem = {
   /**
@@ -27,6 +35,12 @@ export type SkillDefinition = {
   /** Skill 卡片使用的 Ant Design 图标组件。 */
   icon: React.ComponentType<{ className?: string }>;
   /**
+   * 已实现的 Skill 页面按需加载组件；未配置时统一进入明确的待开发占位页。
+   */
+  pageComponent?: React.LazyExoticComponent<
+    React.ComponentType<SkillPageProps>
+  >;
+  /**
    * 当前 Skill 独立 Sidebar 的静态页面定义。
    * 数据链路：skillCode -> SkillDefinition.navigation -> menuData -> ProLayout Sidebar。
    */
@@ -34,14 +48,28 @@ export type SkillDefinition = {
 };
 
 /**
- * 前端静态 Skill Registry：后端只返回稳定的 skillCode，这里维护名称和图标。
+ * 前端静态 Skill Registry：后端只返回稳定的 skillCode，这里维护名称、图标、导航和页面实现。
  * Organization App 路由必须包含 organizationId，由 workspaceRoutes 根据当前 Scope 生成。
  * 后续增加 Skill 时需同步更新该表；OpenAPI 只生成授权数据，不生成 React 组件配置。
  */
 export const skillRegistry = {
+  'platform-assistant': {
+    title: 'pAI',
+    icon: OllamaFilled,
+    navigation: [
+      {
+        pathSegment: 'overview',
+        title: 'nav1',
+        icon: RobotOutlined,
+      },
+      { pathSegment: 'queue', title: 'nav2', icon: InboxOutlined },
+      { pathSegment: 'history', title: 'nav3', icon: HistoryOutlined },
+    ],
+  },
   'file-review': {
     title: '文件审查',
     icon: AuditOutlined,
+    pageComponent: lazy(() => import('@/pages/workspace/app/file-review')),
     navigation: [
       {
         pathSegment: 'overview',
@@ -68,6 +96,7 @@ export const skillRegistry = {
   'knowledge-search': {
     title: '知识检索',
     icon: FileSearchOutlined,
+    pageComponent: lazy(() => import('@/pages/workspace/app/knowledge-search')),
     navigation: [
       {
         pathSegment: 'overview',

@@ -2,11 +2,12 @@
 name: JU SHU
 description: Platform 与 Organization 统一入口及应用标签工作台
 colors:
-  primary: "#1677ff"
-  primary-hover: "#4096ff"
-  primary-active: "#0958d9"
-  primary-soft: "#e6f4ff"
-  primary-border: "#91caff"
+  brand: "#f5f5f5"
+  primary: "#000000e3"
+  primary-hover: "#0d0d0d"
+  primary-active: "#000000"
+  primary-soft: "#f5f5f5"
+  primary-border: "#262626"
   canvas: "#f5f5f5"
   surface: "#ffffff"
   ink: "#000000e0"
@@ -19,9 +20,16 @@ colors:
   work-surface: "#f4f4f5"
   work-divider: "#e4e4e7"
   on-primary: "#ffffff"
-  success: "#52c41a"
-  warning: "#faad14"
-  error: "#ff4d4f"
+  success: "#54915c"
+  success-soft: "#d9fbdd"
+  warning: "#534212"
+  warning-soft: "#fff7cf"
+  error: "#9a2827"
+  error-soft: "#ecdbd9"
+  action: "#3f3f46"
+  action-soft: "#ebebed"
+  selected-soft: "#f5f5f5"
+  hover-soft: "#f5f5f5"
 typography:
   headline:
     fontFamily: "AlibabaSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
@@ -99,6 +107,30 @@ components:
     typography: "{typography.code}"
     rounded: "{rounded.sm}"
     padding: "4px 8px"
+  status-pill-success:
+    backgroundColor: "{colors.success-soft}"
+    textColor: "{colors.success}"
+    typography: "{typography.label}"
+    rounded: "999px"
+    padding: "2px 10px"
+  status-pill-warning:
+    backgroundColor: "{colors.warning-soft}"
+    textColor: "{colors.warning}"
+    typography: "{typography.label}"
+    rounded: "999px"
+    padding: "2px 10px"
+  status-pill-error:
+    backgroundColor: "{colors.error-soft}"
+    textColor: "{colors.error}"
+    typography: "{typography.label}"
+    rounded: "999px"
+    padding: "2px 10px"
+  action-pill:
+    backgroundColor: "{colors.action-soft}"
+    textColor: "{colors.action}"
+    typography: "{typography.label}"
+    rounded: "999px"
+    padding: "2px 10px"
   skill-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.work-ink}"
@@ -135,7 +167,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 **Key Characteristics:**
 
-- 单一秩序蓝强调色，工作灰承担大部分信息层级。
+- 中性品牌灰建立识别表面，近黑主交互与工作灰承担信息层级。
 - 紧凑而不拥挤，常用操作在一至两步内可达。
 - WorkspaceScope、Sidebar、权限、Skill 与业务请求保持一致。
 - 常驻表面平坦，浮层和瞬时状态才获得抬升。
@@ -143,20 +175,41 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 ## 2. Colors
 
-颜色策略是“秩序蓝 + 工作灰”：蓝色只表达主操作、当前选择和关键信息，灰阶承担结构，成功、警告和错误使用独立语义色。
+颜色策略是“品牌灰 + 黑白主交互 + 工作灰”：`#f5f5f5` 统一品牌表面、选中和 hover 的浅层背景，近黑色承担主要操作与焦点，其他灰阶负责结构；成功 / 警示 / 错误使用低饱和状态色对（墨色 + 浅底）。
 
 ### Primary
 
-- **秩序蓝** (`#1677ff`)：品牌与主交互锚点，用于主要按钮、当前菜单、链接和焦点状态。
-- **秩序蓝悬停态** (`#4096ff`)：只用于可交互元素的 hover 反馈。
-- **秩序蓝按下态** (`#0958d9`)：只用于 active 状态，避免与常驻选中态混用。
-- **秩序蓝浅层** (`#e6f4ff`)：用于选中背景和低强调信息底色；边界使用浅蓝 (`#91caff`)。
+- **品牌表面灰** (`#f5f5f5`)：用于页面画布、选中背景与轻量 hover，不作为正文或状态含义的唯一载体。
+- **主交互色** (`#000000e3`)：来源于 `config/defaultSettings.ts` 的 `colorPrimary`，用于主要按钮、链接和焦点锚点。
+- **主交互 hover / active**：由 Ant Design 算法从主交互色派生，当前分别为 `#0d0d0d` 与 `#000000`。
+- **选中与 hover 浅层** (`#f5f5f5`)：来源于 `src/theme/colors.ts` 的 `surfaceColors.selectedSoft` 与 `hoverSoft`。
 
-### Secondary
+### Secondary（状态色）
 
-- **成功绿** (`#52c41a`)：仅表示操作成功或健康状态。
-- **警示金** (`#faad14`)：仅表示需要注意但尚未失败的状态。
-- **错误红** (`#ff4d4f`)：仅表示错误、危险操作和阻断状态。
+语义名保留 `success` / `warning` / `error`，视觉替换为截图中的 Running / Idle / Error 色对。每组包含 **ink（墨色）** 与 **soft（浅底）**：
+
+| 语义 | 产品别名 | ink（文字 / 图标 / 圆点） | soft（胶囊底） |
+|------|----------|---------------------------|----------------|
+| success | Running | `#54915c` | `#d9fbdd` |
+| warning | Idle | `#534212` | `#fff7cf` |
+| error | Error | `#9a2827` | `#ecdbd9` |
+
+- **ink**：用于状态文字、列表圆点、描边和图标着色。
+- **soft**：只用于状态胶囊 / Badge 底色；不要单独铺满大面积表面。
+- 组织「已启用」映射 success（Running）；「已停用 / 待机」映射 warning（Idle）；失败与阻断映射 error。
+- antd 的 `Tag color="success|warning|error"` 仍走组件库默认色；业务状态胶囊请使用本色对，避免两套绿红并存。
+
+### Action（行内操作色）
+
+用于「进入」「编辑」等次要行内操作胶囊，与状态色并列、不抢主色：
+
+| 语义 | ink（文字） | soft（胶囊底） |
+|------|-------------|----------------|
+| action | `#3f3f46` | `#ebebed` |
+
+- **soft**：石墨灰浅底，只用于操作胶囊，不铺大面积。
+- **ink**：冷深灰，保证在石墨底上可读；不使用主交互色做行内次要操作，以免与主按钮抢层级。
+- 「删除」等危险操作：使用 error 色对（文字 `#9a2827` + 底 `#ecdbd9`），与进入 / 编辑的 action 胶囊区分。
 
 ### Neutral
 
@@ -164,12 +217,13 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 - **主墨色** (`#000000e0`)：正文、标题和关键数据；次级与三级信息分别使用 `#000000a6` 和 `#00000073`。
 - **工作黑** (`#09090b`) 与 **工作灰** (`#52525c`)：用于权限与 Skill 概览中的高对比信息层级。
 - **分隔线** (`#d9d9d9`) 与 **轻分隔线** (`#f0f0f0`)：前者标记控件边界，后者划分大面积内容。
+- **品牌 / 选中 / hover 浅底** (`#f5f5f5`)：代码常量见 `src/theme/colors.ts` → `surfaceColors.selectedSoft` 与 `hoverSoft`，同时作为 `colorPrimaryBg` 和交互 hover token 的显式覆盖。
 
 ### Named Rules
 
-**The One Accent Rule.** 秩序蓝在单个屏幕中的常驻面积不得超过约 10%；它只服务于主操作、选中态和关键状态，绝不作为装饰性铺色。
+**The Neutral Brand Rule.** 品牌灰只建立表面识别和低强调交互反馈；主要操作使用近黑色，状态只使用各自的语义色对。
 
-**The Semantic Color Rule.** 绿色、金色和红色只能表达状态含义；同一状态在 Platform 与所有 Organization 中必须保持相同颜色。
+**The Semantic Color Rule.** `success` / `warning` / `error` 只能表达状态含义，且必须成对使用 ink + soft（或至少保留 ink 文案）；同一状态在 Platform 与所有 Organization 中必须保持相同颜色。不得用品牌灰或主交互色表达成功、警示或错误。
 
 ## 3. Typography
 
@@ -212,8 +266,8 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 ### Buttons
 
 - **Shape:** 轻微圆角 (`6px`)，默认高度 `32px`，大号流程按钮高度 `40px`。
-- **Primary:** 秩序蓝背景、白色文字，默认水平内边距 `15px`；一个操作区只保留一个主按钮。
-- **Hover / Focus:** hover 切换为 `#4096ff`；focus-visible 必须显示清晰的蓝色焦点环；active 使用 `#0958d9`。
+- **Primary:** 近黑背景（`#000000e3`）、白色文字，默认水平内边距 `15px`；一个操作区只保留一个主按钮。
+- **Hover / Focus:** hover 使用 `#0d0d0d`，active 使用 `#000000`；focus-visible 必须保留清晰的近黑焦点环。
 - **Text:** 顶栏操作使用透明背景、`36px` 高度和 `8px` 水平内边距，只在 hover 时出现轻灰底色。
 - **Disabled / Loading:** 使用 Ant Design 的标准禁用和加载状态，不通过降低文字对比度到不可读来表达禁用。
 
@@ -225,7 +279,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 ### Cards / Containers
 
 - **Corner Style:** 卡片使用轻微圆角 (`8px`)，不使用大于 `16px` 的业务卡片圆角。
-- **Background:** 内容表面保持白色；图标容器可使用秩序蓝浅层，但不铺满整张卡片。
+- **Background:** 内容表面保持白色；图标容器可使用品牌灰 `#f5f5f5`，但不铺满整张卡片。
 - **Shadow Strategy:** 静止状态无阴影；只有明确可点击的卡片允许在 hover 时使用组件库的轻量反馈。
 - **Border:** 使用轻分隔线 (`1px solid #f0f0f0`) 或不设边界，禁止边界与宽大阴影同时出现。
 - **Internal Padding:** 紧凑卡片使用 `12px`，标准内容容器使用 `16px` 或 `24px`。
@@ -233,13 +287,13 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 ### Inputs / Fields
 
 - **Style:** 全局使用 Ant Design `filled` 变体，浅灰填充、`6px` 圆角、默认高度 `32px`。
-- **Focus:** 聚焦后边界与焦点环使用秩序蓝，文字和输入值保持主墨色。
+- **Focus:** 聚焦后边界与焦点环使用近黑主交互色，文字和输入值保持主墨色。
 - **Error / Disabled:** 错误使用标准错误红并附带文字说明；禁用态保持可辨识标签，不只依赖颜色。
 
 ### Navigation
 
 - **Style:** 使用 ProLayout 的浅色混合导航；左侧菜单由当前 URL 派生，顶部操作负责 WorkspaceScope、账户和全局工具。
-- **Active:** 当前菜单使用秩序蓝文字和浅蓝背景，hover 仅提供轻量灰色反馈。
+- **Active:** 当前菜单使用近黑文字和品牌灰背景，hover 使用同一 `#f5f5f5` 浅层反馈。
 - **Responsive:** 窄屏折叠侧栏并保留图标与可访问名称；不得通过缩放字体适配视口。
 
 ### Workspace Switch
@@ -253,7 +307,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 - **Do** 让当前 WorkspaceScope 可核对，并让 URL、Sidebar、权限、Skill 与请求 Header 同步变化。
 - **Do** 使用 `4/8/12/16/24/32px` 间距和 `4/6/8px` 圆角层级维持紧凑、可预测的节奏。
-- **Do** 将秩序蓝 (`#1677ff`) 限制在主操作、选中态和关键状态，并使用工作灰承担普通信息层级。
+- **Do** 将品牌灰 (`#f5f5f5`) 用于画布、选中和 hover 浅层；主要操作使用近黑色，并由工作灰承担普通信息层级。
 - **Do** 为按钮、输入、菜单和可点击卡片提供 default、hover、focus、active、disabled 与 loading 状态。
 - **Do** 尊重 `prefers-reduced-motion`；常规状态过渡保持在 `100–200ms`，不编排页面入场动画。
 

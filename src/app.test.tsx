@@ -64,6 +64,8 @@ vi.mock('@ant-design/icons', () => ({
   HomeOutlined: () => null,
   InboxOutlined: () => null,
   LinkOutlined: () => null,
+  OllamaFilled: () => null,
+  RobotOutlined: () => null,
   SafetyCertificateOutlined: () => null,
   SearchOutlined: () => null,
   SettingOutlined: () => null,
@@ -267,6 +269,44 @@ describe('app layout guard', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
+  it('should use the user name initial when no avatar URL is configured', async () => {
+    const { layout } = await import('./app');
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          name: 'super adm',
+          avatar: null,
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    expect(runtimeLayout.avatarProps).toMatchObject({
+      src: undefined,
+      title: 'super adm',
+      children: 'S',
+    });
+  });
+
+  it('should preserve a real avatar and keep a Chinese initial as fallback', async () => {
+    const { layout } = await import('./app');
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          name: '张三',
+          avatar: 'https://example.test/avatar.png',
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    expect(runtimeLayout.avatarProps).toMatchObject({
+      src: 'https://example.test/avatar.png',
+      title: '张三',
+      children: '张',
+    });
+  });
+
   it('should not bounce the first post-login navigation while currentUser is committing', async () => {
     const { layout } = await import('./app');
     mockGetAccessToken.mockReturnValue('new-access-token');
@@ -317,7 +357,7 @@ describe('app layout guard', () => {
     const runtimeLayout = layout({
       initialState: {
         currentUser: {
-          userid: 'super-admin',
+          userId: 'super-admin',
           platformPermissions: ['platform:organization:update'],
           platformSkillCodes: [],
           organizations: [],

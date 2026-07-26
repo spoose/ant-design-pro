@@ -58,7 +58,7 @@ export const user = [
 export const defaultUser = {
   name: 'Zhihe',
   avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
-  userid: '00000001',
+  userId: '00000001',
   email: 'antdesign@xxx.com',
   signature: 'Be water',
   title: 'Developer',

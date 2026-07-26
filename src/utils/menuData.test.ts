@@ -18,7 +18,7 @@ vi.mock('@umijs/max', async () => {
 });
 
 const superAdmin = {
-  userid: 'super-admin',
+  userId: 'super-admin',
   platformPermissions: ['platform:organization:update', 'platform:user:manage'],
   platformSkillCodes: ['knowledge-search'],
   organizations: [

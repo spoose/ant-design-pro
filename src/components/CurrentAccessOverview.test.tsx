@@ -20,10 +20,8 @@ vi.mock('@umijs/max', async () => {
 });
 
 vi.mock('antd', () => ({
-  Card: ({ children }: any) => <div>{children}</div>,
-  Empty: Object.assign(({ description }: any) => <div>{description}</div>, {
-    PRESENTED_IMAGE_SIMPLE: 'simple',
-  }),
+  Table: () => null,
+  Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock('@ant-design/icons', () => {
@@ -36,6 +34,8 @@ vi.mock('@ant-design/icons', () => {
     FileTextOutlined: Icon,
     HistoryOutlined: Icon,
     InboxOutlined: Icon,
+    OllamaFilled: Icon,
+    RobotOutlined: Icon,
     SearchOutlined: Icon,
   };
 });

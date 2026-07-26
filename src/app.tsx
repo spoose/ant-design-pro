@@ -20,6 +20,7 @@ import {
 } from '@/components';
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import type { AuthCurrentUser } from '@/services/auth';
+import { surfaceColors, workspaceIconColorVariables } from '@/theme/colors';
 import { clearAccessToken, getAccessToken } from '@/utils/authToken';
 import {
   groupTemplateExampleMenus,
@@ -32,7 +33,13 @@ import { errorConfig } from './requestErrorConfig';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 const selectEntryPath = '/user/select-entry';
-const authFreePaths = [loginPath, '/user/register', '/user/register-result'];
+const authFreePaths = [
+  loginPath,
+  '/user/register',
+  '/user/register-result',
+  '/user/forgot-password',
+  '/user/reset-password',
+];
 const userFlowPaths = [...authFreePaths, selectEntryPath];
 
 const isUnauthorizedError = (error: unknown) =>
@@ -93,6 +100,11 @@ export const layout: RunTimeLayoutConfig = ({
 }) => {
   // 当前地址来自 Umi Browser Router；仅 Workspace 路由使用无外边距的应用壳布局。
   const isWorkspaceRoute = history.location.pathname.startsWith('/workspace/');
+  // 头像链路：currentUser.avatar 有值时显示图片；为空或图片加载失败时显示姓名首字符。
+  const currentUserName = initialState?.currentUser?.name?.trim();
+  const avatarInitial = currentUserName
+    ? Array.from(currentUserName)[0]?.toLocaleUpperCase()
+    : undefined;
 
   return {
     menuDataRender: (menuData) => {
@@ -122,9 +134,14 @@ export const layout: RunTimeLayoutConfig = ({
           className={`flex h-11 items-center border-b border-zinc-200 px-3 dark:border-zinc-800 ${
             collapsed ? 'justify-center' : 'gap-2'
           }`}
+          // 暂时隐藏侧栏身份栏；保留管理中心/组织/App 的完整渲染代码。
+          style={{ display: 'none' }}
         >
           {/* Badge 始终保留；展开时只补充 Organization/App 名称，不显示范围副标题。 */}
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-blue-50 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+          <span
+            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--workspace-icon-background)] text-xs font-semibold text-[var(--workspace-icon-foreground)] dark:bg-[var(--workspace-icon-background-dark)] dark:text-[var(--workspace-icon-foreground-dark)]"
+            style={workspaceIconColorVariables}
+          >
             {workspaceMenu.badge}
           </span>
           {!collapsed && (
@@ -165,6 +182,10 @@ export const layout: RunTimeLayoutConfig = ({
                   paddingInlineEnd: margin,
                   backgroundColor: colorBgContainer,
                   background: workspaceHeaderBackground,
+                  // 暂时隐藏 Workspace 顶栏头像容器；avatarProps 与下拉菜单逻辑继续保留。
+                  // [`${proComponentsCls}-global-header-header-actions-avatar`]: {
+                  //   display: 'none',
+                  // },
                   // headerContentRender 的匿名容器承载 WorkspaceTabsHeader；允许它在窄宽度内收缩。
                   '> div:not([class])': {
                     minWidth: 0,
@@ -289,6 +310,9 @@ export const layout: RunTimeLayoutConfig = ({
                 color: colorPrimary,
                 background: colorPrimaryBg,
               },
+              [`${antCls}-menu-item:not(${antCls}-menu-item-selected):hover`]: {
+                background: surfaceColors.selectedSoft,
+              },
               // 折叠侧栏已有 8px 外层留白；菜单再留 4px，正好容纳并居中 ProLayout 的 40px 折叠标题。
               [`&${antCls}-pro-sider-collapsed ${antCls}-pro-sider-menu`]: {
                 paddingInline: paddingXXS,
@@ -330,8 +354,10 @@ export const layout: RunTimeLayoutConfig = ({
       return [<OrganizationSwitch key="switch" />, <DocLink key="doc" />];
     },
     avatarProps: {
-      src: initialState?.currentUser?.avatar,
-      title: initialState?.currentUser?.name,
+      src: initialState?.currentUser?.avatar || undefined,
+      title: currentUserName,
+      // ProLayout 只有在 src、icon 或 children 存在时才会创建 Avatar。
+      children: avatarInitial,
       render: (_, avatarChildren) => (
         <AvatarDropdown>{avatarChildren}</AvatarDropdown>
       ),
@@ -399,24 +425,26 @@ export const layout: RunTimeLayoutConfig = ({
       return (
         <>
           {children}
-          <SettingDrawer
-            disableUrlParams
-            enableDarkTheme
-            collapse={initialState?.settingDrawerOpen}
-            onCollapseChange={(open) => {
-              setInitialState((s) => ({
-                ...s,
-                settingDrawerOpen: open,
-              }));
-            }}
-            settings={initialState?.settings}
-            onSettingChange={(settings) => {
-              setInitialState((s) => ({
-                ...s,
-                settings,
-              }));
-            }}
-          />
+          {false && (
+            <SettingDrawer
+              disableUrlParams
+              enableDarkTheme
+              collapse={initialState?.settingDrawerOpen}
+              onCollapseChange={(open) => {
+                setInitialState((s) => ({
+                  ...s,
+                  settingDrawerOpen: open,
+                }));
+              }}
+              settings={initialState?.settings}
+              onSettingChange={(settings) => {
+                setInitialState((s) => ({
+                  ...s,
+                  settings,
+                }));
+              }}
+            />
+          )}
         </>
       );
     },

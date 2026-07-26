@@ -1,38 +1,21 @@
-import { render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import WorkspaceSkillList from '.';
 
 vi.mock('@umijs/max', () => ({
-  Link: ({ children, to, ...props }: any) => (
+  Link: ({
+    children,
+    to,
+    ...props
+  }: {
+    children: React.ReactNode;
+    to: string;
+  }) => (
     <a href={to} {...props}>
       {children}
     </a>
   ),
 }));
-
-vi.mock('antd', () => {
-  const Empty = ({ description }: any) => <div>{description}</div>;
-  Empty.PRESENTED_IMAGE_SIMPLE = 'simple';
-  return {
-    Card: ({ children }: any) => <div>{children}</div>,
-    Empty,
-  };
-});
-
-vi.mock('@ant-design/icons', () => {
-  const Icon = () => <span data-testid="skill-icon" />;
-  return {
-    AuditOutlined: Icon,
-    DatabaseOutlined: Icon,
-    FileDoneOutlined: Icon,
-    FileSearchOutlined: Icon,
-    FileTextOutlined: Icon,
-    HistoryOutlined: Icon,
-    InboxOutlined: Icon,
-    SearchOutlined: Icon,
-  };
-});
 
 describe('WorkspaceSkillList', () => {
   it('uses the current Scope path builder for Skill links', () => {
@@ -50,6 +33,7 @@ describe('WorkspaceSkillList', () => {
       'href',
       '/workspace/platform/apps/knowledge-search',
     );
+    expect(screen.getByText('在知识库中检索资料与答案。')).toBeVisible();
   });
 
   it('explains when the current Scope has no available Skills', () => {
@@ -64,5 +48,38 @@ describe('WorkspaceSkillList', () => {
 
     expect(screen.getByText('0 项')).toBeVisible();
     expect(screen.getByText('当前工作区暂无可用应用')).toBeVisible();
+  });
+
+  it('collapses overflow apps behind a more control that can expand', () => {
+    render(
+      <WorkspaceSkillList
+        emptyDescription="暂无应用"
+        getSkillPath={(skillCode) => `/apps/${skillCode}`}
+        skillCodes={[
+          'platform-assistant',
+          'file-review',
+          'document-summary',
+          'knowledge-search',
+        ]}
+        title="组织应用"
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: '打开 pAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '打开 文件审查' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '打开 文档总结' })).toBeVisible();
+    expect(
+      screen.queryByRole('link', { name: '打开 知识检索' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '更多，还有 1 个应用' }),
+    );
+
+    expect(screen.getByRole('link', { name: '打开 知识检索' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '收起' }));
+    expect(
+      screen.queryByRole('link', { name: '打开 知识检索' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -45,31 +45,125 @@ export type OrganizationAccess = {
  * -> getInitialState.currentUser -> Workspace 规则、Sidebar、标签和业务页面。
  * Platform 和 Organization 是两个独立授权域，不能相互推导权限。
  */
-export type AuthCurrentUser = API.CurrentUser & {
+export type AuthCurrentUser = Omit<API.CurrentUser, 'userid'> & {
+  /** 后端用户主键；业务代码不再读取旧字段 userid。 */
+  userId: string;
   /** Platform 控制面权限，只用于 Platform 页面、菜单和操作。 */
   platformPermissions: string[];
   /** Platform Scope 内可打开的 App/Skill Code。 */
   platformSkillCodes: string[];
   /** 非 Platform 用户的长期默认组织，由后端保存。 */
-  defaultOrganizationId?: string;
+  defaultOrganizationId?: string | null;
   /** 当前用户可以真正进入的组织；不等同于 Super Admin 可管理的组织全集。 */
   organizations: OrganizationAccess[];
 };
 
 /**
- * POST /api/login/account 的临时 Bearer-only 响应类型。
- * 登录页保存 accessToken 后重新请求 /api/currentUser；OpenAPI 就绪后改用生成类型。
+ * 认证接口统一使用的成功响应信封。
  */
-export type AuthLoginResult = API.LoginResult & {
-  /** 后端签发的 Bearer Token，写入 authToken 后由请求拦截器附加到 API 请求。 */
-  accessToken?: string;
-  /** 当前只接受 Bearer，避免调用方猜测认证方案。 */
-  tokenType?: 'Bearer';
-  /** Token 相对有效期；当前阶段不实现自动刷新。 */
-  expiresIn?: number;
-  /** 后端可选的绝对过期时间。 */
-  expiresAt?: string;
+export type ApiSuccess<T> = {
+  success: true;
+  data: T;
+  traceId: string;
 };
+
+export type AuthLoginParams = {
+  /** 后端同时接受用户名或邮箱，不再发送旧字段 username/type/autoLogin。 */
+  account: string;
+  password: string;
+};
+
+export type AuthLoginData = {
+  /** 后端签发的 Bearer Token，写入 authToken 后由请求拦截器附加到 API 请求。 */
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  expiresAt: string;
+};
+
+export type RegisterParams = {
+  username: string;
+  email: string;
+  name: string;
+  password: string;
+};
+
+export type RegisteredUser = {
+  userId: string;
+  username: string;
+  email: string;
+  name: string;
+  status: 'active';
+  createdAt: string;
+};
+
+export type ForgotPasswordResult = {
+  accepted: true;
+  expiresAt: string;
+  developmentResetToken?: string;
+};
+
+export type ResetPasswordResult = {
+  reset: true;
+};
+
+/** 当前退出响应会明确说明服务端是否实际撤销了 Access Token。 */
+export type LogoutResult = {
+  loggedOut: true;
+  serverTokenRevoked: boolean;
+};
+
+type RequestError = Error & {
+  request?: unknown;
+  info?: {
+    errorMessage?: string;
+    traceId?: string;
+  };
+  response?: {
+    status?: number;
+    data?: {
+      errorMessage?: string;
+      traceId?: string;
+    };
+  };
+};
+
+export type AuthErrorDetails = {
+  message: string;
+  traceId?: string;
+};
+
+/** 将后端业务错误直接交给页面展示；仅在没有结构化错误时保留原始 Error.message。 */
+export function getAuthErrorDetails(error: unknown): AuthErrorDetails {
+  if (!(error instanceof Error)) return { message: '认证请求失败' };
+
+  const requestError = error as RequestError;
+  const backendMessage =
+    requestError.info?.errorMessage ??
+    requestError.response?.data?.errorMessage;
+  const traceId =
+    requestError.info?.traceId ?? requestError.response?.data?.traceId;
+
+  if (backendMessage) return { message: backendMessage, traceId };
+
+  if (requestError.request && !requestError.response) {
+    return {
+      message: '无法连接认证服务，请确认后端已经启动并检查网络连接',
+    };
+  }
+
+  const responseStatus = requestError.response?.status;
+  if (responseStatus && responseStatus >= 500) {
+    return {
+      message: `认证服务不可用（HTTP ${responseStatus}），请确认后端已经启动`,
+    };
+  }
+
+  return {
+    message: requestError.message,
+    traceId,
+  };
+}
 
 /**
  * PUT /api/users/me/default-organization 的临时响应类型；OpenAPI 就绪后改用生成类型。
@@ -83,10 +177,10 @@ export type DefaultOrganizationResult = {
 };
 
 export async function loginWithPassword(
-  body: API.LoginParams,
+  body: AuthLoginParams,
   options?: { [key: string]: unknown },
 ) {
-  return request<AuthLoginResult>('/api/login/account', {
+  return request<ApiSuccess<AuthLoginData>>('/api/login/account', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -96,8 +190,54 @@ export async function loginWithPassword(
   });
 }
 
+export async function registerAccount(
+  body: RegisterParams,
+  options?: { [key: string]: unknown },
+) {
+  return request<ApiSuccess<RegisteredUser>>('/api/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
+export async function requestPasswordReset(
+  email: string,
+  options?: { [key: string]: unknown },
+) {
+  return request<ApiSuccess<ForgotPasswordResult>>('/api/password/forgot', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: { email },
+    ...(options || {}),
+  });
+}
+
+export async function resetPassword(
+  body: { token: string; password: string },
+  options?: { [key: string]: unknown },
+) {
+  return request<ApiSuccess<ResetPasswordResult>>('/api/password/reset', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
+/**
+ * 通知后端当前用户正在退出；调用方必须在 finally 中独立清理本地 Token。
+ * 当前后端只确认请求，未来接入 Redis 后由 serverTokenRevoked 表示撤销结果。
+ */
 export async function logout(options?: { [key: string]: unknown }) {
-  return request<Record<string, unknown>>('/api/login/outLogin', {
+  return request<ApiSuccess<LogoutResult>>('/api/login/outLogin', {
     method: 'POST',
     ...(options || {}),
   });

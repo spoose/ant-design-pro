@@ -26,6 +26,9 @@ export const PLATFORM_PAGE_PATTERN = '/workspace/platform/:platformPageKey';
 export const PLATFORM_APP_PATTERN = '/workspace/platform/apps/:appKey/*';
 const PLATFORM_APP_ROOT_PATTERN = '/workspace/platform/apps/:appKey';
 
+/** 已认证但尚无任何可进入 Scope 时使用的中立落点。 */
+export const ACCESS_PENDING_PATH = '/workspace/access-pending';
+
 /** Organization 固定首页及其内部管理页的 URL 模板。 */
 export const ORGANIZATION_PAGE_PATTERN =
   '/workspace/org/:organizationId/:pageKey';
@@ -96,16 +99,15 @@ export const getOrganizationAppPagePath = (
  * 登录提交、应用根路由和旧 /home 兼容入口必须共用该函数。
  */
 export const resolveLandingPath = (user: AuthCurrentUser) => {
+  // 单一落点链路：currentUser 授权快照 -> LandingWorkspace -> 正式页面 URL。
   const landing = resolveLandingWorkspace(user);
   switch (landing.kind) {
     case 'platform':
       return getPlatformHomePath();
     case 'organization':
       return getOrganizationHomePath(landing.organizationId);
-    case 'organization-selection':
-      return '/user/select-entry';
-    case 'unauthorized':
-      return '/exception/403';
+    case 'access-pending':
+      return ACCESS_PENDING_PATH;
   }
 };
 

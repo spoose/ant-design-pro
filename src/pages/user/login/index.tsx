@@ -2,9 +2,7 @@ import {
   AlipayCircleOutlined,
   LockOutlined,
   MobileOutlined,
-  TaobaoCircleOutlined,
   UserOutlined,
-  WeiboCircleOutlined,
 } from '@ant-design/icons';
 import {
   LoginForm,
@@ -19,16 +17,19 @@ import {
   SelectLang,
   useIntl,
   useModel,
+  useSearchParams,
 } from '@umijs/max';
-import { Alert, App, Button, Tabs } from 'antd';
+import { App, Button, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useState } from 'react';
 import { Footer } from '@/components';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
-import { loginWithPassword } from '@/services/auth';
-import { setAccessToken } from '@/utils/authToken';
+import { getAuthErrorDetails, loginWithPassword } from '@/services/auth';
+import { clearAccessToken, setAccessToken } from '@/utils/authToken';
 import { resolveLandingPath } from '@/utils/workspaceRoutes';
-import Settings from '../../../../config/defaultSettings';
+import { showAuthErrorNotification } from '../authNotification';
+
+const SHOW_LANGUAGE_SWITCH = false;
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -66,7 +67,7 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
-const ActionIcons = () => {
+const _ActionIcons = () => {
   const { styles } = useStyles();
 
   return (
@@ -75,14 +76,14 @@ const ActionIcons = () => {
         key="AlipayCircleOutlined"
         className={styles.action}
       />
-      <TaobaoCircleOutlined
+      {/* <TaobaoCircleOutlined
         key="TaobaoCircleOutlined"
         className={styles.action}
       />
       <WeiboCircleOutlined
         key="WeiboCircleOutlined"
         className={styles.action}
-      />
+      /> */}
     </>
   );
 };
@@ -97,27 +98,12 @@ const Lang = () => {
   );
 };
 
-const LoginMessage: React.FC<{
-  content: string;
-}> = ({ content }) => {
-  return (
-    <Alert
-      style={{
-        marginBottom: 24,
-      }}
-      title={content}
-      type="error"
-      showIcon
-    />
-  );
-};
-
 const Login: React.FC = () => {
-  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
+  const [searchParams] = useSearchParams();
   const { initialState, setInitialState } = useModel('@@initialState');
   const { styles } = useStyles();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const intl = useIntl();
 
   /**
@@ -136,50 +122,49 @@ const Login: React.FC = () => {
   };
 
   const handleSubmit = async (values: API.LoginParams) => {
-    try {
-      // 登录
-      const msg = await loginWithPassword({ ...values, type });
-      if (msg.status === 'ok') {
-        if (!msg.accessToken) {
-          throw new Error('登录接口未返回 accessToken');
-        }
-        setAccessToken(msg.accessToken);
-        const defaultLoginSuccessMessage = intl.formatMessage({
-          id: 'pages.login.success',
-          defaultMessage: '登录成功！',
-        });
-        message.success(defaultLoginSuccessMessage);
-        // 链路：登录响应 Token -> /api/currentUser -> 单一落点门面 -> Umi URL。
-        const userInfo = await fetchUserInfo();
-        history.replace(resolveLandingPath(userInfo));
-        return;
-      }
-      // 如果失败去设置用户错误信息
-      setUserLoginState(msg);
-    } catch (error) {
-      const defaultLoginFailureMessage = intl.formatMessage({
-        id: 'pages.login.failure',
-        defaultMessage: '登录失败，请重试！',
+    notification.destroy('login-request-error');
+
+    if (type === 'mobile') {
+      showAuthErrorNotification(notification, {
+        key: 'login-request-error',
+        title: '登录失败',
+        details: { message: '当前后端暂不支持手机号登录' },
       });
-      message.error(
-        error instanceof Error ? error.message : defaultLoginFailureMessage,
+      return;
+    }
+    if (!values.username || !values.password) return;
+
+    try {
+      const response = await loginWithPassword(
+        { account: values.username, password: values.password },
+        { skipErrorHandler: true },
       );
+      setAccessToken(response.data.accessToken);
+      const defaultLoginSuccessMessage = intl.formatMessage({
+        id: 'pages.login.success',
+        defaultMessage: '登录成功！',
+      });
+      // 链路：登录响应 Token -> /api/currentUser -> 单一落点门面 -> Umi URL。
+      const userInfo = await fetchUserInfo();
+      message.success(defaultLoginSuccessMessage);
+      history.replace(resolveLandingPath(userInfo));
+    } catch (error) {
+      clearAccessToken();
+      showAuthErrorNotification(notification, {
+        key: 'login-request-error',
+        title: '登录失败',
+        details: getAuthErrorDetails(error),
+      });
     }
   };
-  const { status, type: loginType } = userLoginState;
 
   return (
     <div className={styles.container}>
       <Helmet>
-        <title>
-          {intl.formatMessage({
-            id: 'menu.login',
-            defaultMessage: '登录页',
-          })}
-          {Settings.title && ` - ${Settings.title}`}
-        </title>
+        <title>登录 - JUSHU AI</title>
       </Helmet>
-      <Lang />
+      {/* 右上角语言切换按钮暂时隐藏，需要时可重新开启。 */}
+      {SHOW_LANGUAGE_SWITCH && <Lang />}
       <div
         style={{
           flex: '1',
@@ -191,29 +176,31 @@ const Login: React.FC = () => {
             minWidth: 280,
             maxWidth: '75vw',
           }}
-          logo={<img alt="logo" src="/logo.svg" />}
-          title="Ant Design"
-          subTitle={intl.formatMessage({
-            id: 'pages.layouts.userLayout.title',
-          })}
+          logo={<img alt="JUSHU" src="/jushu-logo.svg" />}
+          title="JUSHU AI"
+          // subTitle="XXXXXXXX"
           initialValues={{
             autoLogin: true,
+            username: searchParams.get('account') ?? undefined,
           }}
-          actions={[
-            <FormattedMessage
-              key="loginWith"
-              id="pages.login.loginWith"
-              defaultMessage="其他登录方式"
-            />,
-            <ActionIcons key="icons" />,
-          ]}
+          // actions={[
+          //   <FormattedMessage
+          //     key="loginWith"
+          //     id="pages.login.loginWith"
+          //     defaultMessage="其他登录方式"
+          //   />,
+          //   <ActionIcons key="icons" />,
+          // ]}
           onFinish={async (values) => {
             await handleSubmit(values as API.LoginParams);
           }}
         >
           <Tabs
             activeKey={type}
-            onChange={setType}
+            onChange={(activeKey) => {
+              setType(activeKey);
+              notification.destroy('login-request-error');
+            }}
             centered
             items={[
               {
@@ -233,14 +220,6 @@ const Login: React.FC = () => {
             ]}
           />
 
-          {status === 'error' && loginType === 'account' && (
-            <LoginMessage
-              content={intl.formatMessage({
-                id: 'pages.login.accountLogin.errorMessage',
-                defaultMessage: '账户或密码错误',
-              })}
-            />
-          )}
           {type === 'account' && (
             <>
               <ProFormText
@@ -251,7 +230,7 @@ const Login: React.FC = () => {
                 }}
                 placeholder={intl.formatMessage({
                   id: 'pages.login.username.placeholder',
-                  defaultMessage: '用户名: admin, user, operator 或 users2',
+                  defaultMessage: 'admin',
                 })}
                 rules={[
                   {
@@ -290,9 +269,6 @@ const Login: React.FC = () => {
             </>
           )}
 
-          {status === 'error' && loginType === 'mobile' && (
-            <LoginMessage content="验证码错误" />
-          )}
           {type === 'mobile' && (
             <>
               <ProFormText
@@ -363,19 +339,37 @@ const Login: React.FC = () => {
                   },
                 ]}
                 onGetCaptcha={async (phone) => {
-                  const result = await getFakeCaptcha({
-                    phone,
-                  });
-                  if (!result) {
-                    return;
+                  notification.destroy('login-request-error');
+                  try {
+                    const result = await getFakeCaptcha(
+                      {
+                        phone,
+                      },
+                      {
+                        skipErrorHandler: true,
+                      },
+                    );
+                    if (!result) {
+                      throw new Error('认证服务未返回验证码结果');
+                    }
+                    message.success('获取验证码成功！验证码为：1234');
+                  } catch (error) {
+                    showAuthErrorNotification(notification, {
+                      key: 'login-request-error',
+                      title: '验证码发送失败',
+                      details: getAuthErrorDetails(error),
+                    });
+                    throw error;
                   }
-                  message.success('获取验证码成功！验证码为：1234');
                 }}
               />
             </>
           )}
           <div
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: 24,
             }}
           >
@@ -385,18 +379,31 @@ const Login: React.FC = () => {
                 defaultMessage="自动登录"
               />
             </ProFormCheckbox>
-            <Button
-              type="link"
+            <div
               style={{
-                float: 'right',
-                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
               }}
             >
-              <FormattedMessage
-                id="pages.login.forgotPassword"
-                defaultMessage="忘记密码"
-              />
-            </Button>
+              <Button
+                type="link"
+                style={{ padding: 0 }}
+                onClick={() => history.push('/user/register')}
+              >
+                注册账户
+              </Button>
+              <Button
+                type="link"
+                style={{ padding: 0 }}
+                onClick={() => history.push('/user/forgot-password')}
+              >
+                <FormattedMessage
+                  id="pages.login.forgotPassword"
+                  defaultMessage="忘记密码"
+                />
+              </Button>
+            </div>
           </div>
         </LoginForm>
       </div>

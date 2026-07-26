@@ -15,7 +15,7 @@ vi.mock('@umijs/max', async () => {
 });
 
 const currentUser = {
-  userid: 'user-1',
+  userId: 'user-1',
   platformPermissions: ['platform:user:manage'],
   platformSkillCodes: [],
   organizations: [

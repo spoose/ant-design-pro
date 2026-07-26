@@ -76,8 +76,7 @@ export type ResolvedOrganizationAccess = {
 export type LandingWorkspace =
   | { kind: 'platform' }
   | { kind: 'organization'; organizationId: string }
-  | { kind: 'organization-selection' }
-  | { kind: 'unauthorized'; reason: 'no-access' };
+  | { kind: 'access-pending' };
 
 const hasGrantedPermission = (
   permissions: readonly string[],
@@ -191,7 +190,9 @@ export const getOrganizationAccess = (
 };
 
 /**
- * 登录落点优先级：Platform -> 有效默认组织 -> 唯一组织 -> 组织选择 -> 无授权。
+ * 登录落点优先级：Platform -> 有效默认组织 -> 第一个可访问组织 -> 等待授权。
+ * organizations 已由后端按 code、id 稳定排序；这里不写回 defaultOrganizationId，
+ * 仅把第一个组织作为当前登录的有效默认入口。
  * 标签快照不参与授权和 Scope 选择，只在进入目标 Scope 后恢复 App 标签。
  */
 export const resolveLandingWorkspace = (
@@ -212,12 +213,12 @@ export const resolveLandingWorkspace = (
       organizationId: defaultOrganization.organizationId,
     };
   }
-  if (organizations.length === 1) {
+  const firstAccessibleOrganization = organizations[0];
+  if (firstAccessibleOrganization) {
     return {
       kind: 'organization',
-      organizationId: organizations[0].organizationId,
+      organizationId: firstAccessibleOrganization.organizationId,
     };
   }
-  if (organizations.length > 1) return { kind: 'organization-selection' };
-  return { kind: 'unauthorized', reason: 'no-access' };
+  return { kind: 'access-pending' };
 };

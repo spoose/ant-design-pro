@@ -1,5 +1,5 @@
 import { InteractionOutlined } from '@ant-design/icons';
-import { useLocation, useModel } from '@umijs/max';
+import { history, useLocation, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Button } from 'antd';
 import {
@@ -57,7 +57,8 @@ export const OrganizationSwitch: React.FC = () => {
    */
   const handleSwitch: MenuProps['onClick'] = ({ key }) => {
     if (key === PLATFORM_SCOPE_KEY && canEnterPlatform) {
-      window.location.assign(getPlatformHomePath());
+      // window.location.assign(getPlatformHomePath());
+      history.push(getPlatformHomePath());
       return;
     }
 
@@ -67,7 +68,8 @@ export const OrganizationSwitch: React.FC = () => {
     );
     if (!target || target.organizationId === currentOrganizationId) return;
 
-    window.location.assign(getOrganizationHomePath(target.organizationId));
+    // window.location.assign(getOrganizationHomePath(target.organizationId));
+    history.push(getOrganizationHomePath(target.organizationId));
   };
 
   const items: MenuProps['items'] = [

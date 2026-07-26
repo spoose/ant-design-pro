@@ -37,11 +37,15 @@ const menuItems: MenuProps['items'] = [
   },
 ];
 
+/**
+ * 退出链路：通知后端 -> 无论确认接口是否成功都清理浏览器 Token -> 跳转登录页。
+ * 当前后端只确认请求；未来 Redis 撤销逻辑可以复用相同接口而不改前端调用方。
+ */
 const loginOut = async () => {
   try {
-    await logout();
+    await logout({ skipErrorHandler: true });
   } catch {
-    // Local logout has already cleared user state; redirect should still proceed.
+    // 后端不可达不应阻止当前设备清除本地登录态。
   } finally {
     clearAccessToken();
   }

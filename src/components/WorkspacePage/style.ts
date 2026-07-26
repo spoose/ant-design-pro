@@ -18,7 +18,7 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     align-items: flex-end;
     justify-content: space-between;
     gap: ${token.marginLG}px;
-    background: ${token.colorBgContainer};
+    background: ${token.colorBgLayout};
     border-bottom: 1px solid ${token.colorBorderSecondary};
   `,
 

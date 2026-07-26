@@ -122,7 +122,7 @@ describe('BaseView geographic selects', () => {
         tags: [],
         title: '',
         unreadCount: 0,
-        userid: '00000001',
+        userId: '00000001',
       },
     });
     vi.mocked(service.queryProvince).mockResolvedValue([
@@ -172,7 +172,7 @@ describe('BaseView geographic selects', () => {
         tags: [],
         title: '',
         unreadCount: 0,
-        userid: '00000001',
+        userId: '00000001',
       } as any,
     });
 

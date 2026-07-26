@@ -66,7 +66,7 @@ npm install                                                # Update dependencies
 
 | Command | Description |
 |---------|-------------|
-| `npm start` | Start dev server (UMI_ENV=dev, with Mock) |
+| `npm start` | Start dev server (UMI_ENV=dev, no Mock) |
 | `npm run dev` | Start dev server (UMI_ENV=dev, no Mock) |
 | `npm run start:no-mock` | Start without Mock |
 | `npm run start:pre` | Pre-production environment |
@@ -147,7 +147,7 @@ const location = useLocation(); // current route info
 // File: config/defaultSettings.ts
 export default {
   navTheme: 'light',               // nav theme: light / dark
-  colorPrimary: '#1890ff',         // primary color
+  colorPrimary: '#f6d2ad',         // primary color
   layout: 'mix',                   // layout mode: side / top / mix
   contentWidth: 'Fluid',           // content width: Fluid / Fixed
   fixedHeader: false,              // fixed header
@@ -422,7 +422,7 @@ antd: {
   configProvider: {
     theme: {
       token: {
-        colorPrimary: '#1890ff',
+        colorPrimary: '#f6d2ad',
         borderRadius: 6,
       },
     },
@@ -474,14 +474,14 @@ export default {
 };
 ```
 
-> 💡 Use `MOCK=none` to skip mock and proxy to backend: `npm run start:no-mock`.
+> 💡 `npm start` and `npm run dev` now disable Mock by default, so `/api` requests are proxied to the real backend.
 
 → See [umi Testing](https://umijs.org/en-US/docs/guides/test), [umi Mock](https://umijs.org/en-US/docs/guides/mock)
 
 ## FAQ
 
 **Q: How to disable Mock?**
-`npm run start:no-mock` or `cross-env MOCK=none max dev`
+Mock is disabled by default; use `npm start` or `npm run dev`.
 
 **Q: How to change the primary color?**
 Edit `colorPrimary` in `config/defaultSettings.ts`. Use SettingDrawer for live preview in dev mode.

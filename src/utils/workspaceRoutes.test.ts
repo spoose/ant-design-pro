@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
+  ACCESS_PENDING_PATH,
   getOrganizationAppPagePath,
   getOrganizationAppWorkspacePath,
   getOrganizationHomePath,
@@ -124,7 +125,7 @@ describe('workspaceRoutes', () => {
       dataScopes: [],
     };
     const regularUser = {
-      userid: 'regular-user',
+      userId: 'regular-user',
       platformPermissions: [],
       platformSkillCodes: [],
       defaultOrganizationId: 'organization-1',
@@ -140,5 +141,25 @@ describe('workspaceRoutes', () => {
     expect(resolveLandingPath(regularUser)).toBe(
       '/workspace/org/organization-1/home',
     );
+    expect(
+      resolveLandingPath({
+        ...regularUser,
+        defaultOrganizationId: null,
+        organizations: [
+          organization,
+          {
+            ...organization,
+            organizationId: 'organization-2',
+          },
+        ],
+      }),
+    ).toBe('/workspace/org/organization-1/home');
+    expect(
+      resolveLandingPath({
+        ...regularUser,
+        defaultOrganizationId: null,
+        organizations: [],
+      }),
+    ).toBe(ACCESS_PENDING_PATH);
   });
 });

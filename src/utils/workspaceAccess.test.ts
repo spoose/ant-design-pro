@@ -11,7 +11,7 @@ vi.mock('@umijs/max', async () => {
 });
 
 const user = {
-  userid: 'workspace-user',
+  userId: 'workspace-user',
   platformPermissions: ['platform:user:manage'],
   platformSkillCodes: ['knowledge-search'],
   organizations: [

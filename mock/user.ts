@@ -57,7 +57,7 @@ type MockAccount = {
   platformSkillCodes: readonly string[];
   defaultOrganizationId?: OrganizationId;
   profile: {
-    userid: string;
+    userId: string;
     username: MockUsername;
     name: string;
     email: string;
@@ -83,7 +83,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     platformSkillCodes: ['knowledge-search'],
     defaultOrganizationId: 'organization-1',
     profile: {
-      userid: '00000001',
+      userId: '00000001',
       username: 'admin',
       name: 'Admin User',
       email: 'admin@example.com',
@@ -129,7 +129,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     // 普通用户登录后直接进入后端指定的默认 Organization 首页。
     defaultOrganizationId: 'organization-1',
     profile: {
-      userid: '00000002',
+      userId: '00000002',
       username: 'user',
       name: 'Standard User',
       email: 'user@example.com',
@@ -161,7 +161,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     platformSkillCodes: [],
     defaultOrganizationId: 'organization-2',
     profile: {
-      userid: '00000004',
+      userId: '00000004',
       username: 'users2',
       name: 'Organization 2 User',
       email: 'users2@example.com',
@@ -183,7 +183,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     platformSkillCodes: [],
     defaultOrganizationId: 'organization-1',
     profile: {
-      userid: '00000003',
+      userId: '00000003',
       username: 'operator',
       name: 'Operator User',
       email: 'operator@example.com',
@@ -330,39 +330,45 @@ export default {
     },
   ],
   'POST /api/login/account': async (req: Request, res: Response) => {
-    const { password, username, type } = req.body;
+    const { account, password } = req.body;
     await waitTime(2000);
-    const account = mockAccounts[username as MockUsername];
-    if (type !== 'mobile' && account && password === account.password) {
+    const normalizedAccount =
+      typeof account === 'string' ? account.toLowerCase() : '';
+    const username = Object.keys(mockAccounts).find((candidate) => {
+      const mockAccount = mockAccounts[candidate as MockUsername];
+      return (
+        candidate === normalizedAccount ||
+        mockAccount.profile.email === normalizedAccount
+      );
+    }) as MockUsername | undefined;
+    const mockAccount = username ? mockAccounts[username] : undefined;
+    if (mockAccount && password === mockAccount.password) {
       res.send({
-        status: 'ok',
-        type,
-        currentAuthority: account.currentAuthority,
-        accessToken: account.accessToken,
-        tokenType: 'Bearer',
-        expiresIn: 900,
+        success: true,
+        data: {
+          accessToken: mockAccount.accessToken,
+          tokenType: 'Bearer',
+          expiresIn: 900,
+          expiresAt: new Date(Date.now() + 900_000).toISOString(),
+        },
+        traceId: 'mock-login-trace-id',
       });
       return;
     }
-    if (type === 'mobile') {
-      // 手机验证码表单暂时保留，后端验证码登录就绪前不签发管理员 token。
-      res.send({
-        status: 'error',
-        type,
-        currentAuthority: 'guest',
-      });
-      return;
-    }
-
-    res.send({
-      status: 'error',
-      type,
-      currentAuthority: 'guest',
+    res.status(401).send({
+      success: false,
+      errorCode: 'BAD_CREDENTIALS',
+      errorMessage: '用户名或密码错误',
+      traceId: 'mock-login-error-trace-id',
     });
   },
   'POST /api/login/outLogin': (_req: Request, res: Response) => {
     // Bearer-only mock 不维护服务端会话；前端退出时清除本地 token。
-    res.send({ data: {}, success: true });
+    res.send({
+      success: true,
+      data: { loggedOut: true, serverTokenRevoked: false },
+      traceId: 'mock-logout-trace-id',
+    });
   },
   'GET /api/500': (_req: Request, res: Response) => {
     res.status(500).send({

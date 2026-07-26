@@ -4,6 +4,7 @@ import { getSkillDefinition, skillRegistry } from './skillRegistry';
 describe('skillRegistry', () => {
   it('maps every configured skill code to static UI metadata', () => {
     expect(Object.keys(skillRegistry)).toEqual([
+      'platform-assistant',
       'file-review',
       'document-summary',
       'knowledge-search',
@@ -16,6 +17,11 @@ describe('skillRegistry', () => {
         { pathSegment: 'history', title: '审查记录' },
       ],
     });
+    expect(getSkillDefinition('file-review')?.pageComponent).toBeDefined();
+    expect(getSkillDefinition('knowledge-search')?.pageComponent).toBeDefined();
+    expect(
+      getSkillDefinition('document-summary')?.pageComponent,
+    ).toBeUndefined();
   });
 
   it('exposes an unknown backend skill instead of silently remapping it', () => {

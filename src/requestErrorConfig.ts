@@ -16,9 +16,10 @@ enum ErrorShowType {
 // 与后端约定的响应数据格式
 interface ResponseStructure {
   success: boolean;
-  data: unknown;
-  errorCode?: number;
+  data?: unknown;
+  errorCode?: string | number;
   errorMessage?: string;
+  traceId?: string;
   showType?: ErrorShowType;
 }
 
@@ -32,12 +33,12 @@ export const errorConfig: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res) => {
-      const { success, data, errorCode, errorMessage, showType } =
+      const { success, data, errorCode, errorMessage, traceId, showType } =
         res as unknown as ResponseStructure;
       if (!success) {
         const error: any = new Error(errorMessage);
         error.name = 'BizError';
-        error.info = { errorCode, errorMessage, showType, data };
+        error.info = { errorCode, errorMessage, traceId, showType, data };
         throw error; // 抛出自制的错误
       }
     },
@@ -122,6 +123,8 @@ export const errorConfig: RequestConfig = {
         '/api/register',
         '/api/login/account',
         '/api/login/outLogin',
+        '/api/password/forgot',
+        '/api/password/reset',
         '/api/users/me/default-organization',
       ].includes(requestPath);
       // 链路：当前 Organization URL -> organizationId -> X-Organization-Id -> 后端再次鉴权。

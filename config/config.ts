@@ -2,6 +2,7 @@
 
 import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
+import { surfaceColors } from '../src/theme/colors';
 import defaultSettings from './defaultSettings';
 import proxy from './proxy';
 
@@ -151,7 +152,16 @@ export default defineConfig({
       theme: {
         token: {
           fontFamily: 'AlibabaSans, sans-serif',
+          colorPrimaryBg: surfaceColors.selectedSoft,
+          controlItemBgActiveHover: surfaceColors.hoverSoft,
+          // borderRadius: 8,
+          // borderRadiusLG: 8,
         },
+        // components: {
+        //   Table: {
+        //     headerBorderRadius: 18,
+        //   },
+        // },
       },
     },
   },

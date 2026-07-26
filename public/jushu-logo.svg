@@ -1,6 +1,13 @@
+
 <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="24" y="24" width="152" height="152" rx="36" fill="#1677FF"/>
-  <path d="M68 61H91V122C91 138.569 77.5685 152 61 152H55V129H61C64.866 129 68 125.866 68 122V61Z" fill="white"/>
-  <path d="M110 61H132C151.33 61 167 76.67 167 96C167 115.33 151.33 131 132 131H110V108H132C138.627 108 144 102.627 144 96C144 89.3726 138.627 84 132 84H110V61Z" fill="white"/>
-  <path d="M107 131H130V152H107V131Z" fill="white"/>
+  <style>
+    :root {
+      --jushu-logo-surface: #faae52;
+      --jushu-logo-ink: #09090B;
+    }
+  </style>
+  <rect x="24" y="24" width="152" height="152" rx="36" fill="var(--jushu-logo-surface)"/>
+  <path d="M68 61H91V122C91 138.569 77.5685 152 61 152H55V129H61C64.866 129 68 125.866 68 122V61Z" fill="var(--jushu-logo-ink)"/>
+  <path d="M110 61H132C151.33 61 167 76.67 167 96C167 115.33 151.33 131 132 131H110V108H132C138.627 108 144 102.627 144 96C144 89.3726 138.627 84 132 84H110V61Z" fill="var(--jushu-logo-ink)"/>
+  <path d="M107 131H130V152H107V131Z" fill="var(--jushu-logo-ink)"/>
 </svg>

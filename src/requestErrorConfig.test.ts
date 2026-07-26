@@ -77,13 +77,14 @@ describe('requestErrorConfig', () => {
         showType: 3,
       };
 
-      expect.assertions(5);
+      expect.assertions(6);
       try {
         errorThrower(response);
       } catch (error: any) {
         expect(error.name).toBe('BizError');
         expect(error.info.errorCode).toBe(403);
         expect(error.info.errorMessage).toBe('Forbidden');
+        expect(error.info.traceId).toBeUndefined();
         expect(error.info.showType).toBe(3);
         expect(error.info.data).toEqual({ detail: 'more info' });
       }

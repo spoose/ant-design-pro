@@ -47,17 +47,19 @@ export const CurrentAccessOverview: React.FC<{
       </div>
     </section>
 
-    <WorkspaceSkillList
-      emptyDescription="当前组织暂无可用应用，请联系组织管理员授权。"
-      getSkillPath={(skillCode) =>
-        getOrganizationAppPagePath(
-          organization.organizationId,
-          skillCode,
-          'overview',
-        )
-      }
-      skillCodes={organization.skillCodes}
-      title="组织应用"
-    />
+    <div className="mt-6">
+      <WorkspaceSkillList
+        emptyDescription="当前组织暂无可用应用，请联系组织管理员授权。"
+        getSkillPath={(skillCode) =>
+          getOrganizationAppPagePath(
+            organization.organizationId,
+            skillCode,
+            'overview',
+          )
+        }
+        skillCodes={organization.skillCodes}
+        title="组织应用"
+      />
+    </div>
   </>
 );

@@ -66,7 +66,7 @@ npm install                                                # 更新依赖
 
 | 命令 | 说明 |
 |------|------|
-| `npm start` | 启动开发服务器（UMI_ENV=dev，带 Mock） |
+| `npm start` | 启动开发服务器（UMI_ENV=dev，无 Mock） |
 | `npm run dev` | 启动开发服务器（UMI_ENV=dev，无 Mock） |
 | `npm run start:no-mock` | 无 Mock 启动 |
 | `npm run start:pre` | 预发布环境启动 |
@@ -147,7 +147,7 @@ const location = useLocation(); // 当前路由信息
 // File: config/defaultSettings.ts
 export default {
   navTheme: 'light',               // 导航主题：light / dark
-  colorPrimary: '#1890ff',         // 主题色
+  colorPrimary: '#f6d2ad',         // 主题色
   layout: 'mix',                   // 布局模式：side / top / mix
   contentWidth: 'Fluid',           // 内容宽度：Fluid / Fixed
   fixedHeader: false,              // 固定顶部导航
@@ -422,7 +422,7 @@ antd: {
   configProvider: {
     theme: {
       token: {
-        colorPrimary: '#1890ff',
+        colorPrimary: '#f6d2ad',
         borderRadius: 6,
       },
     },
@@ -474,14 +474,14 @@ export default {
 };
 ```
 
-> 💡 用 `MOCK=none` 启动可跳过 Mock，直接代理到后端：`npm run start:no-mock`。
+> 💡 当前 `npm start` 与 `npm run dev` 默认禁用 Mock，`/api` 请求会代理到真实后端。
 
 → 更多内容见 [umi 测试](https://umijs.org/docs/guides/test)、[umi Mock](https://umijs.org/docs/guides/mock)
 
 ## FAQ
 
 **Q: 如何关闭 Mock？**
-`npm run start:no-mock` 或 `cross-env MOCK=none max dev`
+Mock 已默认关闭；使用 `npm start` 或 `npm run dev`。
 
 **Q: 如何修改主题色？**
 修改 `config/defaultSettings.ts` 的 `colorPrimary`，开发时可用 SettingDrawer 实时调整。

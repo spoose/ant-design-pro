@@ -1,5 +1,5 @@
 .welcome-gradient-title {
-  background: linear-gradient(135deg, #1677ff 0%, #722ed1 100%);
+  background: linear-gradient(135deg, #f6d2ad 0%, #cfa886 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -12,10 +12,10 @@
   --md-pre-bg: #f6f8fa;
   --md-pre-border: rgba(0, 0, 0, 0.06);
   --md-blockquote-bg: rgba(0, 0, 0, 0.04);
-  --md-blockquote-border: #1677ff;
+  --md-blockquote-border: #f6d2ad;
   --md-blockquote-color: rgba(0, 0, 0, 0.45);
-  --md-link-color: #1677ff;
-  --md-link-hover: #4096ff;
+  --md-link-color: #a88265;
+  --md-link-hover: #cfa886;
   --md-th-bg: rgba(0, 0, 0, 0.04);
   --md-table-border: rgba(0, 0, 0, 0.06);
   --md-tr-hover-bg: rgba(0, 0, 0, 0.02);

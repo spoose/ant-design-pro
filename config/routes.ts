@@ -42,6 +42,16 @@ export default [
         component: './user/register',
       },
       {
+        name: 'forgot-password',
+        path: '/user/forgot-password',
+        component: './user/forgot-password',
+      },
+      {
+        name: 'reset-password',
+        path: '/user/reset-password',
+        component: './user/reset-password',
+      },
+      {
         name: '404',
         component: './exception/404',
         path: '/user/*',
@@ -53,6 +63,13 @@ export default [
     name: 'home',
     icon: 'home',
     component: './workspace/landing',
+    hideInMenu: true,
+    layout: false,
+  },
+  {
+    // 已登录但无组织、无 Platform 权限时使用；不经过 Workspace 权限守卫。
+    path: '/workspace/access-pending',
+    component: './workspace/access-pending',
     hideInMenu: true,
     layout: false,
   },

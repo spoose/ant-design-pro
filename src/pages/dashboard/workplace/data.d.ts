@@ -63,7 +63,7 @@ export type NoticeType = {
 export type CurrentUser = {
   name: string;
   avatar: string;
-  userid: string;
+  userId: string;
   notice: NoticeType[];
   email: string;
   signature: string;
