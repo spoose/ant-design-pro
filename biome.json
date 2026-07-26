@@ -16,7 +16,6 @@
       "!**/src/services",
       "!**/mock",
       "!**/dist",
-      "!**/server",
       "!**/public",
       "!**/coverage",
       "!**/node_modules",
