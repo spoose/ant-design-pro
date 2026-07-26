@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { databaseOperation } from '../db/databaseOperation.js';
+import { withTransaction } from '../db/transaction.js';
 import { AppError } from '../errors/appError.js';
 
 export type UserStatus = 'active' | 'disabled' | 'deleted';
@@ -57,6 +58,10 @@ export interface AuthCurrentUser {
   organizations: OrganizationAccess[];
 }
 
+export type SetDefaultOrganizationResult =
+  | 'updated'
+  | 'organization_forbidden';
+
 export interface UserRepositoryPort {
   createUser(input: CreateUserInput): Promise<RegisteredUser>;
   findAuthenticationUserByAccount(
@@ -66,6 +71,10 @@ export interface UserRepositoryPort {
     userId: string,
   ): Promise<AuthenticationUser | null>;
   getCurrentUser(userId: string): Promise<AuthCurrentUser | null>;
+  setDefaultOrganization(
+    userId: string,
+    organizationId: string,
+  ): Promise<SetDefaultOrganizationResult>;
 }
 
 interface AuthenticationUserRow extends RowDataPacket {
@@ -293,5 +302,53 @@ export class UserRepository implements UserRepositoryPort {
       defaultOrganizationId,
       organizations,
     };
+  }
+
+  async setDefaultOrganization(
+    userId: string,
+    organizationId: string,
+  ): Promise<SetDefaultOrganizationResult> {
+    return databaseOperation(() =>
+      withTransaction(this.pool, async (connection) => {
+        /*
+         * 该访问条件必须与 getCurrentUser.organizations 保持一致。
+         * FOR UPDATE 同时锁定 User、Membership 和 Organization，避免校验后状态变化，
+         * 导致用户保存一个已经无法进入的默认 Organization。
+         */
+        const [accessRows] = await connection.execute<RowDataPacket[]>(
+          `
+            SELECT users.id AS userId
+            FROM users
+            INNER JOIN organization_members AS members
+              ON members.user_id = users.id
+              AND members.organization_id = ?
+              AND members.status = 'active'
+            INNER JOIN organizations
+              ON organizations.id = members.organization_id
+              AND organizations.status = 'active'
+            WHERE users.id = ?
+              AND users.status = 'active'
+            LIMIT 1
+            FOR UPDATE
+          `,
+          [organizationId, userId],
+        );
+
+        if (!accessRows[0]) {
+          return 'organization_forbidden';
+        }
+
+        // 只更新登录偏好；权限、Membership 和 tokenVersion 均不在此链路修改。
+        await connection.execute<ResultSetHeader>(
+          `
+            UPDATE users
+            SET default_organization_id = ?
+            WHERE id = ?
+          `,
+          [organizationId, userId],
+        );
+        return 'updated';
+      }),
+    );
   }
 }

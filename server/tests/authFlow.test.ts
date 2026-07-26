@@ -10,11 +10,13 @@ import type {
   AuthenticationUser,
   CreateUserInput,
   RegisteredUser,
+  SetDefaultOrganizationResult,
   UserRepositoryPort,
 } from '../src/repositories/userRepository.js';
 import { createAuthRouter } from '../src/routes/auth.js';
 import { createCurrentUserRouter } from '../src/routes/currentUser.js';
 import { createLogoutRouter } from '../src/routes/logout.js';
+import { createUserPreferencesRouter } from '../src/routes/userPreferences.js';
 import { AccessTokenService } from '../src/services/accessTokenService.js';
 import { AuthService } from '../src/services/authService.js';
 import { CurrentUserService } from '../src/services/currentUserService.js';
@@ -29,6 +31,7 @@ const jwt = {
 
 class MemoryUserRepository implements UserRepositoryPort {
   private readonly users = new Map<string, AuthenticationUser>();
+  private readonly organizationAccess = new Map<string, Set<string>>();
   private nextId = 1;
 
   async createUser(input: CreateUserInput): Promise<RegisteredUser> {
@@ -88,6 +91,18 @@ class MemoryUserRepository implements UserRepositoryPort {
     if (!user) {
       return null;
     }
+    const organizationIds = [
+      ...(this.organizationAccess.get(userId) ?? new Set<string>()),
+    ];
+    const organizations = organizationIds.map((organizationId) => ({
+      organizationId,
+      organizationCode: organizationId,
+      organizationName: organizationId,
+      permissions: [],
+      skillCodes: [],
+      dataScopes: [] as [],
+      defaultDataScopeId: null,
+    }));
     return {
       userId: user.userId,
       username: user.username,
@@ -98,9 +113,30 @@ class MemoryUserRepository implements UserRepositoryPort {
       isSuperAdmin: user.isSuperAdmin,
       platformPermissions: [],
       platformSkillCodes: [],
-      defaultOrganizationId: null,
-      organizations: [],
+      defaultOrganizationId: organizationIds.includes(
+        user.defaultOrganizationId ?? '',
+      )
+        ? user.defaultOrganizationId
+        : null,
+      organizations,
     };
+  }
+
+  async setDefaultOrganization(
+    userId: string,
+    organizationId: string,
+  ): Promise<SetDefaultOrganizationResult> {
+    const user = this.users.get(userId);
+    const accessibleOrganizations = this.organizationAccess.get(userId);
+    if (
+      !user ||
+      user.status !== 'active' ||
+      !accessibleOrganizations?.has(organizationId)
+    ) {
+      return 'organization_forbidden';
+    }
+    this.users.set(userId, { ...user, defaultOrganizationId: organizationId });
+    return 'updated';
   }
 
   getStoredUser(userId: string): AuthenticationUser {
@@ -114,6 +150,13 @@ class MemoryUserRepository implements UserRepositoryPort {
   updateUser(userId: string, changes: Partial<AuthenticationUser>): void {
     const user = this.getStoredUser(userId);
     this.users.set(userId, { ...user, ...changes });
+  }
+
+  grantOrganizationAccess(userId: string, organizationId: string): void {
+    const organizations =
+      this.organizationAccess.get(userId) ?? new Set<string>();
+    organizations.add(organizationId);
+    this.organizationAccess.set(userId, organizations);
   }
 }
 
@@ -133,6 +176,10 @@ function createTestContext() {
   app.use(
     '/api/currentUser',
     createCurrentUserRouter(authenticate, currentUserService),
+  );
+  app.use(
+    '/api/users',
+    createUserPreferencesRouter(authenticate, currentUserService),
   );
   app.use(errorHandler);
 
@@ -217,6 +264,64 @@ describe('authentication flow', () => {
       loggedOut: true,
       serverTokenRevoked: false,
     });
+  });
+
+  it('persists only an Organization the authenticated user can enter', async () => {
+    const allowedOrganizationId = '11111111-1111-4111-8111-111111111111';
+    const forbiddenOrganizationId = '22222222-2222-4222-8222-222222222222';
+    await request(context.app).post('/api/register').send(registration);
+    context.users.grantOrganizationAccess('user-1', allowedOrganizationId);
+    const login = await request(context.app).post('/api/login/account').send({
+      account: registration.username,
+      password: registration.password,
+    });
+    const authorization = `Bearer ${login.body.data.accessToken}`;
+
+    const forbidden = await request(context.app)
+      .put('/api/users/me/default-organization')
+      .set('Authorization', authorization)
+      .send({ organizationId: forbiddenOrganizationId });
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.errorCode).toBe('ORGANIZATION_FORBIDDEN');
+
+    const updated = await request(context.app)
+      .put('/api/users/me/default-organization')
+      .set('Authorization', authorization)
+      .send({ organizationId: allowedOrganizationId });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data).toEqual({
+      defaultOrganizationId: allowedOrganizationId,
+    });
+
+    const currentUser = await request(context.app)
+      .get('/api/currentUser')
+      .set('Authorization', authorization);
+    expect(currentUser.body.data.defaultOrganizationId).toBe(
+      allowedOrganizationId,
+    );
+  });
+
+  it('authenticates and validates the default Organization command', async () => {
+    await request(context.app).post('/api/register').send(registration);
+    const login = await request(context.app).post('/api/login/account').send({
+      account: registration.username,
+      password: registration.password,
+    });
+
+    const missingToken = await request(context.app)
+      .put('/api/users/me/default-organization')
+      .send({
+        organizationId: '11111111-1111-4111-8111-111111111111',
+      });
+    expect(missingToken.status).toBe(401);
+    expect(missingToken.body.errorCode).toBe('ACCESS_TOKEN_MISSING');
+
+    const invalidBody = await request(context.app)
+      .put('/api/users/me/default-organization')
+      .set('Authorization', `Bearer ${login.body.data.accessToken}`)
+      .send({ organizationId: 'not-a-uuid', userId: 'user-2' });
+    expect(invalidBody.status).toBe(400);
+    expect(invalidBody.body.errorCode).toBe('VALIDATION_ERROR');
   });
 
   it('returns the documented conflict for duplicate accounts', async () => {

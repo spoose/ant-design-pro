@@ -19,6 +19,7 @@ import { createCurrentUserRouter } from './routes/currentUser.js';
 import { createHealthRouter } from './routes/health.js';
 import { createLogoutRouter } from './routes/logout.js';
 import { createPasswordResetRouter } from './routes/passwordReset.js';
+import { createUserPreferencesRouter } from './routes/userPreferences.js';
 import { AccessTokenService } from './services/accessTokenService.js';
 import { AdminUserService } from './services/adminUserService.js';
 import { AuthService } from './services/authService.js';
@@ -86,6 +87,11 @@ export function createApp(options: CreateAppOptions): Express {
   app.use(
     '/api/currentUser',
     createCurrentUserRouter(authenticate, currentUserService),
+  );
+  // 用户偏好接口始终从 JWT 获取 userId，不接受客户端指定目标用户。
+  app.use(
+    '/api/users',
+    createUserPreferencesRouter(authenticate, currentUserService),
   );
   app.use('/api/admin', authenticate, requireSuperAdmin);
   app.use('/api/admin/users', createAdminUsersRouter(adminUserService));
