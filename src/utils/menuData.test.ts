@@ -19,8 +19,15 @@ vi.mock('@umijs/max', async () => {
 
 const superAdmin = {
   userId: 'super-admin',
+  username: 'super-admin',
+  name: 'Super Admin',
+  avatar: null,
+  email: 'super-admin@example.test',
+  status: 'active',
+  isSuperAdmin: true,
   platformPermissions: ['platform:organization:update', 'platform:user:manage'],
   platformSkillCodes: ['knowledge-search'],
+  defaultOrganizationId: null,
   organizations: [
     {
       organizationId: 'organization-1',
@@ -29,6 +36,7 @@ const superAdmin = {
       permissions: ['organization:user:manage'],
       skillCodes: ['file-review'],
       dataScopes: [],
+      defaultDataScopeId: null,
     },
   ],
 } as AuthCurrentUser;

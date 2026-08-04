@@ -18,10 +18,13 @@ import {
   OfflineBanner,
   WorkspaceTabsHeader,
 } from '@/components';
-import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
-import type { AuthCurrentUser } from '@/services/auth';
+import {
+  type AuthCurrentUser,
+  getCurrentUser as queryCurrentUser,
+} from '@/services/auth';
 import { surfaceColors, workspaceIconColorVariables } from '@/theme/colors';
-import { clearAccessToken, getAccessToken } from '@/utils/authToken';
+import { handleAccessTokenFailure } from '@/utils/authFailure';
+import { getAccessToken } from '@/utils/authToken';
 import {
   groupTemplateExampleMenus,
   resolveWorkspaceMenuDescriptor,
@@ -42,9 +45,6 @@ const authFreePaths = [
 ];
 const userFlowPaths = [...authFreePaths, selectEntryPath];
 
-const isUnauthorizedError = (error: unknown) =>
-  (error as { response?: { status?: number } })?.response?.status === 401;
-
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
@@ -60,15 +60,10 @@ export async function getInitialState(): Promise<{
       const msg = await queryCurrentUser({
         skipErrorHandler: true,
       });
-      return msg.data as AuthCurrentUser;
+      return msg.data;
     } catch (error) {
-      if (!isUnauthorizedError(error)) throw error;
-
-      clearAccessToken();
-      const { pathname, search, hash } = history.location;
-      history.replace(
-        `${loginPath}?redirect=${encodeURIComponent(pathname + search + hash)}`,
-      );
+      // 初始化与运行期请求使用同一错误码规则，避免把 BAD_CREDENTIALS 误判为登录失效。
+      if (!handleAccessTokenFailure(error)) throw error;
     }
     return undefined;
   };

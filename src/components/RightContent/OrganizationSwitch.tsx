@@ -68,8 +68,8 @@ export const OrganizationSwitch: React.FC = () => {
     );
     if (!target || target.organizationId === currentOrganizationId) return;
 
-    // window.location.assign(getOrganizationHomePath(target.organizationId));
-    history.push(getOrganizationHomePath(target.organizationId));
+    window.location.assign(getOrganizationHomePath(target.organizationId));
+    //    history.push(getOrganizationHomePath(target.organizationId));
   };
 
   const items: MenuProps['items'] = [

@@ -18,6 +18,7 @@ const createOrganization = (
   permissions,
   skillCodes,
   dataScopes: [],
+  defaultDataScopeId: null,
 });
 
 const createUser = ({
@@ -29,15 +30,20 @@ const createUser = ({
   platformPermissions?: string[];
   platformSkillCodes?: string[];
   organizations?: OrganizationAccess[];
-  defaultOrganizationId?: string;
+  defaultOrganizationId?: string | null;
 } = {}): AuthCurrentUser =>
   ({
     userId: 'workspace-user',
+    username: 'workspace-user',
     name: 'Workspace User',
+    avatar: null,
+    email: 'workspace-user@example.test',
+    status: 'active',
+    isSuperAdmin: false,
     platformPermissions,
     platformSkillCodes,
     organizations,
-    defaultOrganizationId,
+    defaultOrganizationId: defaultOrganizationId ?? null,
   }) as AuthCurrentUser;
 
 describe('workspace access rules', () => {

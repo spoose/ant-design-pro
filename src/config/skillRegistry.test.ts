@@ -19,6 +19,13 @@ describe('skillRegistry', () => {
     });
     expect(getSkillDefinition('file-review')?.pageComponent).toBeDefined();
     expect(getSkillDefinition('knowledge-search')?.pageComponent).toBeDefined();
+    expect(getSkillDefinition('platform-assistant')).toMatchObject({
+      title: 'pAI',
+      navigation: [{ pathSegment: 'overview', title: '通用助手' }],
+    });
+    expect(
+      getSkillDefinition('platform-assistant')?.pageComponent,
+    ).toBeDefined();
     expect(
       getSkillDefinition('document-summary')?.pageComponent,
     ).toBeUndefined();

@@ -24,6 +24,21 @@ export const statusColors = {
   },
 } as const;
 
+/**
+ * pAI 能力标签色对。
+ * soft 用于淡色背景，ink 用于同色系的深色文字、图标与关闭按钮。
+ */
+export const tagColors = {
+  knowledge: {
+    ink: '#8276cc',
+    soft: '#ebe9f5',
+  },
+  webSearch: {
+    ink: 'rgba(22,119,255,0.73)',
+    soft: '#e6f4ff',
+  },
+} as const;
+
 /** 行内操作色对：进入 / 编辑等次要操作胶囊（石墨底 + 冷深灰字）。 */
 export const actionColors = {
   ink: '#3f3f46',

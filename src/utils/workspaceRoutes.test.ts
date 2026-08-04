@@ -123,9 +123,16 @@ describe('workspaceRoutes', () => {
       permissions: [],
       skillCodes: [],
       dataScopes: [],
+      defaultDataScopeId: null,
     };
     const regularUser = {
       userId: 'regular-user',
+      username: 'regular-user',
+      name: 'Regular User',
+      avatar: null,
+      email: 'regular-user@example.test',
+      status: 'active',
+      isSuperAdmin: false,
       platformPermissions: [],
       platformSkillCodes: [],
       defaultOrganizationId: 'organization-1',

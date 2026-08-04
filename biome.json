@@ -9,6 +9,7 @@
     "ignoreUnknown": true,
     "includes": [
       "**/*",
+      "!**/*.architecture.html",
       "!**/.umi",
       "!**/.umi-production",
       "!**/.umi-test",

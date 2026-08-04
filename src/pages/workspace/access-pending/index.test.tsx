@@ -50,7 +50,10 @@ const createUser = (
     userId: 'pending-user',
     username: 'pending.user',
     name: '等待授权用户',
+    avatar: null,
     email: 'pending@example.test',
+    status: 'active',
+    isSuperAdmin: false,
     platformPermissions: [],
     platformSkillCodes: [],
     defaultOrganizationId: null,
@@ -92,6 +95,7 @@ describe('AccessPendingPage', () => {
           permissions: [],
           skillCodes: [],
           dataScopes: [],
+          defaultDataScopeId: null,
         },
       ],
     });

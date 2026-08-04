@@ -55,8 +55,15 @@ describe('WorkspaceTabsHeader', () => {
   it('uses the backend userId field to render Workspace tabs', async () => {
     testState.currentUser = {
       userId: 'super-admin',
+      username: 'super-admin',
+      name: 'Super Admin',
+      avatar: null,
+      email: 'super-admin@example.test',
+      status: 'active',
+      isSuperAdmin: true,
       platformPermissions: ['platform:user:manage'],
       platformSkillCodes: [],
+      defaultOrganizationId: null,
       organizations: [],
     } as AuthCurrentUser;
 

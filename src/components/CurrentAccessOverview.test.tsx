@@ -47,6 +47,7 @@ const organizationOne: OrganizationAccess = {
   permissions: ['page:dashboard-workplace'],
   skillCodes: ['file-review', 'document-summary'],
   dataScopes: [],
+  defaultDataScopeId: null,
 };
 const organizationTwo: OrganizationAccess = {
   organizationId: 'organization-2',
@@ -55,6 +56,7 @@ const organizationTwo: OrganizationAccess = {
   permissions: ['page:dashboard-monitor'],
   skillCodes: ['knowledge-search'],
   dataScopes: [],
+  defaultDataScopeId: null,
 };
 
 describe('CurrentAccessOverview', () => {

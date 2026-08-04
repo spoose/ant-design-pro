@@ -109,10 +109,7 @@ const SelectEntry = () => {
       }
 
       const result = await setDefaultOrganization(selectedOrganizationId);
-      if (result.success === false) {
-        throw new Error(result.errorMessage ?? '设置默认组织失败');
-      }
-      if (result.data?.defaultOrganizationId !== selectedOrganizationId) {
+      if (result.data.defaultOrganizationId !== selectedOrganizationId) {
         throw new Error('设置默认组织接口未返回正确的组织 ID');
       }
       setInitialState((state) => ({

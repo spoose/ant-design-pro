@@ -10,7 +10,7 @@ const testState = vi.hoisted(() => ({
     currentUser: {
       name: 'Test User',
       organizations: [] as OrganizationAccess[],
-      defaultOrganizationId: undefined as string | undefined,
+      defaultOrganizationId: null as string | null,
     },
   },
   setInitialState: vi.fn(),
@@ -44,19 +44,21 @@ const organization: OrganizationAccess = {
   permissions: [],
   skillCodes: ['file-review'],
   dataScopes: [],
+  defaultDataScopeId: null,
 };
 
 describe('SelectEntry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     testState.initialState.currentUser.organizations = [organization];
-    testState.initialState.currentUser.defaultOrganizationId = undefined;
+    testState.initialState.currentUser.defaultOrganizationId = null;
   });
 
   it('sets the selected Organization as default and enters its home', async () => {
     vi.mocked(setDefaultOrganization).mockResolvedValue({
       success: true,
       data: { defaultOrganizationId: organization.organizationId },
+      traceId: 'trace-default-organization',
     });
     render(<SelectEntry />);
 

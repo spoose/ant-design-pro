@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getAuthErrorDetails,
+  getCurrentUser,
   loginWithPassword,
   logout,
   registerAccount,
   requestPasswordReset,
   resetPassword,
+  setDefaultOrganization,
 } from './auth';
 
 const requestMock = vi.hoisted(() => vi.fn());
@@ -17,6 +19,21 @@ vi.mock('@umijs/max', () => ({
 describe('auth service', () => {
   beforeEach(() => {
     requestMock.mockReset();
+  });
+
+  it('delegates currentUser to the generated JU SHU request', async () => {
+    requestMock.mockResolvedValue({
+      success: true,
+      data: { userId: 'user-1' },
+      traceId: 'trace-current-user',
+    });
+
+    await getCurrentUser({ skipErrorHandler: true });
+
+    expect(requestMock).toHaveBeenCalledWith('/api/currentUser', {
+      method: 'GET',
+      skipErrorHandler: true,
+    });
   });
 
   it('sends only account and password to the login endpoint', async () => {
@@ -134,5 +151,25 @@ describe('auth service', () => {
       method: 'POST',
       skipErrorHandler: true,
     });
+  });
+
+  it('delegates the default Organization command to the generated request', async () => {
+    const organizationId = '11111111-1111-4111-8111-111111111111';
+    requestMock.mockResolvedValue({
+      success: true,
+      data: { defaultOrganizationId: organizationId },
+      traceId: 'trace-default-organization',
+    });
+
+    await setDefaultOrganization(organizationId);
+
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/users/me/default-organization',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        data: { organizationId },
+      },
+    );
   });
 });

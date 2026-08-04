@@ -14,6 +14,7 @@ const mockHistory = {
 const mockQueryCurrentUser = vi.fn();
 const mockClearAccessToken = vi.fn();
 const mockGetAccessToken = vi.fn();
+const mockHandleAccessTokenFailure = vi.fn();
 
 vi.mock('@umijs/max', async () => {
   const { generatePath, matchPath } =
@@ -28,13 +29,17 @@ vi.mock('@umijs/max', async () => {
   };
 });
 
-vi.mock('@/services/ant-design-pro/api', () => ({
-  currentUser: mockQueryCurrentUser,
+vi.mock('@/services/auth', () => ({
+  getCurrentUser: mockQueryCurrentUser,
 }));
 
 vi.mock('@/utils/authToken', () => ({
   clearAccessToken: mockClearAccessToken,
   getAccessToken: mockGetAccessToken,
+}));
+
+vi.mock('@/utils/authFailure', () => ({
+  handleAccessTokenFailure: mockHandleAccessTokenFailure,
 }));
 
 vi.mock('@/components', () => ({
@@ -87,6 +92,7 @@ vi.mock('../config/defaultSettings', () => ({
 describe('app getInitialState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockHandleAccessTokenFailure.mockReturnValue(false);
     mockHistory.location = {
       pathname: '/welcome',
       search: '',
@@ -114,27 +120,31 @@ describe('app getInitialState', () => {
     expect(state.fetchUserInfo).toBeDefined();
   });
 
-  it('should redirect to login when currentUser fetch fails (401)', async () => {
+  it('should delegate currentUser Token failure to the shared handler', async () => {
     const { getInitialState } = await import('./app');
-    mockQueryCurrentUser.mockRejectedValue({ response: { status: 401 } });
+    const error = {
+      response: {
+        status: 401,
+        data: { errorCode: 'ACCESS_TOKEN_INVALID' },
+      },
+    };
+    mockQueryCurrentUser.mockRejectedValue(error);
+    mockHandleAccessTokenFailure.mockReturnValue(true);
 
     const state = await getInitialState();
 
-    expect(mockReplace).toHaveBeenCalledWith(
-      expect.stringContaining('/user/login?redirect='),
-    );
-    expect(mockClearAccessToken).toHaveBeenCalled();
+    expect(mockHandleAccessTokenFailure).toHaveBeenCalledWith(error);
     expect(state.currentUser).toBeUndefined();
   });
 
-  it('should expose non-401 currentUser errors without clearing auth', async () => {
+  it('should expose errors that are not Token failures', async () => {
     const { getInitialState } = await import('./app');
     const networkError = new Error('network unavailable');
     mockQueryCurrentUser.mockRejectedValue(networkError);
 
     await expect(getInitialState()).rejects.toBe(networkError);
 
-    expect(mockClearAccessToken).not.toHaveBeenCalled();
+    expect(mockHandleAccessTokenFailure).toHaveBeenCalledWith(networkError);
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
@@ -172,22 +182,6 @@ describe('app getInitialState', () => {
       organizations: [],
     });
     expect(state.fetchUserInfo).toBeDefined();
-  });
-
-  it('should encode redirect path correctly on 401', async () => {
-    const { getInitialState } = await import('./app');
-    mockHistory.location = {
-      pathname: '/admin/users',
-      search: '?page=2',
-      hash: '#section',
-    };
-    mockQueryCurrentUser.mockRejectedValue({ response: { status: 401 } });
-
-    await getInitialState();
-
-    expect(mockReplace).toHaveBeenCalledWith(
-      `/user/login?redirect=${encodeURIComponent('/admin/users?page=2#section')}`,
-    );
   });
 
   it('should include default settings in initial state', async () => {

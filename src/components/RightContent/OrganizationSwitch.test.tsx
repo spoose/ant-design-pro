@@ -35,8 +35,15 @@ vi.mock('../HeaderDropdown', () => ({
 
 const currentUser = {
   userId: 'user-1',
+  username: 'user-1',
+  name: '用户一',
+  avatar: null,
+  email: 'user-1@example.test',
+  status: 'active',
+  isSuperAdmin: false,
   platformPermissions: ['platform:user:manage'],
   platformSkillCodes: [],
+  defaultOrganizationId: null,
   organizations: [
     {
       organizationId: 'organization-1',
@@ -45,6 +52,7 @@ const currentUser = {
       permissions: [],
       skillCodes: [],
       dataScopes: [],
+      defaultDataScopeId: null,
     },
   ],
 } as AuthCurrentUser;

@@ -1,8 +1,8 @@
 # 后端认证、Workspace Scope 与权限 API 契约（Bearer Only）
 
-> 状态：新需求基线，前后端实现以本文件为准
+> 状态：人工说明基线；唯一机器契约为 `openapi/jushu-api.json`
 >
-> 更新日期：2026-07-20
+> 更新日期：2026-07-26
 >
 > 替代：旧 `System / Context / X-Context-Id` 工作区协议
 
@@ -61,11 +61,13 @@ type ApiError = {
   success: false;
   errorCode: string;
   errorMessage: string;
+  details?: Record<string, unknown>;
   traceId: string;
 };
 ```
 
 - `401/403` 必须使用对应 HTTP 状态，不能返回 `HTTP 200 + success: false`。
+- `errorCode` 固定为稳定字符串，不使用 HTTP 状态数字代替业务错误码。
 - `traceId` 用于链路排查，不包含 JWT、密码或权限敏感数据。
 - 后端错误信息可以展示，但不能泄露用户无权访问的组织是否存在。
 
@@ -73,11 +75,13 @@ type ApiError = {
 
 ```ts
 type AuthCurrentUser = {
-  userid: string;
+  userId: string;
   username: string;
   name: string;
   avatar: string | null;
-  email: string | null;
+  email: string;
+  status: 'active' | 'disabled' | 'deleted';
+  isSuperAdmin: boolean;
 
   // Platform 控制面权限；不能由 Organization 权限合并得到。
   platformPermissions: string[];
@@ -85,7 +89,7 @@ type AuthCurrentUser = {
   platformSkillCodes: string[];
 
   // 非 Platform 用户登录后的长期默认组织。
-  defaultOrganizationId?: string;
+  defaultOrganizationId: string | null;
   // 当前用户可以真正“进入”的组织，不代表 Platform 可管理组织全集。
   organizations: OrganizationAccess[];
 };
@@ -102,7 +106,7 @@ type OrganizationAccess = {
 
   // 用户在组织内可以使用的数据范围。
   dataScopes: DataScope[];
-  defaultDataScopeId?: string;
+  defaultDataScopeId: string | null;
 };
 
 type DataScope = {
@@ -119,7 +123,7 @@ type DataScope = {
 AuthCurrentUser
 ├── platformPermissions[]
 ├── platformSkillCodes[]
-├── defaultOrganizationId?
+├── defaultOrganizationId
 └── organizations[]
     ├── permissions[]
     ├── skillCodes[]
@@ -129,6 +133,8 @@ AuthCurrentUser
 规则：
 
 - `organizationId` 是 URL、Storage Scope Key 和 `X-Organization-Id` 的唯一组织标识。
+- API JSON 使用 camelCase；数据库列继续使用 snake_case，由 Repository 映射。
+- 响应对象保持稳定字段形状：字段存在但无值时返回 `null`，不省略字段。
 - `dataScopeId` 只能用于组织内部的数据过滤，不得替代 `organizationId`。
 - `permissions` 与 `skillCodes` 是并列的派生结果，不互相推导。
 - Role 可用于后台配置、展示和审计，但前后端不能只根据 `role === 'admin'` 放行。
@@ -167,23 +173,26 @@ Content-Type: application/json
 ```json
 {
   "username": "user1",
-  "password": "example-password",
-  "email": "user1@example.com"
+  "email": "user1@example.com",
+  "name": "用户一",
+  "password": "example-password"
 }
 ```
 
 ```ts
 type RegisterRequest = {
   username: string;
+  email: string;
+  name: string;
   password: string;
-  email?: string;
 };
 
-type RegisterData = {
+type RegisteredUser = {
   userId: string;
   username: string;
-  email: string | null;
-  status: 'ok';
+  email: string;
+  name: string;
+  status: 'active';
 };
 ```
 
@@ -196,7 +205,8 @@ type RegisterData = {
     "userId": "user1",
     "username": "user1",
     "email": "user1@example.com",
-    "status": "ok"
+    "name": "用户一",
+    "status": "active"
   },
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
@@ -205,12 +215,13 @@ type RegisterData = {
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `username` | `string` | 是 | 登录用户名，全局唯一 |
+| `email` | `string` | 是 | 登录邮箱，全局唯一；校验格式、规范化并保存，暂不验证归属 |
+| `name` | `string` | 是 | 用户展示名称 |
 | `password` | `string` | 是 | 明文仅通过 HTTPS 传输，后端使用强密码哈希保存 |
-| `email` | `string` | 否 | 可选邮箱；填写时校验格式、规范化并保存，暂不验证归属 |
 | `userId` | `string` | 是 | 新用户唯一 ID |
-| `status` | `"ok"` | 是 | 与项目现有注册成功状态名一致 |
+| `status` | `"active"` | 是 | 新用户的账号状态 |
 
-前端可以保留 `confirm` 字段校验两次密码一致，但不发送给后端。后端必须独立校验用户名、密码强度和可选邮箱。MVP 不发送手机或邮箱验证码，也不包含邮箱激活流程。
+前端可以保留 `confirm` 字段校验两次密码一致，但不发送给后端。后端必须独立校验用户名、邮箱、展示名称和密码强度。MVP 不发送手机或邮箱验证码，也不包含邮箱激活流程。
 
 ### `POST /api/login/account`
 
@@ -223,30 +234,22 @@ Content-Type: application/json
 
 ```json
 {
-  "username": "user1",
-  "password": "ant.design",
-  "type": "account",
-  "autoLogin": true
+  "account": "user1",
+  "password": "ant.design"
 }
 ```
 
 ```ts
 type LoginRequest = {
-  username: string;
+  account: string;
   password: string;
-  type: 'account';
-  autoLogin?: boolean;
 };
 
-type LoginResult = {
-  status: 'ok';
-  type: 'account';
-  currentAuthority: string;
+type AuthLoginData = {
   accessToken: string;
   tokenType: 'Bearer';
   expiresIn: number;
   expiresAt: string;
-  traceId: string;
 };
 ```
 
@@ -261,28 +264,27 @@ Pragma: no-cache
 
 ```json
 {
-  "status": "ok",
-  "type": "account",
-  "currentAuthority": "user",
-  "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-  "tokenType": "Bearer",
-  "expiresIn": 7200,
-  "expiresAt": "2026-07-14T08:00:00Z",
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
+    "tokenType": "Bearer",
+    "expiresIn": 7200,
+    "expiresAt": "2026-07-26T10:00:00Z"
+  },
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `status` | `"ok"` | 是 | 兼容现有前端登录成功判断 |
-| `type` | `"account"` | 是 | 当前仅支持账号密码登录 |
-| `currentAuthority` | `string` | 是 | 兼容现有页面字段；正式权限以 `/api/currentUser` 为准 |
+| `account` | `string` | 是 | 用户名或邮箱，后端统一规范化后查询 |
+| `password` | `string` | 是 | 用户输入的登录密码 |
 | `accessToken` | `string` | 是 | JWT access token |
 | `tokenType` | `"Bearer"` | 是 | 固定为 `Bearer` |
 | `expiresIn` | `number` | 是 | 剩余有效秒数 |
-| `expiresAt` | `string` | 是 | 过期时间，ISO 8601 UTC |
+| `expiresAt` | `string` | 是 | UTC RFC 3339 过期时间 |
 
-access token 保存到 `localStorage`，后续通过 `Authorization: Bearer <jwt>` 发送。JWT 过期后端返回 `401`，前端清理 token 并重新登录。`autoLogin` 是现有登录表单字段；由于 MVP 不使用 refresh token，后端可以接收但忽略该字段。
+access token 保存到 `localStorage`，后续通过 `Authorization: Bearer <jwt>` 发送。JWT 过期后端返回 `401`，前端清理 token 并重新登录。旧字段 `username`、`type`、`autoLogin` 和 `currentAuthority` 不再进入产品 API。
 
 登录失败：
 
@@ -314,11 +316,13 @@ Authorization: Bearer <jwt>
 {
   "success": true,
   "data": {
-    "userid": "user1",
+    "userId": "user1",
     "username": "user1",
     "name": "用户一",
     "avatar": null,
     "email": "user1@example.com",
+    "status": "active",
+    "isSuperAdmin": false,
     "platformPermissions": [],
     "platformSkillCodes": [],
     "defaultOrganizationId": "org-1",
@@ -444,6 +448,9 @@ Content-Type: application/json
 /workspace/org/:organizationId/apps/:appKey/*
 ```
 
+
+> workspace是将新业务壳与 /user、/dashboard 等 Ant Design Pro 模板路由隔离，后期删除模版代码后移除
+
 切换规则：
 
 - Platform 与 Organization 使用同一个 Workspace 切换器。
@@ -559,8 +566,8 @@ Authorization: Bearer <jwt>
 
 ## 14. 后端配置与安全要求
 
-- Spring Security 使用 `SessionCreationPolicy.STATELESS`。
-- 从 `Authorization` Header 提取 Bearer JWT。
+- Express 使用无状态认证中间件执行 JWT 鉴权。
+- 从 `Authorization: Bearer <token>` Header 提取并验证 JWT。
 - CORS 仅允许受信任前端域名，不使用 `*`。
 - CORS 允许 `Content-Type`、`Authorization` 和 `X-Organization-Id`。
 - `OPTIONS` 预检请求不要求登录。
@@ -580,6 +587,7 @@ Authorization: Bearer <jwt>
 | `systemCode` | `organizationCode` |
 | `systemName` | `organizationName` |
 | `defaultContextId` | `defaultOrganizationId` |
+| `userid` | `userId` |
 | `X-Context-Id` | `X-Organization-Id` |
 | `sessionStorage.currentContextId` | URL 中的 `organizationId` |
 | System/Context 切换不刷新 | WorkspaceScope 切换执行整页导航 |

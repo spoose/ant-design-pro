@@ -2,6 +2,7 @@
 import type { RequestConfig } from '@umijs/max';
 import { getIntl, history } from '@umijs/max';
 import { message, notification } from 'antd';
+import { handleAccessTokenFailure } from '@/utils/authFailure';
 import { getAccessToken } from '@/utils/authToken';
 import { getWorkspaceOrganizationId } from '@/utils/workspaceRoutes';
 
@@ -17,7 +18,7 @@ enum ErrorShowType {
 interface ResponseStructure {
   success: boolean;
   data?: unknown;
-  errorCode?: string | number;
+  errorCode?: string;
   errorMessage?: string;
   traceId?: string;
   showType?: ErrorShowType;
@@ -45,6 +46,8 @@ export const errorConfig: RequestConfig = {
     // 错误接收及处理
     errorHandler: (error: any, opts: any) => {
       if (opts?.skipErrorHandler) throw error;
+      // BAD_CREDENTIALS 等普通 401 继续由页面处理；这里只收口三种 Token 错误码。
+      if (handleAccessTokenFailure(error)) return;
       // 我们的 errorThrower 抛出的错误。
       if (error.name === 'BizError') {
         const errorInfo: ResponseStructure | undefined = error.info;

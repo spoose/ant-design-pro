@@ -31,6 +31,14 @@ import { showAuthErrorNotification } from '../authNotification';
 
 const SHOW_LANGUAGE_SWITCH = false;
 
+type LoginFormValues = {
+  username?: string;
+  password?: string;
+  mobile?: string;
+  captcha?: string;
+  autoLogin?: boolean;
+};
+
 const useStyles = createStyles(({ token }) => {
   return {
     action: {
@@ -121,7 +129,7 @@ const Login: React.FC = () => {
     return userInfo;
   };
 
-  const handleSubmit = async (values: API.LoginParams) => {
+  const handleSubmit = async (values: LoginFormValues) => {
     notification.destroy('login-request-error');
 
     if (type === 'mobile') {
@@ -171,7 +179,7 @@ const Login: React.FC = () => {
           padding: '32px 0',
         }}
       >
-        <LoginForm
+        <LoginForm<LoginFormValues>
           contentStyle={{
             minWidth: 280,
             maxWidth: '75vw',
@@ -191,9 +199,7 @@ const Login: React.FC = () => {
           //   />,
           //   <ActionIcons key="icons" />,
           // ]}
-          onFinish={async (values) => {
-            await handleSubmit(values as API.LoginParams);
-          }}
+          onFinish={handleSubmit}
         >
           <Tabs
             activeKey={type}

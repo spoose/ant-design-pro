@@ -12,8 +12,15 @@ vi.mock('@umijs/max', async () => {
 
 const user = {
   userId: 'workspace-user',
+  username: 'workspace-user',
+  name: 'Workspace User',
+  avatar: null,
+  email: 'workspace-user@example.test',
+  status: 'active',
+  isSuperAdmin: false,
   platformPermissions: ['platform:user:manage'],
   platformSkillCodes: ['knowledge-search'],
+  defaultOrganizationId: null,
   organizations: [
     {
       organizationId: 'organization-1',
@@ -22,6 +29,7 @@ const user = {
       permissions: ['organization:user:manage'],
       skillCodes: ['file-review'],
       dataScopes: [],
+      defaultDataScopeId: null,
     },
   ],
 } as AuthCurrentUser;

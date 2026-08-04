@@ -250,12 +250,16 @@ export const buildMockCurrentUser = (username: MockUsername) => {
   return {
     ...defaultUser,
     ...account.profile,
+    status: 'active' as const,
+    isSuperAdmin: username === 'admin',
     access: account.currentAuthority,
     platformPermissions: [...account.platformPermissions],
     platformSkillCodes: [...account.platformSkillCodes],
     organizations: getOrganizations(username),
     defaultOrganizationId:
-      defaultOrganizationIds[username] ?? account.defaultOrganizationId,
+      defaultOrganizationIds[username] ??
+      account.defaultOrganizationId ??
+      null,
   };
 };
 

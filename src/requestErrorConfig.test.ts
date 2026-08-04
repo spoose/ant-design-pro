@@ -4,6 +4,7 @@ import { errorConfig } from './requestErrorConfig';
 import { clearAccessToken, setAccessToken } from './utils/authToken';
 
 const testLocation = vi.hoisted(() => ({ pathname: '/outside-workspace' }));
+const mockHandleAccessTokenFailure = vi.hoisted(() => vi.fn());
 
 vi.mock('antd', () => ({
   message: {
@@ -30,6 +31,10 @@ vi.mock('@umijs/max', async () => {
   };
 });
 
+vi.mock('@/utils/authFailure', () => ({
+  handleAccessTokenFailure: mockHandleAccessTokenFailure,
+}));
+
 describe('requestErrorConfig', () => {
   // biome-ignore lint/style/noNonNullAssertion: config handlers are always defined
   const errorThrower = errorConfig.errorConfig!.errorThrower!;
@@ -40,6 +45,7 @@ describe('requestErrorConfig', () => {
     vi.clearAllMocks();
     clearAccessToken();
     testLocation.pathname = '/outside-workspace';
+    mockHandleAccessTokenFailure.mockReturnValue(false);
   });
 
   describe('errorThrower', () => {
@@ -47,7 +53,7 @@ describe('requestErrorConfig', () => {
       const response = {
         success: false,
         data: null,
-        errorCode: 400,
+        errorCode: 'VALIDATION_ERROR',
         errorMessage: 'Bad Request',
         showType: 2,
       };
@@ -72,7 +78,7 @@ describe('requestErrorConfig', () => {
       const response = {
         success: false,
         data: { detail: 'more info' },
-        errorCode: 403,
+        errorCode: 'PERMISSION_DENIED',
         errorMessage: 'Forbidden',
         showType: 3,
       };
@@ -82,7 +88,7 @@ describe('requestErrorConfig', () => {
         errorThrower(response);
       } catch (error: any) {
         expect(error.name).toBe('BizError');
-        expect(error.info.errorCode).toBe(403);
+        expect(error.info.errorCode).toBe('PERMISSION_DENIED');
         expect(error.info.errorMessage).toBe('Forbidden');
         expect(error.info.traceId).toBeUndefined();
         expect(error.info.showType).toBe(3);
@@ -99,13 +105,40 @@ describe('requestErrorConfig', () => {
       expect(() => {
         errorHandler(error, opts);
       }).toThrow('Test error');
+      expect(mockHandleAccessTokenFailure).not.toHaveBeenCalled();
+    });
+
+    it('should stop generic handling after a Token failure is handled', () => {
+      const error: any = new Error('Access Token 已过期');
+      error.info = { errorCode: 'ACCESS_TOKEN_EXPIRED' };
+      mockHandleAccessTokenFailure.mockReturnValue(true);
+
+      errorHandler(error, {});
+
+      expect(mockHandleAccessTokenFailure).toHaveBeenCalledWith(error);
+      expect(message.error).not.toHaveBeenCalled();
+      expect(notification.open).not.toHaveBeenCalled();
+    });
+
+    it('should leave BAD_CREDENTIALS to the normal business error path', () => {
+      const error: any = new Error('用户名或密码错误');
+      error.name = 'BizError';
+      error.info = {
+        errorCode: 'BAD_CREDENTIALS',
+        errorMessage: '用户名或密码错误',
+      };
+
+      errorHandler(error, {});
+
+      expect(mockHandleAccessTokenFailure).toHaveBeenCalledWith(error);
+      expect(message.error).toHaveBeenCalledWith('用户名或密码错误');
     });
 
     it('should handle SILENT showType', () => {
       const error: any = new Error('Silent error');
       error.name = 'BizError';
       error.info = {
-        errorCode: 1001,
+        errorCode: 'SILENT_ERROR',
         errorMessage: 'Silent error',
         showType: 0,
       };
@@ -121,7 +154,7 @@ describe('requestErrorConfig', () => {
       const error: any = new Error('Warning');
       error.name = 'BizError';
       error.info = {
-        errorCode: 1002,
+        errorCode: 'WARNING',
         errorMessage: 'This is a warning',
         showType: 1,
       };
@@ -135,7 +168,7 @@ describe('requestErrorConfig', () => {
       const error: any = new Error('Error message');
       error.name = 'BizError';
       error.info = {
-        errorCode: 1003,
+        errorCode: 'ERROR_MESSAGE',
         errorMessage: 'This is an error',
         showType: 2,
       };
@@ -149,7 +182,7 @@ describe('requestErrorConfig', () => {
       const error: any = new Error('Notification');
       error.name = 'BizError';
       error.info = {
-        errorCode: 1004,
+        errorCode: 'NOTIFICATION',
         errorMessage: 'This is a notification',
         showType: 3,
       };
@@ -157,7 +190,7 @@ describe('requestErrorConfig', () => {
       errorHandler(error, {});
 
       expect(notification.open).toHaveBeenCalledWith({
-        title: 1004,
+        title: 'NOTIFICATION',
         description: 'This is a notification',
       });
     });
@@ -166,7 +199,7 @@ describe('requestErrorConfig', () => {
       const error: any = new Error('Redirect');
       error.name = 'BizError';
       error.info = {
-        errorCode: 401,
+        errorCode: 'AUTH_REDIRECT',
         errorMessage: 'Unauthorized',
         showType: 9,
       };
@@ -183,7 +216,7 @@ describe('requestErrorConfig', () => {
       const error: any = new Error('Unknown type');
       error.name = 'BizError';
       error.info = {
-        errorCode: 1005,
+        errorCode: 'DEFAULT_ERROR',
         errorMessage: 'Unknown error type',
         showType: 99,
       };

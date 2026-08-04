@@ -11,6 +11,7 @@ const organization: OrganizationAccess = {
   permissions: [],
   skillCodes: [],
   dataScopes: [],
+  defaultDataScopeId: null,
 };
 const testState = vi.hoisted(() => ({
   organizationId: 'organization-1',

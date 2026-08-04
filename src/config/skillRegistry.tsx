@@ -56,14 +56,15 @@ export const skillRegistry = {
   'platform-assistant': {
     title: 'pAI',
     icon: OllamaFilled,
+    pageComponent: lazy(
+      () => import('@/pages/workspace/app/platform-assistant'),
+    ),
     navigation: [
       {
         pathSegment: 'overview',
-        title: 'nav1',
+        title: '通用助手',
         icon: RobotOutlined,
       },
-      { pathSegment: 'queue', title: 'nav2', icon: InboxOutlined },
-      { pathSegment: 'history', title: 'nav3', icon: HistoryOutlined },
     ],
   },
   'file-review': {

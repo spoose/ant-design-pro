@@ -31,8 +31,15 @@ const createLandingUser = (
 ): AuthCurrentUser =>
   ({
     userId: 'landing-user',
+    username: 'landing-user',
+    name: 'Landing User',
+    avatar: null,
+    email: 'landing-user@example.test',
+    status: 'active',
+    isSuperAdmin: false,
     platformPermissions: [],
     platformSkillCodes: [],
+    defaultOrganizationId: null,
     organizations: [],
     ...overrides,
   }) as AuthCurrentUser;
@@ -64,6 +71,7 @@ describe('WorkspaceLandingPage', () => {
           permissions: [],
           skillCodes: [],
           dataScopes: [],
+          defaultDataScopeId: null,
         },
       ],
     });
@@ -85,6 +93,7 @@ describe('WorkspaceLandingPage', () => {
           permissions: [],
           skillCodes: [],
           dataScopes: [],
+          defaultDataScopeId: null,
         },
         {
           organizationId: 'organization-2',
@@ -93,6 +102,7 @@ describe('WorkspaceLandingPage', () => {
           permissions: [],
           skillCodes: [],
           dataScopes: [],
+          defaultDataScopeId: null,
         },
       ],
     });
