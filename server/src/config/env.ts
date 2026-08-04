@@ -16,12 +16,23 @@ export interface JwtEnv {
   expiresInSeconds: number;
 }
 
+export interface DeepSeekEnv {
+  apiKey?: string;
+  model: string;
+}
+
+export interface FirecrawlEnv {
+  apiKey?: string;
+}
+
 export interface ServerEnv {
   nodeEnv: NodeEnvironment;
   port: number;
   corsOrigins: string[];
   database: DatabaseEnv;
   jwt: JwtEnv;
+  deepseek: DeepSeekEnv;
+  firecrawl: FirecrawlEnv;
 }
 
 function requireJwtEnv(source: EnvSource): JwtEnv {
@@ -121,6 +132,25 @@ export function loadDatabaseEnv(source: EnvSource = process.env): DatabaseEnv {
   };
 }
 
+export function loadDeepSeekEnv(source: EnvSource = process.env): DeepSeekEnv {
+  const apiKey = source.DEEPSEEK_API_KEY?.trim() || undefined;
+  const model = source.DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash';
+  return apiKey ? { apiKey, model } : { model };
+}
+
+/**
+ * 读取 Firecrawl 搜索配置。
+ *
+ * Key 不属于认证服务的必填配置：未配置时认证与其他 Agent 仍可启动；
+ * 是否允许无 Key 搜索以及可用额度，由 Firecrawl 服务端策略决定。
+ */
+export function loadFirecrawlEnv(
+  source: EnvSource = process.env,
+): FirecrawlEnv {
+  const apiKey = source.FIRECRAWL_API_KEY?.trim() || undefined;
+  return apiKey ? { apiKey } : {};
+}
+
 export function loadServerEnv(source: EnvSource = process.env): ServerEnv {
   return {
     nodeEnv: requireNodeEnvironment(source),
@@ -128,5 +158,7 @@ export function loadServerEnv(source: EnvSource = process.env): ServerEnv {
     corsOrigins: requireCorsOrigins(source),
     database: loadDatabaseEnv(source),
     jwt: requireJwtEnv(source),
+    deepseek: loadDeepSeekEnv(source),
+    firecrawl: loadFirecrawlEnv(source),
   };
 }

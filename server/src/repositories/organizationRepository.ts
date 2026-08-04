@@ -130,6 +130,10 @@ export class OrganizationRepository implements OrganizationRepositoryPort {
             [organizationId, bootstrapAccess.creatorUserId],
           );
 
+          /*
+           * 核心写入顺序：先创建 Membership，再写 Organization Grant。
+           * user_access_grants_membership_fk 会拒绝任何脱离 Membership 的组织授权。
+           */
           const grants = [
             ...bootstrapAccess.permissions.map((grantCode) => ({
               grantType: 'permission' as const,
@@ -271,6 +275,10 @@ export class OrganizationRepository implements OrganizationRepositoryPort {
             return 'in_use';
           }
 
+          /*
+           * 核心删除顺序：先删除 Organization Grant，再删除 Membership。
+           * 两步位于同一事务中，组合外键会阻止任何遗漏 Grant 的成员删除。
+           */
           await connection.execute<ResultSetHeader>(
             'DELETE FROM user_access_grants WHERE organization_id = ?',
             [organizationId],

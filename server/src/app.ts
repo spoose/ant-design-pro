@@ -1,8 +1,15 @@
+import { resolve } from 'node:path';
 import cors from 'cors';
 import type { Express } from 'express';
 import express from 'express';
 import type { Pool } from 'mysql2/promise';
-import type { JwtEnv, NodeEnvironment } from './config/env.js';
+import { WebSearchService } from './ai/services/webSearchService.js';
+import type {
+  DeepSeekEnv,
+  FirecrawlEnv,
+  JwtEnv,
+  NodeEnvironment,
+} from './config/env.js';
 import { AppError } from './errors/appError.js';
 import { createAuthenticationMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -18,6 +25,7 @@ import { createAuthRouter } from './routes/auth.js';
 import { createCurrentUserRouter } from './routes/currentUser.js';
 import { createHealthRouter } from './routes/health.js';
 import { createLogoutRouter } from './routes/logout.js';
+import { createPaiRouter } from './routes/pai.js';
 import { createPasswordResetRouter } from './routes/passwordReset.js';
 import { createUserPreferencesRouter } from './routes/userPreferences.js';
 import { AccessTokenService } from './services/accessTokenService.js';
@@ -33,6 +41,8 @@ export interface CreateAppOptions {
   nodeEnv: NodeEnvironment;
   corsOrigins: string[];
   jwt: JwtEnv;
+  deepseek: DeepSeekEnv;
+  firecrawl: FirecrawlEnv;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -54,6 +64,7 @@ export function createApp(options: CreateAppOptions): Express {
   );
   const currentUserService = new CurrentUserService(users);
   const organizationService = new OrganizationService(organizations);
+  const webSearchService = new WebSearchService(options.firecrawl);
   const authenticate = createAuthenticationMiddleware(tokens, users);
   const requireSuperAdmin = createSuperAdminMiddleware(users);
 
@@ -92,6 +103,15 @@ export function createApp(options: CreateAppOptions): Express {
   app.use(
     '/api/users',
     createUserPreferencesRouter(authenticate, currentUserService),
+  );
+  app.use(
+    '/api/pai',
+    authenticate,
+    createPaiRouter(options.deepseek, {
+      // npm scripts 从 server 目录启动；解析为绝对路径后交给资料加载边界。
+      articlesDirectory: resolve('.data/ai/articles'),
+      webSearchService,
+    }),
   );
   app.use('/api/admin', authenticate, requireSuperAdmin);
   app.use('/api/admin/users', createAdminUsersRouter(adminUserService));

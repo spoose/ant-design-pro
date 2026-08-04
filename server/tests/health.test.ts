@@ -10,6 +10,13 @@ const jwt = {
   expiresInSeconds: 7200,
 };
 
+const deepseek = {
+  apiKey: 'test-deepseek-key',
+  model: 'deepseek-v4-flash',
+};
+
+const firecrawl = {};
+
 function createPool(query: ReturnType<typeof vi.fn>): Pool {
   return { query } as unknown as Pool;
 }
@@ -27,6 +34,8 @@ describe('health routes and errors', () => {
         nodeEnv: 'test',
         corsOrigins: ['http://localhost:8000'],
         jwt,
+        deepseek,
+        firecrawl,
       }),
     ).get('/health/live');
 
@@ -47,6 +56,8 @@ describe('health routes and errors', () => {
         nodeEnv: 'test',
         corsOrigins: ['http://localhost:8000'],
         jwt,
+        deepseek,
+        firecrawl,
       }),
     ).get('/health/ready');
 
@@ -67,6 +78,8 @@ describe('health routes and errors', () => {
         nodeEnv: 'test',
         corsOrigins: ['http://localhost:8000'],
         jwt,
+        deepseek,
+        firecrawl,
       }),
     ).get('/health/ready');
 
@@ -86,6 +99,8 @@ describe('health routes and errors', () => {
         nodeEnv: 'test',
         corsOrigins: ['http://localhost:8000'],
         jwt,
+        deepseek,
+        firecrawl,
       }),
     ).get('/not-found');
 
@@ -104,6 +119,8 @@ describe('health routes and errors', () => {
         nodeEnv: 'test',
         corsOrigins: ['http://localhost:8000'],
         jwt,
+        deepseek,
+        firecrawl,
       }),
     )
       .post('/not-found')

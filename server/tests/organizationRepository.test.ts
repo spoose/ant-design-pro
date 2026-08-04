@@ -132,7 +132,7 @@ describe('OrganizationRepository bootstrap access cleanup', () => {
     expect(connection.rollback).not.toHaveBeenCalled();
   });
 
-  it('removes creator bootstrap grants and membership before deleting the organization', async () => {
+  it('deletes grants before the creator membership in the same transaction', async () => {
     const { connection, execute, pool } = createDeletePool();
     const repository = new OrganizationRepository(pool);
 
@@ -146,6 +146,15 @@ describe('OrganizationRepository bootstrap access cleanup', () => {
     );
     expect(statements).toContain(
       'DELETE FROM organization_members WHERE organization_id = ?',
+    );
+    expect(
+      statements.indexOf(
+        'DELETE FROM user_access_grants WHERE organization_id = ?',
+      ),
+    ).toBeLessThan(
+      statements.indexOf(
+        'DELETE FROM organization_members WHERE organization_id = ?',
+      ),
     );
     expect(statements).toContain('DELETE FROM organizations WHERE id = ?');
     expect(connection.commit).toHaveBeenCalledOnce();

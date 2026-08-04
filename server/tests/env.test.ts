@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadServerEnv } from '../src/config/env.js';
+import { loadFirecrawlEnv, loadServerEnv } from '../src/config/env.js';
 
 const validEnv = {
   NODE_ENV: 'test',
@@ -15,6 +15,9 @@ const validEnv = {
   JWT_ISSUER: 'ant-design-pro-auth-server',
   JWT_AUDIENCE: 'ant-design-pro-web',
   JWT_EXPIRES_IN_SECONDS: '7200',
+  DEEPSEEK_API_KEY: 'test-deepseek-key',
+  DEEPSEEK_MODEL: 'deepseek-v4-flash',
+  FIRECRAWL_API_KEY: 'fc-test-key',
 };
 
 describe('loadServerEnv', () => {
@@ -37,6 +40,22 @@ describe('loadServerEnv', () => {
         audience: 'ant-design-pro-web',
         expiresInSeconds: 7200,
       },
+      deepseek: {
+        apiKey: 'test-deepseek-key',
+        model: 'deepseek-v4-flash',
+      },
+      firecrawl: {
+        apiKey: 'fc-test-key',
+      },
+    });
+  });
+
+  it('allows the auth server to start before the optional model key is configured', () => {
+    expect(
+      loadServerEnv({ ...validEnv, DEEPSEEK_API_KEY: '   ' }).deepseek,
+    ).toEqual({
+      apiKey: undefined,
+      model: 'deepseek-v4-flash',
     });
   });
 
@@ -68,5 +87,17 @@ describe('loadServerEnv', () => {
         JWT_SECRET: 'replace-with-at-least-32-random-bytes',
       }),
     ).toThrow('环境变量 JWT_SECRET 不能使用示例占位值');
+  });
+});
+
+describe('loadFirecrawlEnv', () => {
+  it('trims a configured Firecrawl key', () => {
+    expect(loadFirecrawlEnv({ FIRECRAWL_API_KEY: '  fc-test-key  ' })).toEqual({
+      apiKey: 'fc-test-key',
+    });
+  });
+
+  it('keeps Firecrawl optional for non-search server features', () => {
+    expect(loadFirecrawlEnv({ FIRECRAWL_API_KEY: '   ' })).toEqual({});
   });
 });

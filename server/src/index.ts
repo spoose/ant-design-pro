@@ -20,6 +20,8 @@ async function start(): Promise<void> {
     nodeEnv: env.nodeEnv,
     corsOrigins: env.corsOrigins,
     jwt: env.jwt,
+    deepseek: env.deepseek,
+    firecrawl: env.firecrawl,
   });
   let httpServer: Server;
   try {
