@@ -1,10 +1,12 @@
 /**
  * pAI 与 Ant Design X SDK 的协议适配层：
- * 出站时清理空消息和 UI 字段并附带登录凭证；入站时复用 DeepSeek 流解析，
- * 再把本站 sources SSE 事件合并进同一条 assistant 消息。
+ * 出站时清理空消息和 UI 字段并附带登录凭证；入站时
+ * 将本站 reasoning/text/sources SSE 事件合并进同一条 assistant 消息。
  */
 import {
-  DeepSeekChatProvider,
+  AbstractChatProvider,
+  type SSEOutput,
+  type TransformMessage,
   type XModelMessage,
   type XModelParams,
   XRequest,
@@ -16,10 +18,6 @@ import type { PaiChatMessage } from './types';
 
 const PAI_CHAT_ENDPOINT = '/api/pai/chat/completions';
 
-type PaiTransformMessageInfo = Parameters<
-  DeepSeekChatProvider<PaiChatMessage, XModelParams>['transformMessage']
->[0];
-
 const hasSendableContent = ({ content }: XModelMessage) =>
   (typeof content === 'string' ? content : content.text).trim().length > 0;
 
@@ -28,20 +26,39 @@ const toModelRequestMessage = ({ role, content }: XModelMessage) => ({
   content: typeof content === 'string' ? content : content.text,
 });
 
+const parseTextDelta = (data: unknown): string | undefined => {
+  try {
+    const payload = typeof data === 'string' ? JSON.parse(data) : data;
+    return typeof payload === 'object' &&
+      payload !== null &&
+      'text' in payload &&
+      typeof payload.text === 'string'
+      ? payload.text
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * useXChat 会保留失败请求的空 assistant 占位气泡，方便界面显示错误状态；
  * 但该空消息不属于有效对话上下文，下一轮请求前必须排除。sources 等
  * 前端展示字段也必须在出站时移除，后端模型协议只接收 role/content。
  */
-class PaiDeepSeekChatProvider extends DeepSeekChatProvider<
+class PaiChatProvider extends AbstractChatProvider<
   PaiChatMessage,
-  XModelParams
+  XModelParams,
+  SSEOutput
 > {
   override transformParams(
     requestParams: Partial<XModelParams>,
     options: XRequestOptions<XModelParams>,
   ): XModelParams {
-    const params = super.transformParams(requestParams, options);
+    const params = {
+      ...(options.params ?? {}),
+      ...requestParams,
+      messages: this.getMessages(),
+    } as XModelParams;
     return {
       ...params,
       messages: params.messages
@@ -50,20 +67,51 @@ class PaiDeepSeekChatProvider extends DeepSeekChatProvider<
     };
   }
 
+  override transformLocalMessage(
+    requestParams: Partial<XModelParams>,
+  ): PaiChatMessage[] {
+    return (requestParams.messages ?? []) as PaiChatMessage[];
+  }
+
   /**
-   * sources 是本站在 DeepSeek 数据流前发送的结构化 SSE 事件。
-   * 后续 reasoning/content 分块通过 originMessage 延续该字段，保证来源不会被覆盖。
+   * pAI 自有事件与模型 Provider 无关；reasoning 仍转换为
+   * <think> 标记，保持当前界面的折叠思考展示。
    */
-  override transformMessage(info: PaiTransformMessageInfo): PaiChatMessage {
-    const message = super.transformMessage(info);
+  override transformMessage(
+    info: TransformMessage<PaiChatMessage, SSEOutput>,
+  ): PaiChatMessage {
+    const originContent = info.originMessage?.content ?? '';
+    let content = originContent;
     const sources =
-      // X SDK 在 onSuccess 阶段会以 chunk=undefined 再转换一次消息，
-      // 此时只负责把状态收口为 success，并沿用流式阶段已保存的 sources。
       parseMessageSourcesEvent(info.chunk?.event, info.chunk?.data) ??
       info.originMessage?.sources;
 
+    if (info.chunk?.event === 'reasoning-delta') {
+      const text = parseTextDelta(info.chunk.data);
+      if (text) {
+        content = originContent
+          ? `${originContent}${text}`
+          : `\n\n<think>\n\n${text.replace(/^\n{0,2}/, '')}`;
+      }
+    } else if (info.chunk?.event === 'text-delta') {
+      const text = parseTextDelta(info.chunk.data);
+      if (text) {
+        if (
+          originContent.includes('<think>') &&
+          !originContent.includes('</think>')
+        ) {
+          content = `${originContent
+            .replace('<think>', '<think status="done">')
+            .replace(/[\s\n]{0,2}$/, '')}\n\n</think>\n\n${text}`;
+        } else {
+          content = `${originContent}${text}`;
+        }
+      }
+    }
+
     return {
-      ...message,
+      role: 'assistant',
+      content,
       ...(sources ? { sources } : {}),
     };
   }
@@ -71,17 +119,20 @@ class PaiDeepSeekChatProvider extends DeepSeekChatProvider<
 
 /**
  * 核心请求链路：
- * useXChat 将当前会话交给 DeepSeekChatProvider 组装 messages，
- * XRequest 携带本站登录 token 请求后端，模型 Key 和模型参数只由后端持有。
+ * useXChat 将当前会话交给 PaiChatProvider 组装 messages，
+ * XRequest 携带本站登录 token 请求后端 Agent。
  */
 export const createPaiChatProvider = () => {
   const accessToken = getAccessToken();
-  return new PaiDeepSeekChatProvider({
-    request: XRequest<XModelParams>(PAI_CHAT_ENDPOINT, {
-      headers: accessToken
-        ? { Authorization: `Bearer ${accessToken}` }
-        : undefined,
-      manual: true,
-    }),
+  return new PaiChatProvider({
+    request: XRequest<XModelParams, SSEOutput, PaiChatMessage>(
+      PAI_CHAT_ENDPOINT,
+      {
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : undefined,
+        manual: true,
+      },
+    ),
   });
 };

@@ -74,7 +74,7 @@ export const normalizeMessageSources = (
 };
 
 /**
- * 只消费本站定义的 sources SSE 事件；DeepSeek 原生 data 分块继续交给 Provider。
+ * 只消费本站定义的 sources SSE 事件；文本和推理事件继续交给 Provider。
  */
 export const parseMessageSourcesEvent = (
   event: unknown,
@@ -99,7 +99,7 @@ const removeReasoningContent = (content: string): string =>
  * 从候选来源中保留最终回答实际引用的来源。
  *
  * 知识库使用后端约定的 [资料:sourceId] 标记，网页使用原始 URL；
- * reasoning_content 可能也出现来源，但不属于用户可见答案，必须先排除。
+ * 推理流中可能也出现来源，但不属于用户可见答案，必须先排除。
  */
 export const selectCitedMessageSources = (
   content: string,

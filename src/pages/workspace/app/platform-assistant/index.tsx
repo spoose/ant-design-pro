@@ -87,12 +87,12 @@ export const isResponseUpdating = (
 ) => status === 'updating';
 
 /**
- * DeepSeekChatProvider 会把 reasoning_content 包装成 <think>。
+ * PaiChatProvider 会把 reasoning-delta 事件包装成 <think>。
  * Think 的加载状态以 useXChat 消息状态为准，避免请求 abort 后未闭合的
  * <think> 标签继续让 XMarkdown 显示“思考中”。
  */
 const MessageUpdatingContext = createContext(false);
-const DeepSeekThink = ({ children }: ComponentProps) => {
+const PaiThink = ({ children }: ComponentProps) => {
   const isThinking = useContext(MessageUpdatingContext);
   return (
     <Think
@@ -104,7 +104,7 @@ const DeepSeekThink = ({ children }: ComponentProps) => {
     </Think>
   );
 };
-const MARKDOWN_COMPONENTS = { think: DeepSeekThink };
+const MARKDOWN_COMPONENTS = { think: PaiThink };
 
 const promptTextByKey = {
   'risk-review': '帮我检查一段内容中的逻辑风险，并按严重程度给出修改建议。',
@@ -320,8 +320,8 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
 
     /**
      * 核心消息链路：
-     * Sender -> useXChat.onRequest -> DeepSeekChatProvider
-     * -> XRequest 请求本站后端 -> DeepSeek -> useXChat 更新状态 -> Bubble.List 渲染。
+     * Sender -> useXChat.onRequest -> PaiChatProvider -> XRequest 请求本站后端
+     * -> pAI Agent -> 项目 SSE -> useXChat 更新状态 -> Bubble.List 渲染。
      */
     onRequest({
       ...(knowledgeEnabled ? { knowledgeEnabled: true } : {}),

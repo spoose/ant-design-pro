@@ -1,6 +1,6 @@
 /**
  * Provider 协议测试：
- * 覆盖登录凭证、DeepSeek 流拼接、sources 事件保留以及出站消息清洗。
+ * 覆盖登录凭证、pAI 流拼接、sources 事件保留以及出站消息清洗。
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { setAccessToken } from '@/utils/authToken';
@@ -10,11 +10,15 @@ const responseHeaders = new Headers({
   'content-type': 'text/event-stream',
 });
 
-const createChunk = (delta: Record<string, string>) => ({
-  data: JSON.stringify({ choices: [{ delta }] }),
+const createChunk = (
+  event: 'reasoning-delta' | 'text-delta',
+  text: string,
+) => ({
+  event,
+  data: JSON.stringify({ text }),
 });
 
-describe('pAI DeepSeek provider', () => {
+describe('pAI chat provider', () => {
   afterEach(() => {
     setAccessToken();
   });
@@ -34,17 +38,14 @@ describe('pAI DeepSeek provider', () => {
   it('keeps reasoning content separate from the final answer', () => {
     const provider = createPaiChatProvider();
     const reasoningMessage = provider.transformMessage({
-      chunk: createChunk({
-        role: 'assistant',
-        reasoning_content: '先分析条件',
-      }),
+      chunk: createChunk('reasoning-delta', '先分析条件'),
       chunks: [],
       status: 'updating',
       responseHeaders,
     });
     const completedMessage = provider.transformMessage({
       originMessage: reasoningMessage,
-      chunk: createChunk({ role: 'assistant', content: '最终结论' }),
+      chunk: createChunk('text-delta', '最终结论'),
       chunks: [],
       status: 'updating',
       responseHeaders,
@@ -55,7 +56,7 @@ describe('pAI DeepSeek provider', () => {
     expect(completedMessage.content).toContain('最终结论');
   });
 
-  it('keeps structured sources across later DeepSeek chunks', () => {
+  it('keeps structured sources across later text chunks', () => {
     const provider = createPaiChatProvider();
     const sourcesMessage = provider.transformMessage({
       chunk: {
@@ -83,7 +84,7 @@ describe('pAI DeepSeek provider', () => {
     });
     const completedMessage = provider.transformMessage({
       originMessage: sourcesMessage,
-      chunk: createChunk({ role: 'assistant', content: '资料结论' }),
+      chunk: createChunk('text-delta', '资料结论'),
       chunks: [],
       status: 'updating',
       responseHeaders,

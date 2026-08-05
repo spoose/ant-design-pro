@@ -16,7 +16,7 @@ export type MessageSource = {
 };
 
 /**
- * useXChat 与 DeepSeekChatProvider 共同消费的消息正文。
+ * useXChat 与 PaiChatProvider 共同消费的消息正文。
  * id 和 status 由 X SDK 的 MessageInfo 管理，不在业务消息内重复定义。
  */
 export interface PaiChatMessage extends XModelMessage {
