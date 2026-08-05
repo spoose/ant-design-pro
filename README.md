@@ -52,7 +52,7 @@ Mastra pAI Agent
 ### 1. 克隆项目
 
 ```bash
-git clone xxxx
+git clone https://gitee.com/zhihe09/ant-design-pro.git
 cd ant-design-pro
 ```
 
