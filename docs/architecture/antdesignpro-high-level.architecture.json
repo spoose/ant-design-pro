@@ -388,7 +388,7 @@
         "前端：Umi Max、React、Ant Design Pro、React Query；OpenAPI 生成 jushu-api 客户端。",
         "浏览器：Access Token 与 pAI 临时会话写入 localStorage；前端权限只控制可见性。",
         "后端：Express 5、Zod、JWT、Argon2id、统一错误包络、Trace ID、MySQL 连接池与事务。",
-        "pAI：可注入本地文章和 Firecrawl 结果，再透传 DeepSeek reasoning/content SSE。"
+        "pAI：由统一 Mastra Agent 按请求启用知识上下文与 Web Search Tool，并输出项目自有 reasoning/text/sources SSE。"
       ]
     },
     {
