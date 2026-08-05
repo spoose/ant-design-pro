@@ -9,10 +9,8 @@
 - JWT Bearer 认证、注册、登录、密码重置和 Super Admin 管理接口
 - MySQL 用户、组织、成员关系与授权数据
 - 基于 Ant Design X 的 pAI 对话界面
-- Mastra pAI Agent 与 DeepSeek 模型接入
-- 可选 Firecrawl 联网搜索，单次请求最多搜索两次
-- 可选本地资料上下文和回答来源展示
-- 项目自有 SSE 协议，统一传输推理、正文、来源和完成事件
+- DeepSeek 模型接入
+
 
 ## 技术栈
 
@@ -38,8 +36,6 @@ Express API
       ↓
 Mastra pAI Agent
 ├── DeepSeek
-├── 本地知识上下文（可选）
-└── Firecrawl Web Search（可选）
       ↓
 项目 SSE：reasoning-delta / text-delta / sources / done
 ```
@@ -56,7 +52,7 @@ Mastra pAI Agent
 ### 1. 克隆项目
 
 ```bash
-git clone https://gitee.com/zhihe09/ant-design-pro.git
+git clone xxxx
 cd ant-design-pro
 ```
 
@@ -155,13 +151,11 @@ server/       Express、MySQL、Mastra 与测试
 src/          React 前端应用
 ```
 
-## 架构文档
+## 文档
 
-- [AI / pAI 架构导航](./docs/architecture/ai/README.md)
-- [Mastra 接入架构](./docs/architecture/ai/mastra-integration.md)
-- [后端会话与向量存储规划](./docs/architecture/ai/backend-conversation-vector-storage.md)
 - [认证与权限 API 契约](./docs/backend-auth-api-bearer-only.md)
 - [后端认证与 RBAC 开发规划](./docs/auth-rbac-backend-development-plan.md)
+
 
 ## 安全说明
 
