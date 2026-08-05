@@ -52,8 +52,8 @@ Mastra pAI Agent
 ### 1. 克隆项目
 
 ```bash
-git clone https://gitee.com/zhihe09/ant-design-pro.git
-cd ant-design-pro
+git clone https://gitee.com/jushu2026/xone-fronted.git
+cd xone-fronted
 ```
 
 ### 2. 安装前后端依赖
