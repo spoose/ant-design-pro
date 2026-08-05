@@ -1,161 +1,176 @@
-Language : [English](./README.md) | 简体中文
+# Ant Design Pro pAI Workspace
 
-<h1 align="center">Ant Design Pro</h1>
+基于 Ant Design Pro 构建的企业工作台，包含组织级权限、独立认证后端和 pAI 智能助手。
+当前主线同时维护 React 前端与 Express 后端，默认分支为 `main`。
 
-<div align="center">
+## 已实现能力
 
-开箱即用的中台前端/设计解决方案。
+- Platform / Organization 双层 Workspace 与权限隔离
+- JWT Bearer 认证、注册、登录、密码重置和 Super Admin 管理接口
+- MySQL 用户、组织、成员关系与授权数据
+- 基于 Ant Design X 的 pAI 对话界面
+- Mastra pAI Agent 与 DeepSeek 模型接入
+- 可选 Firecrawl 联网搜索，单次请求最多搜索两次
+- 可选本地资料上下文和回答来源展示
+- 项目自有 SSE 协议，统一传输推理、正文、来源和完成事件
 
-[![CI](https://github.com/ant-design/ant-design-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/ant-design/ant-design-pro/actions/workflows/ci.yml)
-[![GitHub release](https://img.shields.io/github/v/release/ant-design/ant-design-pro.svg)](https://github.com/ant-design/ant-design-pro/releases)
-[![Build With Utoo](https://img.shields.io/badge/build%20with-utoo-028fe4.svg)](https://utoo.land)
-[![Build With Umi](https://img.shields.io/badge/build%20with-umi-028fe4.svg)](https://umijs.org/)
-[![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)
-[![Ant Design](https://badgen.net/badge/icon/Ant%20Design?icon=https://gw.alipayobjects.com/zos/antfincdn/Pp4WPgVDB3/KDpgvguMpGfqaHPjicRK.svg&label)](https://ant.design/)
+## 技术栈
 
-![](https://github.com/user-attachments/assets/fde29061-3d9a-4397-8ac2-397b0e033ef5)
+| 范围 | 技术 |
+| --- | --- |
+| 前端 | React 19、Umi Max 4、Ant Design 6、ProComponents 3、Ant Design X |
+| 后端 | Node.js、Express 5、TypeScript、Zod |
+| 数据库 | MySQL |
+| AI | Mastra、DeepSeek、Firecrawl |
+| 工程 | Vitest、Biome、utoopack |
 
-</div>
+## 核心链路
 
-- 预览：https://preview.pro.ant.design
-- 使用文档：[docs/cheatsheet.zh-CN.md](./docs/cheatsheet.zh-CN.md)
-- 更新日志: https://github.com/ant-design/ant-design-pro/releases
-- 常见问题：[docs/cheatsheet.zh-CN.md#faq](./docs/cheatsheet.zh-CN.md#faq)
-- **v6 正式发布！** — [查看 v6 更新内容](https://github.com/ant-design/ant-design-pro/releases/tag/v6.0.0)
-
-## 特性
-
-- :bulb: **TypeScript**: 应用程序级 JavaScript 的语言
-- :scroll: **区块**: 通过区块模板快速构建页面
-- :gem: **优雅美观**：基于 [Ant Design 6](https://ant.design/) 体系精心设计
-- :triangular_ruler: **常见设计模式**：提炼自中后台应用的典型页面和场景
-- :rocket: **最新技术栈**：使用 React 19/[Umi Max 4](https://umijs.org/)/[antd 6](https://ant.design/)/[utoopack](https://utoo.land) 等前端前沿技术开发
-- :iphone: **响应式**：针对不同屏幕大小设计
-- :art: **主题**：基于 [Tailwind CSS v4](https://tailwindcss.com/) + [antd-style](https://github.com/ant-design/antd-style) 的可配置主题满足多样化品牌诉求
-- :globe_with_meridians: **国际化**：内建业界通用的国际化方案
-- :gear: **最佳实践**：良好的工程实践助您持续产出高质量代码
-- :1234: **Mock 数据**：实用的本地数据调试方案
-- :robot: **AI 助手**：内置 AI 聊天助手页面，基于 [Ant Design X](https://x.ant.design/)
-- :white_check_mark: **UI 测试**：自动化测试保障前端产品质量
-
-## 模板
-
-```
-- 欢迎页
-- Dashboard
-  - 分析页
-  - 监控页
-  - 工作台
-- 表单页
-  - 基础表单页
-  - 分步表单页
-  - 高级表单页
-- 列表页
-  - 搜索列表（文章/项目/应用）
-  - 查询表格
-  - 标准列表
-  - 卡片列表
-- 详情页
-  - 基础详情页
-  - 高级详情页
-- 结果
-  - 成功页
-  - 失败页
-- 异常
-  - 403 无权限
-  - 404 找不到
-  - 500 服务器出错
-- 用户
-  - 用户中心页
-  - 用户设置页
-- AI 助手
-- 账户
-  - 登录
-  - 注册
-  - 注册成功
+```text
+浏览器
+├── Workspace / RBAC 页面
+└── pAI 对话页面
+      ↓ Bearer Token + 完整会话历史
+Express API
+├── 认证与 Organization 权限
+├── MySQL Repository / Service
+└── PaiAgentService
+      ↓
+Mastra pAI Agent
+├── DeepSeek
+├── 本地知识上下文（可选）
+└── Firecrawl Web Search（可选）
+      ↓
+项目 SSE：reasoning-delta / text-delta / sources / done
 ```
 
-## 使用
+## 环境要求
 
-### 开始使用
+- Node.js 22 或更高版本
+- npm（使用仓库中的 `package-lock.json`）
+- MySQL
+- 可选：DeepSeek API Key、Firecrawl API Key
 
-克隆或下载本项目到本地：
+## 本地启动
+
+### 1. 克隆项目
 
 ```bash
-git clone --depth=1 https://github.com/ant-design/ant-design-pro.git myapp
-cd myapp
+git clone https://gitee.com/zhihe09/ant-design-pro.git
+cd ant-design-pro
 ```
 
-### 安装依赖
+### 2. 安装前后端依赖
 
 ```bash
-npm install
+npm ci
+cd server
+npm ci
 ```
 
-### 开发
+### 3. 配置后端环境变量
 
 ```bash
-# 启动开发服务器（默认为完整版）
-npm start
+cp .env.example .env
 ```
 
-### 精简为简单版本
+编辑 `server/.env`，至少配置 MySQL 和 JWT：
 
-本项目默认包含所有区块。如果你需要一个最小化的版本，运行：
+```dotenv
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DATABASE=ant_design_pro
+MYSQL_USER=ant_design_pro
+MYSQL_PASSWORD=replace-with-a-local-secret
 
-```bash
-npm run simple
+JWT_SECRET=replace-with-at-least-32-random-bytes
 ```
 
-这将会：
-- 删除多余的页面目录（dashboard、form、list/*、profile、result、exception、account 等）
-- 删除多余的 mock 文件
-- 替换路由为简单版本
-- 从 package.json 中移除多余的依赖
+pAI 与联网搜索为可选配置：
 
-**注意**：此操作不可逆，将永久删除文件。
+```dotenv
+DEEPSEEK_API_KEY=sk-
+DEEPSEEK_MODEL=deepseek-v4-flash
+FIRECRAWL_API_KEY=fc-
+```
 
-### 构建
+未配置 DeepSeek 时认证服务仍可运行，但 pAI 模型接口会返回 `503`。未配置 Firecrawl 时
+普通对话仍可使用，联网搜索不可用。
+
+### 4. 初始化数据库
+
+在 `server` 目录运行：
 
 ```bash
+npm run migrate
+```
+
+### 5. 启动后端
+
+```bash
+npm run dev
+```
+
+后端默认地址：`http://localhost:3000`。
+
+### 6. 启动前端
+
+另开终端，在仓库根目录运行：
+
+```bash
+npm run dev
+```
+
+前端默认地址：`http://localhost:8000`。
+
+## 常用命令
+
+### 前端
+
+```bash
+npm run dev
+npm test
+npm run lint
+npx antd lint ./src
 npm run build
 ```
 
-更多信息请参考 [使用文档](./docs/cheatsheet.zh-CN.md)。
-
-## AI Skills（Claude Code）
-
-本项目内置了两个 [Claude Code Skills](https://docs.anthropic.com/en/docs/claude-code/skills)，位于 `.claude/skills/` 目录下：
-
-| Skill | 触发词 | 说明 |
-|---|---|---|
-| `/pro-upgrade` | "升级"、"upgrade pro"、"update to latest" | 自动升级到最新 Ant Design Pro 版本。对比最新模板差异，合并框架变更并保留业务代码。 |
-| `/antd` | antd 相关代码或问题 | 查询 antd 组件 API、props、token、demo；检查废弃用法；跨版本迁移 — 基于 `@ant-design/cli`。 |
-
-**在 Claude Code 中使用：**
+### 后端
 
 ```bash
-# 升级项目到最新 Pro 版本
-/pro-upgrade
-
-# 查询 antd 组件信息、调试问题、运行 lint 等
-/antd
+cd server
+npm run dev
+npm test
+npm run typecheck
+npm run build
 ```
 
-> 💡 如果你的项目是从本仓库克隆的，这些 skill 已经内置，无需额外安装。如需获取最新 skill 定义，可以从模板拉取更新或运行 `npx skills add ant-design/ant-design-pro` 刷新。
+## 项目目录
 
-## 支持环境
+```text
+config/       Umi 配置与路由
+docs/         架构、认证和 AI 设计文档
+openapi/      前端 API 机器契约
+server/       Express、MySQL、Mastra 与测试
+src/          React 前端应用
+```
 
-现代浏览器。
+## 架构文档
 
-| [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png" alt="Edge" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Edge | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Safari |
-| --- | --- | --- | --- |
-| Edge | last 2 versions | last 2 versions | last 2 versions |
+- [AI / pAI 架构导航](./docs/architecture/ai/README.md)
+- [Mastra 接入架构](./docs/architecture/ai/mastra-integration.md)
+- [后端会话与向量存储规划](./docs/architecture/ai/backend-conversation-vector-storage.md)
+- [认证与权限 API 契约](./docs/backend-auth-api-bearer-only.md)
+- [后端认证与 RBAC 开发规划](./docs/auth-rbac-backend-development-plan.md)
 
-## 参与贡献
+## 安全说明
 
-我们非常欢迎你的贡献，你可以通过以下方式和我们一起共建 :smiley:：
+- `.env`、数据库凭据、JWT Secret 和模型 API Key 不得提交到 Git。
+- 用户与 Organization Scope 只能来自服务端认证结果。
+- pAI Tool 不得绕过权限访问任意文件、SQL 或其他 Organization。
+- 生产环境应使用 HTTPS、受控 CORS 和足够强度的 JWT Secret。
 
-- 在你的公司或个人项目中使用 Ant Design Pro。
-- 通过 [Issue](http://github.com/ant-design/ant-design-pro/issues) 报告 bug 或进行咨询。
-- 提交 [Pull Request](http://github.com/ant-design/ant-design-pro/pulls) 改进 Pro 的代码。
+## 上游与许可证
+
+前端基础来自 [Ant Design Pro](https://github.com/ant-design/ant-design-pro)。项目沿用仓库中的
+[MIT License](./LICENSE)。
