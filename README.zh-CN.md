@@ -145,7 +145,7 @@ npm run build
 
 ```text
 config/       Umi 配置与路由
-docs/         架构、认证和 AI 设计文档
+docs/         项目速查与 API 契约
 openapi/      前端 API 机器契约
 server/       Express、MySQL、Mastra 与测试
 src/          React 前端应用
