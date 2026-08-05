@@ -1,8 +1,5 @@
 import { Agent } from '@mastra/core/agent';
-import {
-  type ConfiguredDeepSeekEnv,
-  createDeepSeekChatModel,
-} from '../providers/deepSeek.js';
+import { toMastraDeepSeekModelId } from '../models/deepSeek.js';
 
 /**
  * 根据后端已经授权并加载的资料生成研究介绍。
@@ -10,7 +7,7 @@ import {
  * Agent 当前没有 Tool 和 Memory：它只能使用 Workflow 放入 Prompt 的资料，
  * 不会自行联网、读取文件或声明掌握了“最新数据”。
  */
-export function createResearchIntroductionAgent(config: ConfiguredDeepSeekEnv) {
+export function createResearchIntroductionAgent(model: string) {
   return new Agent({
     id: 'research-introduction-agent',
     name: 'Research Introduction Agent',
@@ -25,6 +22,6 @@ export function createResearchIntroductionAgent(config: ConfiguredDeepSeekEnv) {
 5. 如果资料不足以支持某项结论，应明确说明资料缺口。
 6. 输出应包含背景、与调研目的的关系、兴趣方向要点和待继续调查的问题。
     `.trim(),
-    model: createDeepSeekChatModel(config),
+    model: toMastraDeepSeekModelId(model),
   });
 }

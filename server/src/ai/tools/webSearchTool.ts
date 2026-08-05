@@ -9,7 +9,7 @@ import {
 /**
  * Mastra Web Search Tool 适配层。
  * Tool 只声明模型可见的能力契约，实际 Firecrawl 调用与结果清洗由
- * WebSearchService 负责，供未来 pAI HTTP 编排复用。
+ * WebSearchService 负责，pAI Agent 只控制何时调用与调用次数。
  */
 export function createWebSearchTool(config: FirecrawlEnv) {
   const webSearchService = new WebSearchService(config);

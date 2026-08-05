@@ -1,9 +1,11 @@
 import { resolve } from 'node:path';
+import type { MessageListInput } from '@mastra/core/agent/message-list';
 import cors from 'cors';
 import type { Express } from 'express';
 import express from 'express';
 import type { Pool } from 'mysql2/promise';
-import { WebSearchService } from './ai/services/webSearchService.js';
+import { createPaiAgent } from './ai/agents/paiAgent.js';
+import { PaiAgentService } from './ai/services/paiAgentService.js';
 import type {
   DeepSeekEnv,
   FirecrawlEnv,
@@ -64,7 +66,11 @@ export function createApp(options: CreateAppOptions): Express {
   );
   const currentUserService = new CurrentUserService(users);
   const organizationService = new OrganizationService(organizations);
-  const webSearchService = new WebSearchService(options.firecrawl);
+  const paiAgent = createPaiAgent(options.deepseek.model, options.firecrawl);
+  const paiAgentService = new PaiAgentService({
+    stream: (messages, streamOptions) =>
+      paiAgent.stream(messages as MessageListInput, streamOptions),
+  });
   const authenticate = createAuthenticationMiddleware(tokens, users);
   const requireSuperAdmin = createSuperAdminMiddleware(users);
 
@@ -110,7 +116,7 @@ export function createApp(options: CreateAppOptions): Express {
     createPaiRouter(options.deepseek, {
       // npm scripts 从 server 目录启动；解析为绝对路径后交给资料加载边界。
       articlesDirectory: resolve('.data/ai/articles'),
-      webSearchService,
+      paiAgentService,
     }),
   );
   app.use('/api/admin', authenticate, requireSuperAdmin);

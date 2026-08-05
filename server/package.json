@@ -20,7 +20,6 @@
     "stock:agent:local": "tsx scripts/runStockAgent.ts"
   },
   "dependencies": {
-    "@ai-sdk/deepseek": "^3.0.15",
     "@mastra/core": "^1.54.0",
     "argon2": "^0.45.0",
     "cors": "^2.8.6",

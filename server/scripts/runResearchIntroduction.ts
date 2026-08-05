@@ -30,10 +30,7 @@ async function runResearchIntroduction(): Promise<void> {
   // npm script 从 server 包根目录运行；真实文章目录被 .gitignore 排除。
   const articlesDirectory = resolve('.data/ai/articles');
   const service = createLocalResearchIntroductionService(
-    {
-      apiKey: deepseek.apiKey,
-      model: deepseek.model,
-    },
+    deepseek.model,
     articlesDirectory,
   );
 

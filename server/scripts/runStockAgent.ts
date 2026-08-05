@@ -16,10 +16,7 @@ async function runStockAgent(): Promise<void> {
     );
   }
 
-  const agent = createStockAgent({
-    apiKey: deepseek.apiKey,
-    model: deepseek.model,
-  });
+  const agent = createStockAgent(deepseek.model);
 
   console.info(`正在使用 ${deepseek.model} 查询 AAPL 收盘价...`);
   const result = await agent.generate(

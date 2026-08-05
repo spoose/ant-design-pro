@@ -9,14 +9,14 @@ export const paiChatRequestSchema = z
     knowledgeEnabled: z.boolean().optional().default(false),
     /**
      * 本次请求是否启用联网检索。
-     * 开启时由后端使用最后一条用户消息查询公开网页。
+     * 开启时由 pAI Agent 按完整会话语境决定搜索查询。
      */
     webSearchEnabled: z.boolean().optional().default(false),
     messages: z
       .array(
         z
           .object({
-            role: z.enum(['system', 'user', 'assistant']),
+            role: z.enum(['user', 'assistant']),
             content: z.string().min(1).max(100_000),
           })
           .strict(),
