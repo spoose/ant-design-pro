@@ -1,10 +1,12 @@
 # 后端认证、Workspace Scope 与权限 API 契约（Bearer Only）
 
-> 状态：人工说明基线；唯一机器契约为 `openapi/jushu-api.json`
+> 状态：当前实现基线；已生成的前端机器契约见 `openapi/jushu-api.json`
 >
-> 更新日期：2026-07-26
+> 更新日期：2026-08-05
 >
 > 替代：旧 `System / Context / X-Context-Id` 工作区协议
+>
+> 字段约定：本文是 API JSON 字段、枚举、请求和响应的唯一事实来源；实施计划不得重新定义同名 DTO。
 
 ## 1. 已确认原则
 
@@ -17,6 +19,12 @@
 - Platform App 使用 `platformSkillCodes`；Organization App 使用该组织的 `skillCodes`。
 - Organization 业务请求携带 `X-Organization-Id`；Platform 请求不得继承最近访问的 Organization。
 - 前端权限只控制可见性，后端必须依据 JWT、Scope 和实时权限再次鉴权。
+- API JSON 统一使用 `camelCase`；MySQL 列名使用 `snake_case`，只在 Repository 映射。
+- 用户主键在所有 API 中统一为 `userId`；旧字段 `userid` 不再出现在新接口。
+- 所有成功响应统一使用 `ApiSuccess<T>`，所有失败响应统一使用 `ApiError`。
+- ID 是不透明字符串，客户端不得从格式、长度或顺序推导业务含义。
+- API 时间统一为 ISO 8601 UTC 字符串；MySQL 按 UTC 保存。
+- 契约声明为 `null` 的空值必须明确返回 `null`；数组字段始终返回数组，不因无数据而省略。
 
 MVP 暂不实现：
 
@@ -24,7 +32,7 @@ MVP 暂不实现：
 - `GET /api/login/captcha` 和手机验证码登录。
 - 多个 Organization 在同一页面运行。
 - DataScope 作为全局切换器或顶栏标签。
-- 前端提交权限码参与鉴权。
+- 普通业务请求由前端提交权限码参与鉴权；唯一例外是 Super Admin 的用户授权快照接口。
 
 ## 2. 接口总表
 
@@ -32,14 +40,21 @@ MVP 暂不实现：
 | --- | --- | --- | --- |
 | `POST` | `/api/register` | 否 | 创建账户，不签发 JWT |
 | `POST` | `/api/login/account` | 否 | 账号密码登录并返回 access JWT |
+| `POST` | `/api/password/forgot` | 否 | 请求一次性密码重置凭证 |
+| `POST` | `/api/password/reset` | 否 | 使用一次性凭证设置新密码 |
 | `GET` | `/api/currentUser` | Bearer JWT | 获取用户、Platform Access 和可进入的 Organization Access |
 | `PUT` | `/api/users/me/default-organization` | Bearer JWT | 保存非 Platform 用户的长期默认组织 |
-| `GET` | `/api/platform/organizations` | Bearer JWT + Platform 权限 | 获取 Super Admin 可管理的组织目录 |
 | `POST` | `/api/login/outLogin` | Bearer JWT | 可选的注销审计 |
+| `GET/POST` | `/api/admin/users` | Bearer JWT + Super Admin | 查询或创建用户 |
+| `GET/PATCH/DELETE` | `/api/admin/users/:userId` | Bearer JWT + Super Admin | 查询、更新或软删除用户 |
+| `GET/PUT` | `/api/admin/users/:userId/access` | Bearer JWT + Super Admin | 查询或原子替换用户授权 |
+| `GET` | `/api/admin/access-catalog` | Bearer JWT + Super Admin | 获取可授予 Permission 与 Skill |
+| `GET/POST` | `/api/admin/organizations` | Bearer JWT + Super Admin | 查询或创建 Organization |
+| `PATCH/DELETE` | `/api/admin/organizations/:organizationId` | Bearer JWT + Super Admin | 更新或删除空 Organization/仅含初始化访问的 Organization |
 | 按业务定义 | Platform API | Bearer JWT | 使用 Platform 权限，不携带 Organization Header |
 | 按业务定义 | Organization API | Bearer JWT + `X-Organization-Id` | 使用指定 Organization 的权限和数据范围 |
 
-`/api/currentUser.organizations` 只表示用户可以进入的组织，不能替代 Super Admin 的平台组织目录。Super Admin 管理全部组织时使用 `/api/platform/organizations`。
+`/api/currentUser.organizations` 只表示用户可以进入的组织，不能替代 Super Admin 的平台组织目录。Super Admin 修改用户授权时使用 `/api/admin/organizations`。
 
 项目中已有但 MVP 不使用的认证接口：
 
@@ -64,12 +79,21 @@ type ApiError = {
   details?: Record<string, unknown>;
   traceId: string;
 };
+
+type PageResult<T> = {
+  list: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
 ```
 
-- `401/403` 必须使用对应 HTTP 状态，不能返回 `HTTP 200 + success: false`。
+- 所有成功接口都返回 `ApiSuccess<T>`；登录接口不再使用特殊的顶层响应结构。
+- `400/401/403/404/409/500/503` 必须使用对应 HTTP 状态，不能返回 `HTTP 200 + success: false`。
 - `errorCode` 固定为稳定字符串，不使用 HTTP 状态数字代替业务错误码。
 - `traceId` 用于链路排查，不包含 JWT、密码或权限敏感数据。
 - 后端错误信息可以展示，但不能泄露用户无权访问的组织是否存在。
+- `details` 只包含安全的字段校验信息；SQL、堆栈和内部路径只记录在服务端。
 
 ## 4. 核心访问结构
 
@@ -80,7 +104,7 @@ type AuthCurrentUser = {
   name: string;
   avatar: string | null;
   email: string;
-  status: 'active' | 'disabled' | 'deleted';
+  status: UserStatus;
   isSuperAdmin: boolean;
 
   // Platform 控制面权限；不能由 Organization 权限合并得到。
@@ -93,6 +117,8 @@ type AuthCurrentUser = {
   // 当前用户可以真正“进入”的组织，不代表 Platform 可管理组织全集。
   organizations: OrganizationAccess[];
 };
+
+type UserStatus = 'active' | 'disabled' | 'deleted';
 
 type OrganizationAccess = {
   organizationId: string;
@@ -135,6 +161,8 @@ AuthCurrentUser
 - `organizationId` 是 URL、Storage Scope Key 和 `X-Organization-Id` 的唯一组织标识。
 - API JSON 使用 camelCase；数据库列继续使用 snake_case，由 Repository 映射。
 - 响应对象保持稳定字段形状：字段存在但无值时返回 `null`，不省略字段。
+- 没有有效默认组织时，`defaultOrganizationId` 明确返回 `null`，不省略字段。
+- 没有默认 DataScope 时，`defaultDataScopeId` 明确返回 `null`；数组字段始终返回数组。
 - `dataScopeId` 只能用于组织内部的数据过滤，不得替代 `organizationId`。
 - `permissions` 与 `skillCodes` 是并列的派生结果，不互相推导。
 - Role 可用于后台配置、展示和审计，但前后端不能只根据 `role === 'admin'` 放行。
@@ -219,7 +247,7 @@ type RegisteredUser = {
 | `name` | `string` | 是 | 用户展示名称 |
 | `password` | `string` | 是 | 明文仅通过 HTTPS 传输，后端使用强密码哈希保存 |
 | `userId` | `string` | 是 | 新用户唯一 ID |
-| `status` | `"active"` | 是 | 新用户的账号状态 |
+| `status` | `"active"` | 是 | 注册后的初始用户状态 |
 
 前端可以保留 `confirm` 字段校验两次密码一致，但不发送给后端。后端必须独立校验用户名、邮箱、展示名称和密码强度。MVP 不发送手机或邮箱验证码，也不包含邮箱激活流程。
 
@@ -241,6 +269,7 @@ Content-Type: application/json
 
 ```ts
 type LoginRequest = {
+  // 可以是 username 或 email。
   account: string;
   password: string;
 };
@@ -269,7 +298,7 @@ Pragma: no-cache
     "accessToken": "eyJhbGciOiJSUzI1NiIs...",
     "tokenType": "Bearer",
     "expiresIn": 7200,
-    "expiresAt": "2026-07-26T10:00:00Z"
+    "expiresAt": "2026-08-05T10:00:00Z"
   },
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
@@ -284,7 +313,7 @@ Pragma: no-cache
 | `expiresIn` | `number` | 是 | 剩余有效秒数 |
 | `expiresAt` | `string` | 是 | UTC RFC 3339 过期时间 |
 
-access token 保存到 `localStorage`，后续通过 `Authorization: Bearer <jwt>` 发送。JWT 过期后端返回 `401`，前端清理 token 并重新登录。旧字段 `username`、`type`、`autoLogin` 和 `currentAuthority` 不再进入产品 API。
+access token 保存到 `localStorage`，后续通过 `Authorization: Bearer <jwt>` 发送。JWT 过期后端返回 `401`，前端清理 token 并重新登录。旧字段 `username`、`type`、`autoLogin`、`status` 和 `currentAuthority` 不进入新后端契约；前端一次性迁移，不做双字段 Fallback。
 
 登录失败：
 
@@ -300,6 +329,42 @@ HTTP/1.1 401 Unauthorized
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
 ```
+
+### `POST /api/password/forgot`
+
+请求字段固定为注册邮箱：
+
+```ts
+type ForgotPasswordRequest = {
+  email: string;
+};
+```
+
+开发环境响应：
+
+```ts
+type ForgotPasswordData = {
+  accepted: true;
+  expiresAt: string;
+  developmentResetToken: string;
+};
+```
+
+- 不论邮箱是否存在，请求阶段都返回相同结构，避免直接枚举账户。
+- 原始 Token 只返回一次；MySQL 只保存 SHA-256 Hash。
+- Token 15 分钟过期，新请求会使同一用户之前未使用的 Token 失效。
+- `developmentResetToken` 仅用于本机开发闭环；生产环境未配置邮件投递时返回 `503 PASSWORD_RESET_DELIVERY_UNAVAILABLE`，不能伪装成已发送。
+
+### `POST /api/password/reset`
+
+```ts
+type ResetPasswordRequest = {
+  token: string;
+  password: string;
+};
+```
+
+成功响应的 `data` 为 `{ reset: true }`。成功后 Token 标记为已使用，用户 `tokenVersion` 递增，旧 JWT 在下一次请求时失效。无效、已使用或过期 Token 统一返回 `400 PASSWORD_RESET_TOKEN_INVALID`。
 
 ## 6. 获取用户与访问范围
 
@@ -357,6 +422,7 @@ Super Admin 示例差异：
 
 ```json
 {
+  "isSuperAdmin": true,
   "platformPermissions": [
     "platform:organization:create",
     "platform:organization:update",
@@ -364,12 +430,17 @@ Super Admin 示例差异：
     "platform:permission:grant",
     "platform:audit:view"
   ],
-  "platformSkillCodes": ["platform-assistant"],
+  "platformSkillCodes": [
+    "platform-assistant",
+    "file-review",
+    "document-summary",
+    "knowledge-search"
+  ],
   "organizations": []
 }
 ```
 
-Super Admin 即使可以管理全部组织，也不要求 `organizations` 返回所有组织。只有明确允许“进入组织业务工作区”的组织才进入该数组。
+Super Admin 即使可以管理全部组织，也不要求 `organizations` 返回所有组织。只有明确允许“进入组织业务工作区”的组织才进入该数组。Super Admin 创建 Organization 时会成为该组织的成员并获得 `organization:*` 与全部 Organization Skill；新建组织因此会进入该创建者的数组。
 
 ## 7. Platform 与 Organization Access
 
@@ -432,7 +503,166 @@ Content-Type: application/json
 
 右上角临时切换 WorkspaceScope 不修改 `defaultOrganizationId`。只有用户在默认组织设置或首次选择流程中明确确认时才调用本接口。
 
-## 9. WorkspaceScope 与 URL
+## 9. Super Admin 用户与授权 API
+
+所有 `/api/admin/*` 接口必须同时验证 Bearer JWT、用户状态、`tokenVersion` 和数据库中的 `isSuperAdmin`。普通 Platform Permission 不能替代 Super Admin 身份。
+
+### 9.1 统一用户结构
+
+```ts
+type AdminUser = {
+  userId: string;
+  username: string;
+  email: string;
+  name: string;
+  avatar: string | null;
+  status: UserStatus;
+  isSuperAdmin: boolean;
+  defaultOrganizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+type CreateUserRequest = {
+  username: string;
+  email: string;
+  name: string;
+  password: string;
+  status: 'active' | 'disabled';
+};
+
+type UpdateUserRequest = {
+  username?: string;
+  email?: string;
+  name?: string;
+  status?: 'active' | 'disabled';
+};
+```
+
+规则：
+
+- `RegisterRequest` 与 `CreateUserRequest` 共享 `username/email/name/password` 的字段名和校验规则。
+- 管理员创建用户额外要求明确提交 `status`，不依赖后端隐式默认值。
+- `UpdateUserRequest` 至少包含一个字段，未知字段返回 `VALIDATION_ERROR`。
+- `isSuperAdmin`、`userId`、时间字段和 `defaultOrganizationId` 不能通过普通用户更新接口修改。
+- `DELETE` 执行软删除；恢复使用 `PATCH status=active`，但仍受 Super Admin 保护规则约束。
+
+### 9.2 用户 CRUD
+
+当前只实现分页只读列表。`POST /api/admin/users`、`PATCH /api/admin/users/:userId` 和
+`DELETE /api/admin/users/:userId` 已预留，调用时返回 `501 FEATURE_NOT_IMPLEMENTED`，不产生数据写入。
+其余表格中的接口仍是目标契约，不代表当前已经开放。
+
+| 方法 | 路径 | 请求 | 成功响应 `data` |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/users` | `UserListQuery` | `PageResult<AdminUser>` |
+| `POST` | `/api/admin/users` | `CreateUserRequest` | `AdminUser` |
+| `GET` | `/api/admin/users/:userId` | 无 | `AdminUser` |
+| `PATCH` | `/api/admin/users/:userId` | `UpdateUserRequest` | `AdminUser` |
+| `DELETE` | `/api/admin/users/:userId` | 无 | `{ userId: string; status: 'deleted' }` |
+
+```ts
+type UserListQuery = {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+  status?: UserStatus;
+  sortBy?: 'username' | 'email' | 'name' | 'status' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+};
+```
+
+- `page` 和 `pageSize` 必填，避免客户端与服务端使用不同的隐式分页值。
+- `sortBy` 只允许白名单值；非法值返回 400，不拼接到 SQL。
+- `keyword` 由后端定义对 `username/email/name` 的安全匹配。
+- 禁止删除或停用当前 Super Admin 自己，也禁止删除或停用最后一个有效 Super Admin。
+
+### 9.3 用户授权快照
+
+```ts
+type OrganizationAccessAssignment = {
+  organizationId: string;
+  permissions: string[];
+  skillCodes: string[];
+};
+
+type UserAccessSnapshot = {
+  platformPermissions: string[];
+  platformSkillCodes: string[];
+  organizations: OrganizationAccessAssignment[];
+};
+```
+
+| 方法 | 路径 | 请求 | 成功响应 `data` |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/users/:userId/access` | 无 | `UserAccessSnapshot` |
+| `PUT` | `/api/admin/users/:userId/access` | `UserAccessSnapshot` | `UserAccessSnapshot` |
+
+`PUT` 是完整快照替换：
+
+1. 先校验所有 Organization、Permission 和 Skill Code。
+2. 对数组去重；重复值返回 400，不静默去重。
+3. 任一值无效时整笔请求失败。
+4. 验证成功后，在一个 MySQL 事务中替换 Membership 与 Grant。
+5. 返回数据库重新读取的最终快照，不直接回显请求体。
+6. 撤销关键访问时递增目标用户 `tokenVersion`。
+
+`OrganizationAccessAssignment` 是管理写模型；`OrganizationAccess` 是 `/api/currentUser` 的读模型。后者额外包含组织编码、名称与 DataScope，不能把两个类型混用。
+
+### 9.4 授权目录与组织目录
+
+```ts
+type AccessCatalogItem = {
+  code: string;
+  name: string;
+  description: string;
+};
+
+type AccessCatalog = {
+  platformPermissions: AccessCatalogItem[];
+  organizationPermissions: AccessCatalogItem[];
+  platformSkills: AccessCatalogItem[];
+  organizationSkills: AccessCatalogItem[];
+};
+
+type OrganizationSummary = {
+  organizationId: string;
+  organizationCode: string;
+  organizationName: string;
+  status: 'active' | 'disabled';
+  createdAt: string;
+  updatedAt: string;
+};
+
+type CreateOrganizationRequest = {
+  organizationCode: string;
+  organizationName: string;
+  status: 'active' | 'disabled';
+};
+
+type UpdateOrganizationRequest = {
+  organizationName?: string;
+  status?: 'active' | 'disabled';
+};
+```
+
+| 方法 | 路径 | 成功响应 `data` |
+| --- | --- | --- |
+| `GET` | `/api/admin/access-catalog` | `AccessCatalog` |
+| `GET` | `/api/admin/organizations` | `OrganizationSummary[]` |
+| `POST` | `/api/admin/organizations` | `OrganizationSummary` |
+| `PATCH` | `/api/admin/organizations/:organizationId` | `OrganizationSummary` |
+| `DELETE` | `/api/admin/organizations/:organizationId` | `{ organizationId: string }` |
+
+- Access Catalog 来自后端 Allowlist，不从现有用户授权反推。
+- 未知 Code 返回 `UNKNOWN_PERMISSION` 或 `UNKNOWN_SKILL`。
+- 只有 `active` Organization 可以加入新的用户授权快照。
+- Organization Code 创建时统一转为大写，创建后不可修改。
+- POST 原子写入 Organization、创建者 Membership、`organization:*` 和全部 Organization Skill Grant。
+- DELETE 允许删除空 Organization，也允许原子清理并删除只含创建者完整初始化访问的 Organization；存在其他成员、额外 Grant 或不完整初始化访问时返回 `409 ORGANIZATION_IN_USE`。
+
+## 10. WorkspaceScope 与 URL
 
 最终 URL：
 
@@ -459,16 +689,16 @@ Content-Type: application/json
 - Platform 与每个 Organization 可以拥有各自隔离的标签恢复快照，但任意时刻只读取当前 Scope 的快照。
 - URL 是当前 Scope、当前标签和 Sidebar 的唯一导航依据，不持久化独立 `sidebarState`。
 
-## 10. 业务请求
+## 11. 业务请求
 
-### Platform 请求
+### Super Admin Platform 请求
 
 ```http
-GET /api/platform/organizations
+GET /api/admin/organizations
 Authorization: Bearer <jwt>
 ```
 
-后端校验：JWT → Platform 实时权限 → 具体操作权限。
+后端校验：JWT → 用户实时状态与 `tokenVersion` → `isSuperAdmin` → 具体操作约束。
 
 ### Organization 请求
 
@@ -497,7 +727,7 @@ X-Organization-Id: org-1
 - 不使用全局 `X-Data-Scope-Id`，避免不同 App 或并发请求误用同一 DataScope。
 - 接口不需要 DataScope 时不传；需要但缺少时返回 `DATA_SCOPE_REQUIRED`。
 
-## 11. 标签恢复边界
+## 12. 标签恢复边界
 
 标签快照按以下 Key 隔离：
 
@@ -519,17 +749,17 @@ workspace-tabs:{version}:{userId}:organization:{organizationId}
 
 恢复时以最新 `/api/currentUser` 为准，删除已撤权 Organization 或 App 的记录。
 
-## 12. 注销
+## 13. 注销
 
 Bearer-only MVP 的注销由前端清除本地 access token 完成：
 
 ```ts
-localStorage.removeItem('accessToken');
+localStorage.removeItem('ant-design-pro.access-token');
 ```
 
-### `POST /api/login/outLogin`（可选）
+### `POST /api/login/outLogin`
 
-如后端需要记录注销审计，前端在删除 token 前调用：
+前端在删除 token 前调用经过认证的退出确认接口：
 
 ```http
 POST /api/login/outLogin
@@ -539,21 +769,33 @@ Authorization: Bearer <jwt>
 ```json
 {
   "success": true,
-  "data": null,
+  "data": {
+    "loggedOut": true,
+    "serverTokenRevoked": false
+  },
   "traceId": "019f34df-ba75-77a1-97b9-cd2b0056bec8"
 }
 ```
 
-纯无状态 JWT 无法立即撤销已签发 token。如需强制下线，后续增加 `jti` 黑名单或用户 `tokenVersion`。
+当前 `serverTokenRevoked: false` 明确表示后端只确认退出请求，前端仍负责在 `finally` 中删除本地 token。
+纯无状态 JWT 无法立即撤销已签发 token；后续接入 Redis `jti` 黑名单后，撤销成功时改为返回
+`serverTokenRevoked: true`。用户 `tokenVersion` 继续用于密码重置、封禁和全部设备下线。
 
-## 13. 错误码
+## 14. 错误码
 
 | HTTP | `errorCode` | 含义 |
 | --- | --- | --- |
 | `400` | `VALIDATION_ERROR` | 请求字段不合法 |
 | `400` | `ORGANIZATION_REQUIRED` | Organization API 缺少 `X-Organization-Id` |
 | `400` | `DATA_SCOPE_REQUIRED` | 当前接口要求 DataScope，但请求未提供 |
+| `400` | `UNKNOWN_PERMISSION` | 请求包含未定义 Permission Code |
+| `400` | `UNKNOWN_SKILL` | 请求包含未定义 Skill Code |
+| `400` | `PASSWORD_RESET_TOKEN_INVALID` | 密码重置 Token 无效、已使用或已过期 |
 | `409` | `ACCOUNT_ALREADY_EXISTS` | 用户名或邮箱已存在 |
+| `409` | `LAST_SUPER_ADMIN` | 操作会移除最后一个有效 Super Admin |
+| `409` | `SUPER_ADMIN_ALREADY_EXISTS` | 受控 Seed 检测到已有 Super Admin |
+| `409` | `SUPER_ADMIN_SEED_BUSY` | 另一个 Super Admin Seed 正在执行 |
+| `409` | `CANNOT_MODIFY_SELF` | Super Admin 尝试删除或停用自己 |
 | `401` | `BAD_CREDENTIALS` | 用户名或密码错误 |
 | `401` | `ACCESS_TOKEN_MISSING` | 未携带 Bearer token |
 | `401` | `ACCESS_TOKEN_INVALID` | JWT 签名或 Claims 无效 |
@@ -562,22 +804,68 @@ Authorization: Bearer <jwt>
 | `403` | `ORGANIZATION_FORBIDDEN` | 用户不能进入指定 Organization |
 | `403` | `DATA_SCOPE_FORBIDDEN` | DataScope 不属于当前用户和 Organization |
 | `403` | `PERMISSION_DENIED` | 当前 Scope 缺少具体操作权限 |
+| `403` | `SUPER_ADMIN_REQUIRED` | 当前接口只允许 Super Admin |
+| `404` | `USER_NOT_FOUND` | 目标用户不存在 |
+| `404` | `ORGANIZATION_NOT_FOUND` | 目标 Organization 不存在 |
 | `500` | `INTERNAL_ERROR` | 后端异常 |
+| `501` | `FEATURE_NOT_IMPLEMENTED` | 接口路径已预留，但当前版本尚未实现该能力 |
+| `503` | `DATABASE_UNAVAILABLE` | MySQL 不可用或依赖尚未就绪 |
+| `503` | `PASSWORD_RESET_DELIVERY_UNAVAILABLE` | 生产环境尚未配置密码重置邮件投递 |
 
-## 14. 后端配置与安全要求
+## 15. 后端配置与安全要求
 
-- Express 使用无状态认证中间件执行 JWT 鉴权。
+- Node.js + Express 后端保持无状态，不创建服务端 Session。
+- MySQL 使用连接池、参数化查询和显式事务。
 - 从 `Authorization: Bearer <token>` Header 提取并验证 JWT。
 - CORS 仅允许受信任前端域名，不使用 `*`。
 - CORS 允许 `Content-Type`、`Authorization` 和 `X-Organization-Id`。
+- CORS Methods 允许实际需要的 `GET`、`POST`、`PUT`、`PATCH`、`DELETE` 和 `OPTIONS`。
 - `OPTIONS` 预检请求不要求登录。
 - Platform API 不能因为携带某个 Organization ID 而获得或扩大权限。
 - Organization API 必须校验用户、Organization、DataScope 与权限的完整关系。
 - JWT、密码和权限敏感数据不得进入日志或错误信息。
+- 密码重置原始 Token 不得写入日志或 MySQL；生产环境只能通过受控邮件投递。
 - Bearer Header 不会被浏览器自动携带，MVP 不需要 CSRF Token。
 - 建议配置严格 CSP，降低 localStorage token 被 XSS 窃取的风险。
+- 环境变量、JWT Secret 或私钥、数据库凭据缺失时启动失败，不回退默认配置。
+- 数据库、权限或用户查询失败时返回标准错误，不回退 Mock、静态数组、默认管理员或空权限。
 
-## 15. 旧协议迁移
+## 16. 字段映射与旧协议迁移
+
+### 16.1 MySQL 与 API 字段映射
+
+| MySQL | API JSON |
+| --- | --- |
+| `id` / `user_id` | `userId` |
+| `display_name` | `name` |
+| `avatar_url` | `avatar` |
+| `is_super_admin` | `isSuperAdmin` |
+| `default_organization_id` | `defaultOrganizationId` |
+| `token_version` | 仅 JWT 校验使用，不在普通用户 DTO 暴露 |
+| `organization_id` | `organizationId` |
+| `organization_code` / `code` | `organizationCode` |
+| `organization_name` / `name` | `organizationName` |
+| `skill_code` | `skillCodes[]` 中的元素 |
+| `created_at` | `createdAt` |
+| `updated_at` | `updatedAt` |
+| `deleted_at` | `deletedAt` |
+
+Repository 是唯一允许执行 snake_case/camelCase 映射的层。Route、Service、OpenAPI 和前端统一使用 API JSON 字段。
+
+### 16.2 前端旧字段迁移
+
+| 旧字段 | 统一字段/处理 |
+| --- | --- |
+| `userid` | `userId` |
+| 登录请求 `username` | `account`，可接受用户名或邮箱值 |
+| 登录请求 `type`、`autoLogin` | 删除，不发送到后端 |
+| 登录响应 `status`、`type`、`currentAuthority` | 删除；成功由 `success: true` 表达，权限来自 `/api/currentUser` |
+| `access` | 删除；使用 `isSuperAdmin`、`platformPermissions` 与 Organization `permissions` |
+| 注册响应 `status: "ok"` | `status: "active"`，使用统一 `UserStatus` |
+
+不同时返回新旧字段，也不在前端用 `newField ?? oldField` 长期兼容。OpenAPI 和调用方在同一变更中完成迁移。
+
+### 16.3 Workspace 旧协议迁移
 
 | 旧字段/行为 | 新字段/行为 |
 | --- | --- |
@@ -593,4 +881,4 @@ Authorization: Bearer <jwt>
 | System/Context 切换不刷新 | WorkspaceScope 切换执行整页导航 |
 | 多 System 标签同时存在 | 仅当前 Scope 的 Home/App 标签运行 |
 
-迁移期间可以在 API Adapter 层兼容旧响应，但旧 Context 字段不得继续进入 Workspace、标签、Sidebar 和权限核心模型。
+新后端不提供旧 Context 字段兼容响应。OpenAPI、前端调用方和后端在同一功能分支内一次性迁移，旧字段不得继续进入 Workspace、标签、Sidebar 和权限核心模型。

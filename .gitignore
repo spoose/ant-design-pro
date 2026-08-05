@@ -52,6 +52,3 @@ docs/superpowers
 # cloudflare wrangler
 .wrangler
 requestRecord.mock.js
-
-# experimental backend lives on its own branch
-/server/

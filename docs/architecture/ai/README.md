@@ -40,11 +40,11 @@ Ant Design X 会话页面
 主要实现：
 
 - 前端 Provider：`src/pages/workspace/app/platform-assistant/provider.ts`
-- 后端路由：`.worktrees/auth-backend/server/src/routes/pai.ts`
-- pAI Agent：`.worktrees/auth-backend/server/src/ai/agents/paiAgent.ts`
-- Agent 事件适配：`.worktrees/auth-backend/server/src/ai/services/paiAgentService.ts`
-- 模型 ID：`.worktrees/auth-backend/server/src/ai/models/deepSeek.ts`
-- Web Tool：`.worktrees/auth-backend/server/src/ai/tools/webSearchTool.ts`
+- 后端路由：`server/src/routes/pai.ts`
+- pAI Agent：`server/src/ai/agents/paiAgent.ts`
+- Agent 事件适配：`server/src/ai/services/paiAgentService.ts`
+- 模型 ID：`server/src/ai/models/deepSeek.ts`
+- Web Tool：`server/src/ai/tools/webSearchTool.ts`
 
 当前尚未具备：
 
