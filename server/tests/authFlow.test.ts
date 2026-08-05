@@ -129,8 +129,7 @@ class MemoryUserRepository implements UserRepositoryPort {
     const user = this.users.get(userId);
     const accessibleOrganizations = this.organizationAccess.get(userId);
     if (
-      !user ||
-      user.status !== 'active' ||
+      user?.status !== 'active' ||
       !accessibleOrganizations?.has(organizationId)
     ) {
       return 'organization_forbidden';
