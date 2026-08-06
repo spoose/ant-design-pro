@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title description">
+  <title id="title">JU SHU enterprise workspace</title>
+  <desc id="description">A calm enterprise workspace showing Platform and Organization scopes, permission-aware applications, and the pAI assistant.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif; }
+    .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    .canvas { fill: #f5f5f5; }
+    .surface { fill: #ffffff; }
+    .surface-soft { fill: #fafafa; }
+    .ink { fill: #09090b; }
+    .muted { fill: #52525c; }
+    .faint { fill: #71717a; }
+    .line { stroke: #e4e4e7; }
+    .line-strong { stroke: #d4d4d8; }
+    .chip { fill: #f4f4f5; }
+    .accent { fill: #e8bf85; }
+    .accent-soft { fill: #fbf2e6; }
+    .success { fill: #54915c; }
+    .success-soft { fill: #d9fbdd; }
+    @media (prefers-color-scheme: dark) {
+      .canvas { fill: #111113; }
+      .surface { fill: #18181b; }
+      .surface-soft { fill: #202024; }
+      .ink { fill: #fafafa; }
+      .muted { fill: #d4d4d8; }
+      .faint { fill: #a1a1aa; }
+      .line { stroke: #303036; }
+      .line-strong { stroke: #3f3f46; }
+      .chip { fill: #27272a; }
+      .accent-soft { fill: #32291e; }
+      .success-soft { fill: #1e3522; }
+    }
+  </style>
+
+  <rect class="canvas" width="1200" height="520" rx="24"/>
+  <path class="line" d="M0 68H1200"/>
+  <path class="line" d="M472 68V520"/>
+
+  <g transform="translate(42 25)">
+    <rect class="accent" width="32" height="32" rx="8"/>
+    <path class="ink" d="M10 9h5v11c0 4.4-3.6 8-8 8H6v-5h1c1.7 0 3-1.3 3-3V9Zm9 0h5c4.4 0 8 3.6 8 8s-3.6 8-8 8h-5v-5h5a3 3 0 1 0 0-6h-5V9Zm0 16h5v3h-5v-3Z"/>
+    <text class="ink" x="46" y="15" font-size="15" font-weight="700" letter-spacing="2">JU SHU</text>
+    <text class="faint mono" x="46" y="30" font-size="9" letter-spacing="1.2">ENTERPRISE WORKSPACE</text>
+  </g>
+
+  <g transform="translate(42 112)">
+    <rect class="accent-soft" width="132" height="28" rx="14"/>
+    <circle class="accent" cx="16" cy="14" r="4"/>
+    <text class="muted mono" x="28" y="18" font-size="11">scope-aware</text>
+
+    <text class="ink" x="0" y="84" font-size="42" font-weight="650">一个账号</text>
+    <text class="ink" x="0" y="136" font-size="42" font-weight="650">进入正确的工作空间</text>
+    <text class="muted" x="0" y="180" font-size="16">Platform 与 Organization 各自拥有明确的</text>
+    <text class="muted" x="0" y="206" font-size="16">路由、权限、应用与操作边界。</text>
+
+    <g transform="translate(0 250)">
+      <rect class="surface" width="188" height="48" rx="10"/>
+      <rect class="line" width="188" height="48" rx="10" fill="none"/>
+      <circle class="ink" cx="22" cy="24" r="5"/>
+      <text class="ink" x="38" y="21" font-size="12" font-weight="650">Platform</text>
+      <text class="faint mono" x="38" y="35" font-size="9">/workspace/platform</text>
+    </g>
+    <path class="line-strong" d="M196 274h28" stroke-dasharray="3 4"/>
+    <path class="line-strong" d="m219 269 6 5-6 5" fill="none"/>
+    <g transform="translate(232 250)">
+      <rect class="surface" width="188" height="48" rx="10"/>
+      <rect class="line" width="188" height="48" rx="10" fill="none"/>
+      <rect class="accent" x="16" y="18" width="12" height="12" rx="3"/>
+      <text class="ink" x="38" y="21" font-size="12" font-weight="650">Organization</text>
+      <text class="faint mono" x="38" y="35" font-size="9">/workspace/org/:id</text>
+    </g>
+
+    <text class="faint mono" x="0" y="346" font-size="10">React 19 · Umi Max 4 · antd 6 · Express 5 · MySQL · Mastra</text>
+  </g>
+
+  <g transform="translate(510 96)">
+    <rect class="surface" width="648" height="380" rx="16"/>
+    <rect class="line-strong" width="648" height="380" rx="16" fill="none"/>
+
+    <g transform="translate(18 16)">
+      <rect class="accent" width="25" height="25" rx="7"/>
+      <path class="ink" d="M8 7h4v8c0 3-2.5 5.5-5.5 5.5H6v-4h.5c.8 0 1.5-.7 1.5-1.5V7Zm7 0h3.5a5.5 5.5 0 1 1 0 11H15v-4h3.5a1.5 1.5 0 0 0 0-3H15V7Z"/>
+      <text class="ink" x="36" y="17" font-size="12" font-weight="700">JU SHU</text>
+      <rect class="chip" x="356" width="92" height="25" rx="7"/>
+      <text class="muted" x="374" y="17" font-size="10">Platform</text>
+      <rect class="accent-soft" x="458" width="154" height="25" rx="7"/>
+      <text class="ink" x="476" y="17" font-size="10" font-weight="600">北辰运营中心</text>
+    </g>
+    <path class="line" d="M0 57H648"/>
+
+    <g transform="translate(18 74)">
+      <rect class="surface-soft" width="142" height="288" rx="10"/>
+      <text class="faint" x="15" y="25" font-size="9" font-weight="650" letter-spacing="1">WORKSPACE</text>
+      <rect class="surface" x="7" y="38" width="128" height="34" rx="7"/>
+      <rect class="accent" x="15" y="47" width="16" height="16" rx="4"/>
+      <text class="ink" x="40" y="59" font-size="11" font-weight="650">组织首页</text>
+      <text class="muted" x="15" y="98" font-size="11">成员管理</text>
+      <text class="muted" x="15" y="128" font-size="11">角色与权限</text>
+      <text class="muted" x="15" y="158" font-size="11">组织设置</text>
+      <path class="line" d="M15 181H127"/>
+      <text class="faint" x="15" y="205" font-size="9" font-weight="650" letter-spacing="1">CURRENT SCOPE</text>
+      <text class="ink" x="15" y="228" font-size="11" font-weight="650">北辰运营中心</text>
+      <text class="faint mono" x="15" y="246" font-size="9">ORG-BEICHEN</text>
+      <rect class="success-soft" x="15" y="259" width="64" height="20" rx="10"/>
+      <circle class="success" cx="26" cy="269" r="3"/>
+      <text class="success" x="34" y="273" font-size="9" font-weight="650">已启用</text>
+    </g>
+
+    <g transform="translate(178 74)">
+      <text class="faint" y="13" font-size="10">北辰运营中心 / 组织首页</text>
+      <text class="ink" y="46" font-size="23" font-weight="650">当前工作区</text>
+      <text class="muted" x="260" y="45" font-size="10">权限 4 项 · 应用 3 项</text>
+
+      <g transform="translate(0 66)">
+        <rect class="surface-soft" width="438" height="62" rx="10"/>
+        <text class="faint" x="14" y="20" font-size="9" font-weight="650">CURRENT PERMISSIONS</text>
+        <g class="mono" font-size="8.5">
+          <rect class="chip" x="14" y="30" width="108" height="20" rx="4"/>
+          <text class="muted" x="23" y="44">org:members:read</text>
+          <rect class="chip" x="130" y="30" width="96" height="20" rx="4"/>
+          <text class="muted" x="139" y="44">app:pai:use</text>
+          <rect class="chip" x="234" y="30" width="118" height="20" rx="4"/>
+          <text class="muted" x="243" y="44">file:review:read</text>
+        </g>
+      </g>
+
+      <text class="ink" y="157" font-size="12" font-weight="650">组织应用</text>
+      <text class="faint" x="399" y="157" font-size="9">3 项</text>
+
+      <g transform="translate(0 171)">
+        <rect class="surface-soft" width="137" height="92" rx="11"/>
+        <rect class="line" width="137" height="92" rx="11" fill="none"/>
+        <circle class="accent" cx="24" cy="24" r="10"/>
+        <path class="ink" d="M19 24h10M24 19v10" stroke="#09090b" stroke-width="1.5"/>
+        <text class="ink" x="14" y="56" font-size="12" font-weight="650">pAI</text>
+        <text class="faint" x="14" y="75" font-size="9">智能协作助手</text>
+      </g>
+      <g transform="translate(149 171)">
+        <rect class="surface-soft" width="137" height="92" rx="11"/>
+        <rect class="line" width="137" height="92" rx="11" fill="none"/>
+        <rect class="chip" x="14" y="14" width="20" height="20" rx="5"/>
+        <path class="line-strong" d="M19 20h10M19 24h10M19 28h7"/>
+        <text class="ink" x="14" y="56" font-size="12" font-weight="650">文件审查</text>
+        <text class="faint" x="14" y="75" font-size="9">按 Scope 访问</text>
+      </g>
+      <g transform="translate(298 171)">
+        <rect class="surface-soft" width="140" height="92" rx="11"/>
+        <rect class="line" width="140" height="92" rx="11" fill="none"/>
+        <circle class="chip" cx="24" cy="24" r="10"/>
+        <path class="line-strong" d="M20 24h8M24 20v8"/>
+        <text class="ink" x="14" y="56" font-size="12" font-weight="650">知识检索</text>
+        <text class="faint" x="14" y="75" font-size="9">受控资料来源</text>
+      </g>
+
+      <g transform="translate(0 279)">
+        <circle class="success" cx="5" cy="5" r="4"/>
+        <text class="faint mono" x="16" y="9" font-size="9">URL → Scope → access → Skill → API</text>
+      </g>
+    </g>
+  </g>
+</svg>
