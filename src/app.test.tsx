@@ -65,6 +65,7 @@ vi.mock('@ant-design/icons', () => ({
   FileDoneOutlined: () => null,
   FileSearchOutlined: () => null,
   FileTextOutlined: () => null,
+  FolderOutlined: () => null,
   HistoryOutlined: () => null,
   HomeOutlined: () => null,
   InboxOutlined: () => null,

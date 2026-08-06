@@ -12,14 +12,17 @@ const bootstrapGrants = [
     grantType: 'permission',
     grantCode: 'organization:*',
   },
-  ...['file-review', 'document-summary', 'knowledge-search'].map(
-    (grantCode) => ({
-      userId: creatorUserId,
-      createdBy: creatorUserId,
-      grantType: 'skill',
-      grantCode,
-    }),
-  ),
+  ...[
+    'ai-assistant',
+    'file-review',
+    'document-summary',
+    'knowledge-search',
+  ].map((grantCode) => ({
+    userId: creatorUserId,
+    createdBy: creatorUserId,
+    grantType: 'skill',
+    grantCode,
+  })),
 ];
 
 function createDeletePool(options?: { includeAdditionalMember?: boolean }) {
@@ -98,7 +101,12 @@ describe('OrganizationRepository bootstrap access cleanup', () => {
         {
           creatorUserId,
           permissions: ['organization:*'],
-          skillCodes: ['file-review', 'document-summary', 'knowledge-search'],
+          skillCodes: [
+            'ai-assistant',
+            'file-review',
+            'document-summary',
+            'knowledge-search',
+          ],
         },
       ),
     ).resolves.toMatchObject({ organizationCode: 'NEW_ORG' });
@@ -123,6 +131,7 @@ describe('OrganizationRepository bootstrap access cleanup', () => {
     expect(grantsInsert?.[1]).toEqual(
       expect.arrayContaining([
         'organization:*',
+        'ai-assistant',
         'file-review',
         'document-summary',
         'knowledge-search',

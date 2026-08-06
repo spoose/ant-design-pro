@@ -32,6 +32,7 @@ vi.mock('@ant-design/icons', () => {
     FileDoneOutlined: Icon,
     FileSearchOutlined: Icon,
     FileTextOutlined: Icon,
+    FolderOutlined: Icon,
     HistoryOutlined: Icon,
     InboxOutlined: Icon,
     OllamaFilled: Icon,

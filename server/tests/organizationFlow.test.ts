@@ -153,7 +153,12 @@ describe('organization management flow', () => {
     expect(context.repository.lastBootstrapAccess).toEqual({
       creatorUserId: superAdminUserId,
       permissions: ['organization:*'],
-      skillCodes: ['file-review', 'document-summary', 'knowledge-search'],
+      skillCodes: [
+        'ai-assistant',
+        'file-review',
+        'document-summary',
+        'knowledge-search',
+      ],
     });
   });
 

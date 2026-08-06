@@ -1,9 +1,9 @@
 /**
  * pAI 前端领域模型：
  * MessageSource 描述消息引用的通用来源，PaiChatMessage 交给 X SDK 流式更新，
- * 会话与工作区类型则作为 useXChat、useXConversations 和 localStorage 的契约。
+ * 会话类型作为 useXChat、useXConversations 与后端会话 API 的前端契约。
  */
-import type { MessageInfo, XModelMessage } from '@ant-design/x-sdk';
+import type { XModelMessage } from '@ant-design/x-sdk';
 
 export type MessageSource = {
   sourceId: string;
@@ -24,6 +24,9 @@ export interface PaiChatMessage extends XModelMessage {
   content: string;
   /** 后端提供的候选来源；回答完成后再按模型实际引用派生展示列表。 */
   sources?: MessageSource[];
+  /** SSE error/done 的终态，用于在 HTTP 200 流中显示明确的失败或中止状态。 */
+  terminalStatus?: 'completed' | 'failed' | 'aborted';
+  errorMessage?: string;
 }
 
 export type PaiConversation = {
@@ -31,18 +34,13 @@ export type PaiConversation = {
   key: string;
   label: string;
   updatedAt: string;
-  /** 草稿会话在首次提问后使用问题摘要替换默认标题。 */
-  isDraft: boolean;
 };
 
-/** localStorage 中会话元数据与 X SDK 消息快照的组合。 */
-export type PaiStoredConversation = PaiConversation & {
-  messages: MessageInfo<PaiChatMessage>[];
-};
-
-export type PaiWorkspaceState = {
-  version: 1;
-  /** 当前活动会话，是 useXConversations 与 useXChat 之间的连接键。 */
-  activeConversationKey: string;
-  conversations: PaiStoredConversation[];
+/** useXChat 的本地消息参数和后端 Run 请求共用这一输入。 */
+export type PaiRunRequest = {
+  messages?: PaiChatMessage[];
+  idempotencyKey?: string;
+  content?: string;
+  knowledgeEnabled?: boolean;
+  webSearchEnabled?: boolean;
 };

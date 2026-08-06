@@ -170,5 +170,25 @@ describe('Workspace menus', () => {
         path: '/workspace/platform/apps/knowledge-search/history',
       },
     ]);
+
+    expect(
+      createAppWorkspaceMenus(
+        '/workspace/platform/apps/ai-assistant/overview',
+        'ai-assistant',
+      ).map(({ name, path }) => ({ name, path })),
+    ).toEqual([
+      {
+        name: '通用助手',
+        path: '/workspace/platform/apps/ai-assistant/overview',
+      },
+      {
+        name: '资源',
+        path: '/workspace/platform/apps/ai-assistant/resources',
+      },
+      {
+        name: '记忆',
+        path: '/workspace/platform/apps/ai-assistant/memory',
+      },
+    ]);
   });
 });

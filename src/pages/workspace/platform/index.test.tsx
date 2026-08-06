@@ -127,7 +127,7 @@ describe('PlatformOverview', () => {
         organizationRows={[]}
         permissions={[]}
         skillCodes={[
-          'platform-assistant',
+          'ai-assistant',
           'file-review',
           'document-summary',
           'knowledge-search',

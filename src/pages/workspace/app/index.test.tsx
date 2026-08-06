@@ -2,7 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WorkspaceAppPage from '.';
 
-const { useLocationMock, useModelMock } = vi.hoisted(() => ({
+const { requestMock, useLocationMock, useModelMock } = vi.hoisted(() => ({
+  requestMock: vi.fn(),
   useLocationMock: vi.fn(),
   useModelMock: vi.fn(),
 }));
@@ -15,6 +16,7 @@ vi.mock('@umijs/max', async () => {
   return {
     generatePath,
     matchPath,
+    request: requestMock,
     useLocation: useLocationMock,
     useModel: useModelMock,
   };
@@ -23,6 +25,7 @@ vi.mock('@umijs/max', async () => {
 describe('WorkspaceAppPage', () => {
   beforeEach(() => {
     localStorage.clear();
+    requestMock.mockReset();
     useLocationMock.mockReset();
     useModelMock.mockReset();
     useModelMock.mockReturnValue({
@@ -30,6 +33,49 @@ describe('WorkspaceAppPage', () => {
         currentUser: { userId: 'user-1', name: '测试用户' },
       },
     });
+    requestMock.mockImplementation(
+      (
+        url: string,
+        options?: { method?: string; data?: { title?: string } },
+      ) => {
+        const conversation = {
+          conversationId: 'conversation-1',
+          ownerUserId: 'user-1',
+          scope: { type: 'platform' },
+          title: options?.data?.title ?? '新对话',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        if (url === '/api/pai/conversations' && options?.method === 'GET') {
+          return Promise.resolve({
+            success: true,
+            data: [conversation],
+            traceId: 'trace-list',
+          });
+        }
+        if (
+          url === '/api/pai/conversations/conversation-1' &&
+          options?.method === 'GET'
+        ) {
+          return Promise.resolve({
+            success: true,
+            data: { conversation, turns: [] },
+            traceId: 'trace-history',
+          });
+        }
+        if (
+          url === '/api/pai/conversations/conversation-1' &&
+          options?.method === 'PATCH'
+        ) {
+          return Promise.resolve({
+            success: true,
+            data: conversation,
+            traceId: 'trace-update',
+          });
+        }
+        return Promise.reject(new Error(`Unexpected request: ${url}`));
+      },
+    );
   });
 
   it('loads an implemented page from the Skill Registry', async () => {
@@ -59,24 +105,37 @@ describe('WorkspaceAppPage', () => {
 
   it('loads the standalone pAI workbench from the Skill Registry', async () => {
     useLocationMock.mockReturnValue({
-      pathname: '/workspace/platform/apps/platform-assistant/overview',
+      pathname: '/workspace/platform/apps/ai-assistant/overview',
     });
 
     render(<WorkspaceAppPage />);
 
     expect(
-      await screen.findByRole(
-        'heading',
-        { level: 1, name: 'pAI' },
-        { timeout: 3000 },
-      ),
+      await screen.findByRole('region', { name: 'pAI' }, { timeout: 3000 }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { level: 1, name: 'pAI' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText('pAI 对话工作台')).toBeInTheDocument();
+  });
+
+  it('uses placeholders for unfinished pAI navigation pages', () => {
+    useLocationMock.mockReturnValue({
+      pathname: '/workspace/platform/apps/ai-assistant/memory',
+    });
+
+    render(<WorkspaceAppPage />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: '记忆' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('记忆页面待开发')).toBeInTheDocument();
+    expect(screen.queryByLabelText('pAI 对话工作台')).not.toBeInTheDocument();
   });
 
   it('collapses and expands the pAI conversation sidebar', async () => {
     useLocationMock.mockReturnValue({
-      pathname: '/workspace/platform/apps/platform-assistant/overview',
+      pathname: '/workspace/platform/apps/ai-assistant/overview',
     });
     render(<WorkspaceAppPage />);
 
@@ -89,15 +148,18 @@ describe('WorkspaceAppPage', () => {
     expect(sidebar).not.toHaveClass('ant-layout-sider-collapsed');
   });
 
-  it('renames a pAI conversation and persists the title', async () => {
+  it('renames a pAI conversation through the backend API', async () => {
     useLocationMock.mockReturnValue({
-      pathname: '/workspace/platform/apps/platform-assistant/overview',
+      pathname: '/workspace/platform/apps/ai-assistant/overview',
     });
     const { container } = render(<WorkspaceAppPage />);
 
     await screen.findByLabelText('pAI 对话工作台', {}, { timeout: 3000 });
-    const menuTrigger = container.querySelector('.ant-conversations-menu-icon');
-    expect(menuTrigger).toBeInTheDocument();
+    const menuTrigger = await waitFor(() => {
+      const trigger = container.querySelector('.ant-conversations-menu-icon');
+      expect(trigger).toBeInTheDocument();
+      return trigger;
+    });
     fireEvent.click(menuTrigger as Element);
     fireEvent.click(await screen.findByText('重命名'));
 
@@ -109,14 +171,9 @@ describe('WorkspaceAppPage', () => {
     await waitFor(() => {
       expect(screen.getAllByText('合同审查')).toHaveLength(2);
     });
-    await waitFor(() => {
-      const storedState = JSON.parse(
-        localStorage.getItem('pai:v1:user-1:platform') ?? '{}',
-      );
-      expect(storedState.conversations[0]).toMatchObject({
-        label: '合同审查',
-        isDraft: false,
-      });
-    });
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/pai/conversations/conversation-1',
+      { method: 'PATCH', data: { title: '合同审查' } },
+    );
   });
 });

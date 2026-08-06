@@ -1,6 +1,6 @@
 /**
  * 消息来源协议边界：
- * 将 SSE 或 localStorage 中的未知数据校验、清洗为 MessageSource[]；
+ * 将 SSE 中的未知数据校验、清洗为 MessageSource[]；
  * Provider 与持久化层共享该入口，避免不可信 URL 或损坏数据进入 UI。
  */
 import type { MessageSource } from './types';
@@ -26,7 +26,7 @@ const normalizeHttpUrl = (value: unknown): string | undefined => {
 };
 
 /**
- * 校验来自 SSE 或 localStorage 的消息来源。
+ * 校验来自 SSE 的消息来源。
  *
  * 两条入口都属于运行时不可信数据，因此共享同一校验边界；
  * sourceUrl 只允许 HTTP(S)；旧数据未携带 sourceType 时按 knowledge 恢复。

@@ -5,10 +5,11 @@ import { WorkspaceSkillArt } from './SkillArt';
 
 /** 折叠时最多展示的应用卡数量；超出后以三点按钮展开其余。 */
 const SKILL_PREVIEW_COUNT = 3;
+const PRIMARY_SKILL_CODE = 'ai-assistant';
 
 /** 启动卡默认说明；可按 skillCode 覆盖，不进入 Skill Registry。 */
 const defaultSkillDescriptions: Record<string, string> = {
-  'platform-assistant': '用平台助手处理日常管理与协作任务。',
+  'ai-assistant': '使用 pAI 处理日常管理与协作任务。',
   'file-review': '从空白开始，或让助手引导你完成审查。',
   'document-summary': '自动提炼文档要点，生成可读摘要。',
   'knowledge-search': '在知识库中检索资料与答案。',
@@ -95,12 +96,19 @@ const WorkspaceSkillList = ({
 }: WorkspaceSkillListProps) => {
   const [expanded, setExpanded] = useState(false);
   const resolvedDescriptions = { ...defaultSkillDescriptions, ...descriptions };
-  const hasOverflow = skillCodes.length > SKILL_PREVIEW_COUNT;
+  // pAI 是首页首要入口；其余应用保持后端授权列表的原有顺序。
+  const orderedSkillCodes = skillCodes.includes(PRIMARY_SKILL_CODE)
+    ? [
+        PRIMARY_SKILL_CODE,
+        ...skillCodes.filter((skillCode) => skillCode !== PRIMARY_SKILL_CODE),
+      ]
+    : skillCodes;
+  const hasOverflow = orderedSkillCodes.length > SKILL_PREVIEW_COUNT;
   const visibleSkillCodes =
     hasOverflow && !expanded
-      ? skillCodes.slice(0, SKILL_PREVIEW_COUNT)
-      : skillCodes;
-  const hiddenCount = skillCodes.length - SKILL_PREVIEW_COUNT;
+      ? orderedSkillCodes.slice(0, SKILL_PREVIEW_COUNT)
+      : orderedSkillCodes;
+  const hiddenCount = orderedSkillCodes.length - SKILL_PREVIEW_COUNT;
 
   return (
     <section
@@ -125,12 +133,12 @@ const WorkspaceSkillList = ({
             </button>
           ) : null}
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {skillCodes.length} 项
+            {orderedSkillCodes.length} 项
           </span>
         </div>
       </header>
 
-      {skillCodes.length ? (
+      {orderedSkillCodes.length ? (
         <section
           aria-label={`${title}卡片，可左右滑动`}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]"

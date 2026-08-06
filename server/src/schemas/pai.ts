@@ -1,29 +1,78 @@
 import { z } from 'zod';
 
-export const paiChatRequestSchema = z
+const conversationTitle = z
+  .string({ error: '会话标题必须是字符串' })
+  .trim()
+  .min(1, '会话标题不能为空')
+  .max(120, '会话标题不能超过 120 个字符');
+
+export const createPaiConversationSchema = z.discriminatedUnion('scopeType', [
+  z
+    .object({
+      scopeType: z.literal('platform'),
+      title: conversationTitle,
+    })
+    .strict(),
+  z
+    .object({
+      scopeType: z.literal('organization'),
+      organizationId: z.uuid('organizationId 必须是有效 UUID'),
+      title: conversationTitle,
+    })
+    .strict(),
+]);
+
+export const listPaiConversationsQuerySchema = z.discriminatedUnion(
+  'scopeType',
+  [
+    z
+      .object({
+        scopeType: z.literal('platform'),
+        limit: z.coerce.number().int().min(1).max(100).default(30),
+      })
+      .strict(),
+    z
+      .object({
+        scopeType: z.literal('organization'),
+        organizationId: z.uuid('organizationId 必须是有效 UUID'),
+        limit: z.coerce.number().int().min(1).max(100).default(30),
+      })
+      .strict(),
+  ],
+);
+
+export const paiConversationParamsSchema = z
   .object({
-    /**
-     * 本次请求是否由后端注入本地知识库上下文。
-     * 省略时保持普通聊天链路，避免把 UI 编排状态混入 messages。
-     */
-    knowledgeEnabled: z.boolean().optional().default(false),
-    /**
-     * 本次请求是否启用联网检索。
-     * 开启时由 pAI Agent 按完整会话语境决定搜索查询。
-     */
-    webSearchEnabled: z.boolean().optional().default(false),
-    messages: z
-      .array(
-        z
-          .object({
-            role: z.enum(['user', 'assistant']),
-            content: z.string().min(1).max(100_000),
-          })
-          .strict(),
-      )
-      .min(1)
-      .max(100),
+    conversationId: z.uuid('conversationId 必须是有效 UUID'),
   })
   .strict();
 
-export type PaiChatRequest = z.infer<typeof paiChatRequestSchema>;
+export const updatePaiConversationSchema = z
+  .object({
+    title: conversationTitle,
+  })
+  .strict();
+
+export const startPaiRunSchema = z
+  .object({
+    idempotencyKey: z.uuid('idempotencyKey 必须是有效 UUID'),
+    content: z
+      .string({ error: '消息内容必须是字符串' })
+      .trim()
+      .min(1, '消息内容不能为空')
+      .max(100_000, '消息内容不能超过 100000 个字符'),
+    knowledgeEnabled: z.boolean().optional().default(false),
+    webSearchEnabled: z.boolean().optional().default(false),
+  })
+  .strict();
+export type CreatePaiConversationRequest = z.infer<
+  typeof createPaiConversationSchema
+>;
+export type ListPaiConversationsQuery = z.infer<
+  typeof listPaiConversationsQuerySchema
+>;
+export type PaiConversationParams = z.infer<typeof paiConversationParamsSchema>;
+export type UpdatePaiConversationRequest = z.infer<
+  typeof updatePaiConversationSchema
+>;
+export type StartPaiRunRequest = z.infer<typeof startPaiRunSchema>;

@@ -4,6 +4,7 @@ import {
   FileDoneOutlined,
   FileSearchOutlined,
   FileTextOutlined,
+  FolderOutlined,
   HistoryOutlined,
   InboxOutlined,
   OllamaFilled,
@@ -27,6 +28,8 @@ export type SkillNavigationItem = {
   title: string;
   /** 左侧菜单使用的 Ant Design 图标组件。 */
   icon: React.ComponentType<{ className?: string }>;
+  /** 尚未实现的页面由 Workspace App 统一渲染占位内容。 */
+  placeholder?: boolean;
 };
 
 export type SkillDefinition = {
@@ -53,17 +56,27 @@ export type SkillDefinition = {
  * 后续增加 Skill 时需同步更新该表；OpenAPI 只生成授权数据，不生成 React 组件配置。
  */
 export const skillRegistry = {
-  'platform-assistant': {
+  'ai-assistant': {
     title: 'pAI',
     icon: OllamaFilled,
-    pageComponent: lazy(
-      () => import('@/pages/workspace/app/platform-assistant'),
-    ),
+    pageComponent: lazy(() => import('@/pages/workspace/app/ai-assistant')),
     navigation: [
       {
         pathSegment: 'overview',
         title: '通用助手',
         icon: RobotOutlined,
+      },
+      {
+        pathSegment: 'resources',
+        title: '资源',
+        icon: FolderOutlined,
+        placeholder: true,
+      },
+      {
+        pathSegment: 'memory',
+        title: '记忆',
+        icon: HistoryOutlined,
+        placeholder: true,
       },
     ],
   },

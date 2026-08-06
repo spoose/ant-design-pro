@@ -91,6 +91,15 @@ export class PaiAgentService {
         const chunk = value as UnknownChunk;
         if (!isRecord(chunk.payload)) continue;
 
+        // Mastra 会把建连、鉴权等上游失败包装成 error chunk；必须继续抛给
+        // 会话服务，不能把没有正文的错误流误判为 completed。
+        if (chunk.type === 'error') {
+          const upstreamError = chunk.payload.error;
+          throw upstreamError instanceof Error
+            ? upstreamError
+            : new Error('Mastra Agent returned an invalid error chunk');
+        }
+
         if (
           (chunk.type === 'reasoning-delta' || chunk.type === 'text-delta') &&
           typeof chunk.payload.text === 'string'

@@ -14,6 +14,7 @@ describe('pAI Agent', () => {
     expect(toMastraDeepSeekModelId('deepseek/deepseek-chat')).toBe(
       'deepseek/deepseek-chat',
     );
+    expect(agent.maxRetries).toBe(2);
     expect(await agent.getDefaultOptions()).toMatchObject({
       maxSteps: 3,
       providerOptions: {

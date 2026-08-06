@@ -282,7 +282,7 @@ platform:permission:grant
 platform:audit:view
 ```
 
-Platform Skill：`platform-assistant`、`file-review`、`document-summary`、`knowledge-search`。
+Platform 与 Organization Skill：`ai-assistant`、`file-review`、`document-summary`、`knowledge-search`。
 
 Organization 初始权限为 `organization:*`；Organization Skill 为 `file-review`、`document-summary`、`knowledge-search`。
 

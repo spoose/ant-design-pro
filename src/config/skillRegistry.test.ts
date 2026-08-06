@@ -4,7 +4,7 @@ import { getSkillDefinition, skillRegistry } from './skillRegistry';
 describe('skillRegistry', () => {
   it('maps every configured skill code to static UI metadata', () => {
     expect(Object.keys(skillRegistry)).toEqual([
-      'platform-assistant',
+      'ai-assistant',
       'file-review',
       'document-summary',
       'knowledge-search',
@@ -19,13 +19,15 @@ describe('skillRegistry', () => {
     });
     expect(getSkillDefinition('file-review')?.pageComponent).toBeDefined();
     expect(getSkillDefinition('knowledge-search')?.pageComponent).toBeDefined();
-    expect(getSkillDefinition('platform-assistant')).toMatchObject({
+    expect(getSkillDefinition('ai-assistant')).toMatchObject({
       title: 'pAI',
-      navigation: [{ pathSegment: 'overview', title: '通用助手' }],
+      navigation: [
+        { pathSegment: 'overview', title: '通用助手' },
+        { pathSegment: 'resources', title: '资源', placeholder: true },
+        { pathSegment: 'memory', title: '记忆', placeholder: true },
+      ],
     });
-    expect(
-      getSkillDefinition('platform-assistant')?.pageComponent,
-    ).toBeDefined();
+    expect(getSkillDefinition('ai-assistant')?.pageComponent).toBeDefined();
     expect(
       getSkillDefinition('document-summary')?.pageComponent,
     ).toBeUndefined();

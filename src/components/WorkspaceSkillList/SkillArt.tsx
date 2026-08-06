@@ -171,7 +171,7 @@ const KnowledgeSearchArt = () => (
   </svg>
 );
 
-const PlatformAssistantArt = () => (
+const AiAssistantArt = () => (
   <svg
     aria-hidden
     className="h-full w-full"
@@ -250,8 +250,8 @@ const FallbackArt = () => (
 /** 按 skillCode 返回总览启动卡右侧插画；未知 code 回退为通用纸张叠层。 */
 export const WorkspaceSkillArt = ({ skillCode }: { skillCode: string }) => {
   switch (skillCode) {
-    case 'platform-assistant':
-      return <PlatformAssistantArt />;
+    case 'ai-assistant':
+      return <AiAssistantArt />;
     case 'file-review':
       return <FileReviewArt />;
     case 'document-summary':

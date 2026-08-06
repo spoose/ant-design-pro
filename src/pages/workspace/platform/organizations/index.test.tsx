@@ -188,7 +188,7 @@ describe('OrganizationManagement', () => {
       userId: 'super-admin-1',
       platformPermissions: ['platform:organization:create'],
       platformSkillCodes: [
-        'platform-assistant',
+        'ai-assistant',
         'file-review',
         'document-summary',
         'knowledge-search',

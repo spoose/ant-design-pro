@@ -1,4 +1,5 @@
 import { Agent } from '@mastra/core/agent';
+import { ConsoleLogger } from '@mastra/core/logger';
 import type { FirecrawlEnv } from '../../config/env.js';
 import { toMastraDeepSeekModelId } from '../models/deepSeek.js';
 import { createWebSearchTool } from '../tools/webSearchTool.js';
@@ -10,7 +11,7 @@ import { createWebSearchTool } from '../tools/webSearchTool.js';
 export function createPaiAgent(model: string, firecrawlConfig: FirecrawlEnv) {
   const webSearchTool = createWebSearchTool(firecrawlConfig);
 
-  return new Agent({
+  const agent = new Agent({
     id: 'pai-agent',
     name: 'pAI Agent',
     instructions: `
@@ -28,6 +29,8 @@ export function createPaiAgent(model: string, firecrawlConfig: FirecrawlEnv) {
 9. 调用方提供 <knowledge-base> 时，可以同时使用其中的授权资料；引用时使用 [资料:sourceId]。
     `.trim(),
     model: toMastraDeepSeekModelId(model),
+    // 模型建连等可重试故障最多再尝试两次，与 Agent 工具循环无关。
+    maxRetries: 2,
     tools: {
       webSearchTool,
     },
@@ -41,4 +44,14 @@ export function createPaiAgent(model: string, firecrawlConfig: FirecrawlEnv) {
       },
     },
   });
+
+  // 上游失败由会话服务记录一次精简日志，避免 Mastra 重复打印完整错误对象。
+  agent.__setLogger(
+    new ConsoleLogger({
+      level: 'error',
+      filter: ({ message }) => !message.startsWith('Upstream LLM API error'),
+    }),
+  );
+
+  return agent;
 }

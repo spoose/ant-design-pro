@@ -50,13 +50,30 @@ describe('WorkspaceSkillList', () => {
     expect(screen.getByText('当前工作区暂无可用应用')).toBeVisible();
   });
 
+  it('places pAI first while preserving the remaining app order', () => {
+    render(
+      <WorkspaceSkillList
+        emptyDescription="暂无应用"
+        getSkillPath={(skillCode) => `/apps/${skillCode}`}
+        skillCodes={['file-review', 'knowledge-search', 'ai-assistant']}
+        title="平台应用"
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('aria-label')),
+    ).toEqual(['打开 pAI', '打开 文件审查', '打开 知识检索']);
+  });
+
   it('collapses overflow apps behind a more control that can expand', () => {
     render(
       <WorkspaceSkillList
         emptyDescription="暂无应用"
         getSkillPath={(skillCode) => `/apps/${skillCode}`}
         skillCodes={[
-          'platform-assistant',
+          'ai-assistant',
           'file-review',
           'document-summary',
           'knowledge-search',

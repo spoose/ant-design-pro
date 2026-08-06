@@ -155,4 +155,26 @@ describe('PaiAgentService', () => {
       { activeTools: [] },
     );
   });
+
+  it('propagates an upstream model error chunk instead of completing empty', async () => {
+    const upstreamError = new Error('DeepSeek connect timeout');
+    const stream = vi.fn<PaiAgentRunner['stream']>().mockResolvedValue({
+      fullStream: createStream([
+        { type: 'error', payload: { error: upstreamError } },
+      ]),
+    });
+    const service = new PaiAgentService({ stream });
+    const events = await service.stream(
+      [{ role: 'user', content: '测试连接失败' }],
+      { webSearchEnabled: false },
+    );
+
+    await expect(
+      (async () => {
+        for await (const _event of events) {
+          // Error chunk must reject before yielding a domain event.
+        }
+      })(),
+    ).rejects.toBe(upstreamError);
+  });
 });

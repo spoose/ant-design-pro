@@ -46,7 +46,7 @@ describe('SuperAdminSeedService', () => {
       'platform:user:manage',
     );
     expect(capturedInput?.platformSkillCodes).toEqual([
-      'platform-assistant',
+      'ai-assistant',
       'file-review',
       'document-summary',
       'knowledge-search',

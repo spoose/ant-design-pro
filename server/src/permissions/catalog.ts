@@ -9,7 +9,7 @@ export const SUPER_ADMIN_PLATFORM_PERMISSIONS = [
 
 /** Platform Scope 内已注册的全部 Skill。 */
 export const PLATFORM_SKILL_CODES = [
-  'platform-assistant',
+  'ai-assistant',
   'file-review',
   'document-summary',
   'knowledge-search',
@@ -17,6 +17,7 @@ export const PLATFORM_SKILL_CODES = [
 
 /** Organization Scope 内已注册的全部 Skill。 */
 export const ORGANIZATION_SKILL_CODES = [
+  'ai-assistant',
   'file-review',
   'document-summary',
   'knowledge-search',

@@ -18,9 +18,13 @@ const WorkspaceAppPage = () => {
   const { pathname } = useLocation();
   const appKey = getWorkspaceAppKey(pathname);
   const pageKey = getWorkspaceAppPageKey(pathname);
-  const PageComponent = appKey
-    ? getSkillDefinition(appKey)?.pageComponent
-    : undefined;
+  const definition = appKey ? getSkillDefinition(appKey) : undefined;
+  const navigationItem = definition?.navigation.find(
+    (item) => item.pathSegment === pageKey,
+  );
+  const PageComponent = navigationItem?.placeholder
+    ? undefined
+    : definition?.pageComponent;
 
   if (PageComponent) {
     return (

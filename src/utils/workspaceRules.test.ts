@@ -53,7 +53,7 @@ describe('workspace access rules', () => {
         'platform:organization:create',
         'platform:audit:view',
       ],
-      platformSkillCodes: ['platform-assistant'],
+      platformSkillCodes: ['ai-assistant'],
       organizations: [
         createOrganization(
           'org-1',
@@ -68,7 +68,7 @@ describe('workspace access rules', () => {
     expect(access.canManageOrganizations).toBe(true);
     expect(access.canManagePlatformUsers).toBe(false);
     expect(access.canViewPlatformAudit).toBe(true);
-    expect(access.canUseSkill('platform-assistant')).toBe(true);
+    expect(access.canUseSkill('ai-assistant')).toBe(true);
     expect(access.canUseSkill('file-review')).toBe(false);
     expect(access.visibleMenuKeys).toEqual([
       'overview',

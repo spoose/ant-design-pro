@@ -11,6 +11,7 @@ import {
   MenuUnfoldOutlined,
   OllamaFilled,
   PlusOutlined,
+  ReloadOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import {
@@ -29,7 +30,6 @@ import {
   type MessageInfo,
   useXChat,
   useXConversations,
-  type XModelParams,
 } from '@ant-design/x-sdk';
 import { useLocation, useModel } from '@umijs/max';
 import {
@@ -53,29 +53,30 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
-import WorkspacePage from '@/components/WorkspacePage';
 import { tagColors } from '@/theme/statusColors';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
+import type { WorkspaceScope } from '@/utils/workspaceState';
 import { buildWorkspaceScopeKey } from '@/utils/workspaceState';
-import { createPaiChatProvider } from './provider';
-import { selectCitedMessageSources } from './sourceProtocol';
 import {
-  buildPaiStorageKey,
+  createPaiChatProvider,
+  createPaiRequestFallback,
+  findRetryQuestion,
+} from './provider';
+import {
+  clearLegacyPaiStorage,
   createPaiConversation,
-  loadPaiWorkspaceState,
-  savePaiWorkspaceState,
+  deletePaiConversation,
+  getPaiConversationHistory,
+  listPaiConversations,
   toPaiConversation,
   toPaiDefaultMessages,
-} from './storage';
-import usePlatformAssistantStyles from './style';
-import type {
-  PaiChatMessage,
-  PaiConversation,
-  PaiWorkspaceState,
-} from './types';
+  updatePaiConversationTitle,
+} from './service';
+import { selectCitedMessageSources } from './sourceProtocol';
+import useAiAssistantStyles from './style';
+import type { PaiChatMessage, PaiConversation, PaiRunRequest } from './types';
 
 const STREAMING_ACTIVE = { hasNextChunk: true, enableAnimation: true };
 const STREAMING_IDLE = { hasNextChunk: false, enableAnimation: false };
@@ -134,7 +135,7 @@ const promptItems: PromptsItemType[] = [
 ];
 
 type PaiWorkbenchProps = {
-  storageKey: string;
+  scope: WorkspaceScope;
   userName?: string;
 };
 
@@ -179,14 +180,13 @@ const createRequestPlaceholder = (): PaiChatMessage => ({
   content: '',
 });
 
-const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
-  const { styles } = usePlatformAssistantStyles();
+const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
+  const { styles } = useAiAssistantStyles();
   const { token } = theme.useToken();
-  const { modal } = App.useApp();
-  const [initialWorkspaceState] = useState(() =>
-    loadPaiWorkspaceState(storageKey),
-  );
+  const { message: messageApi, modal } = App.useApp();
   const [senderValue, setSenderValue] = useState('');
+  const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(true);
+  const [isConversationMutation, setIsConversationMutation] = useState(false);
   /**
    * 知识库模式是本次请求的后端编排开关，不写入消息历史。
    * sendMessage 会把启用状态复制到顶层请求参数，关闭时则省略该字段。
@@ -205,18 +205,6 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
   // 重命名弹窗的临时表单状态；undefined 表示弹窗关闭。
   const [renameConversationState, setRenameConversationState] =
     useState<RenameConversationState>();
-  /**
-   * 该 Map 只保存页面启动时从 localStorage 读取的快照，
-   * 新建 X SDK 消息 Store 时通过 defaultMessages 恢复一次，不参与运行期状态管理。
-   */
-  const persistedMessagesByConversationRef = useRef(
-    new Map<string, MessageInfo<PaiChatMessage>[]>(
-      initialWorkspaceState.conversations.map(({ key, messages }) => [
-        key,
-        messages,
-      ]),
-    ),
-  );
 
   const {
     conversations: sdkConversations,
@@ -226,26 +214,36 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
     removeConversation,
     setConversation,
     setConversations,
-    getMessages: getSdkMessages,
   } = useXConversations({
-    defaultConversations:
-      initialWorkspaceState.conversations.map(toPaiConversation),
-    defaultActiveConversationKey: initialWorkspaceState.activeConversationKey,
+    defaultConversations: [],
+    defaultActiveConversationKey: '',
   });
   const conversations = sdkConversations as PaiConversation[];
   const activeConversation = conversations.find(
     ({ key }) => key === activeConversationKey,
   );
-  const provider = useMemo(createPaiChatProvider, []);
+  const provider = useMemo(
+    () =>
+      activeConversationKey
+        ? createPaiChatProvider(activeConversationKey)
+        : undefined,
+    [activeConversationKey],
+  );
   const getDefaultMessages = useCallback(
-    ({ conversationKey }: { conversationKey?: string } = {}) =>
-      conversationKey
-        ? toPaiDefaultMessages(
-            persistedMessagesByConversationRef.current.get(conversationKey) ??
-              [],
-          )
-        : [],
-    [],
+    async ({ conversationKey }: { conversationKey?: string } = {}) => {
+      if (!conversationKey) return [];
+
+      try {
+        // 每个 X SDK Store 首次创建时直接读取 MySQL History，不经过前端快照层。
+        const { data: history } =
+          await getPaiConversationHistory(conversationKey);
+        return toPaiDefaultMessages(history);
+      } catch (error) {
+        messageApi.error('会话历史加载失败，请稍后重试');
+        throw error;
+      }
+    },
+    [messageApi],
   );
   const {
     abort,
@@ -253,140 +251,175 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
     isRequesting,
     messages,
     onRequest,
-  } = useXChat<PaiChatMessage, PaiChatMessage, XModelParams>({
+    queueRequest,
+    setMessages,
+  } = useXChat<PaiChatMessage, PaiChatMessage, PaiRunRequest>({
     provider,
     conversationKey: activeConversationKey,
     defaultMessages: getDefaultMessages,
+    requestFallback: createPaiRequestFallback,
     requestPlaceholder: createRequestPlaceholder,
   });
+  const isBusy =
+    isWorkspaceLoading ||
+    isConversationMutation ||
+    isDefaultMessagesRequesting ||
+    isRequesting;
 
   /**
-   * 核心持久化链路：
-   * useXConversations 元数据 + getMessages() 读取的 X SDK 消息 Store
-   * -> 短暂防抖 -> 用户与 Scope 专属 localStorage Key。
-   *
-   * 删除会话后 conversations 会变化；此处只遍历剩余会话并覆盖整个快照，
-   * 因此被删除会话的元数据和消息不会再次写入 localStorage。
+   * 页面启动只读取会话列表；激活会话的 History 由 useXChat.defaultMessages
+   * 按 conversationKey 异步加载。旧 pai:v1:* 数据按产品决定直接清除，
+   * 不迁移、不作为接口失败时的历史兜底。
    */
   useEffect(() => {
-    if (isDefaultMessagesRequesting) return;
+    let cancelled = false;
 
-    const timer = setTimeout(() => {
-      const workspaceState: PaiWorkspaceState = {
-        version: 1,
-        activeConversationKey,
-        conversations: conversations.map((conversation) => ({
-          ...conversation,
-          messages:
-            (getSdkMessages(conversation.key) as
-              | MessageInfo<PaiChatMessage>[]
-              | undefined) ??
-            persistedMessagesByConversationRef.current.get(conversation.key) ??
-            [],
-        })),
-      };
-      savePaiWorkspaceState(storageKey, workspaceState);
-    }, 160);
-    return () => clearTimeout(timer);
-  }, [
-    activeConversationKey,
-    conversations,
-    getSdkMessages,
-    isDefaultMessagesRequesting,
-    messages,
-    storageKey,
-  ]);
+    const loadWorkspace = async () => {
+      setIsWorkspaceLoading(true);
+      try {
+        clearLegacyPaiStorage();
+        const { data: summaries } = await listPaiConversations(scope);
+        if (cancelled) return;
 
-  const sendMessage = (rawQuestion: string) => {
-    const question = rawQuestion.trim();
-    if (!question || !activeConversation || isRequesting) return;
-
-    const now = new Date().toISOString();
-    const updatedConversation: PaiConversation = {
-      ...activeConversation,
-      label: activeConversation.isDraft
-        ? createConversationTitle(question)
-        : activeConversation.label,
-      isDraft: false,
-      updatedAt: now,
+        const loadedConversations = summaries.map(toPaiConversation);
+        const firstConversation = loadedConversations[0];
+        setConversations(loadedConversations);
+        setActiveConversationKey(firstConversation?.key ?? '');
+      } catch {
+        if (!cancelled) messageApi.error('会话加载失败，请稍后重试');
+      } finally {
+        if (!cancelled) setIsWorkspaceLoading(false);
+      }
     };
-    // 最近产生内容的会话置顶，让 Conversations 顺序与用户心智一致。
-    setConversations([
-      updatedConversation,
-      ...conversations.filter(({ key }) => key !== activeConversation.key),
-    ]);
-    setSenderValue('');
-    setCapabilityPopoverOpen(false);
 
-    /**
-     * 核心消息链路：
-     * Sender -> useXChat.onRequest -> PaiChatProvider -> XRequest 请求本站后端
-     * -> pAI Agent -> 项目 SSE -> useXChat 更新状态 -> Bubble.List 渲染。
-     */
-    onRequest({
+    void loadWorkspace();
+    return () => {
+      cancelled = true;
+    };
+  }, [messageApi, scope, setActiveConversationKey, setConversations]);
+
+  const buildRunRequest = useCallback(
+    (question: string): PaiRunRequest => ({
+      // 每次点击发送都生成独立幂等键；网络重试可复用同一请求对象。
+      idempotencyKey: crypto.randomUUID(),
+      messages: [{ role: 'user', content: question }],
       ...(knowledgeEnabled ? { knowledgeEnabled: true } : {}),
       ...(webSearchEnabled ? { webSearchEnabled: true } : {}),
-      messages: [{ role: 'user', content: question }],
-    });
+    }),
+    [knowledgeEnabled, webSearchEnabled],
+  );
+
+  const sendMessage = async (rawQuestion: string) => {
+    const question = rawQuestion.trim();
+    if (!question || isBusy) return;
+
+    setIsConversationMutation(true);
+    try {
+      const requestParams = buildRunRequest(question);
+      let requestConversation = activeConversation;
+
+      if (!requestConversation) {
+        // 空工作台首次发送时先创建后端会话，再由 queueRequest 等待 SDK 切换完成。
+        const { data: created } = await createPaiConversation(
+          scope,
+          createConversationTitle(question),
+        );
+        requestConversation = toPaiConversation(created);
+        addConversation(requestConversation, 'prepend');
+        setActiveConversationKey(requestConversation.key);
+        queueRequest(requestConversation.key, requestParams);
+      } else {
+        let updatedConversation = requestConversation;
+        if (requestConversation.label === '新对话' && messages.length === 0) {
+          const { data: renamed } = await updatePaiConversationTitle(
+            requestConversation.key,
+            createConversationTitle(question),
+          );
+          updatedConversation = toPaiConversation(renamed);
+          setConversation(updatedConversation.key, updatedConversation);
+        }
+
+        // 后端 updatedAt 会在 Run 写入时更新；这里先把当前会话置顶，随后刷新仍以后端为准。
+        setConversations([
+          updatedConversation,
+          ...conversations.filter(({ key }) => key !== updatedConversation.key),
+        ]);
+        onRequest(requestParams);
+      }
+
+      setSenderValue('');
+      setCapabilityPopoverOpen(false);
+    } catch {
+      messageApi.error('消息发送失败，请稍后重试');
+    } finally {
+      setIsConversationMutation(false);
+    }
   };
 
-  const createConversation = () => {
-    if (isRequesting) return;
-
-    const currentMessages =
-      (getSdkMessages(activeConversationKey) as
-        | MessageInfo<PaiChatMessage>[]
-        | undefined) ??
-      persistedMessagesByConversationRef.current.get(activeConversationKey) ??
-      [];
-    if (activeConversation?.isDraft && currentMessages.length === 0) {
+  const handleCreateConversation = async () => {
+    if (isBusy) return;
+    if (activeConversation?.label === '新对话' && messages.length === 0) {
       setConversationDrawerOpen(false);
       return;
     }
 
-    const storedConversation = createPaiConversation();
-    addConversation(toPaiConversation(storedConversation), 'prepend');
-    setActiveConversationKey(storedConversation.key);
-    setSenderValue('');
-    setConversationDrawerOpen(false);
+    setIsConversationMutation(true);
+    try {
+      const { data: created } = await createPaiConversation(scope, '新对话');
+      const conversation = toPaiConversation(created);
+      addConversation(conversation, 'prepend');
+      setActiveConversationKey(conversation.key);
+      setSenderValue('');
+      setConversationDrawerOpen(false);
+    } catch {
+      messageApi.error('新建会话失败，请稍后重试');
+    } finally {
+      setIsConversationMutation(false);
+    }
   };
 
-  const deleteConversation = (conversationKey: string) => {
-    if (isRequesting) return;
+  const handleDeleteConversation = async (conversationKey: string) => {
+    if (isBusy) return;
 
-    // 先计算删除后的列表，用于选择新的激活会话或补建一个空白会话。
-    const remainingConversations = conversations.filter(
-      ({ key }) => key !== conversationKey,
-    );
-    // 更新 useXConversations 内存状态；随后由上方持久化 effect 覆盖 localStorage。
-    removeConversation(conversationKey);
+    setIsConversationMutation(true);
+    try {
+      await deletePaiConversation(conversationKey);
+      const remainingConversations = conversations.filter(
+        ({ key }) => key !== conversationKey,
+      );
+      removeConversation(conversationKey);
 
-    if (remainingConversations.length === 0) {
-      // 工作台始终至少保留一个可输入的会话，删除最后一个时立即创建草稿。
-      const storedConversation = createPaiConversation();
-      addConversation(toPaiConversation(storedConversation), 'prepend');
-      setActiveConversationKey(storedConversation.key);
-      return;
-    }
-    if (activeConversationKey === conversationKey) {
-      setActiveConversationKey(remainingConversations[0].key);
+      if (activeConversationKey === conversationKey) {
+        const nextConversation = remainingConversations[0];
+        if (nextConversation) {
+          setActiveConversationKey(nextConversation.key);
+        } else {
+          // 删除最后一条后保持真正的空工作台；首次发送时再创建后端记录。
+          setActiveConversationKey('');
+          setMessages([]);
+        }
+      }
+    } catch {
+      messageApi.error('删除会话失败，请稍后重试');
+    } finally {
+      setIsConversationMutation(false);
     }
   };
 
   const confirmDeleteConversation = (conversationKey: string) => {
-    if (isRequesting) return;
+    if (isBusy) return;
     modal.confirm({
       title: '删除此会话？',
-      content: '该会话只保存在当前浏览器，删除后无法恢复。',
+      content: '会话及其消息将从服务器永久删除，删除后无法恢复。',
       okText: '删除',
       cancelText: '取消',
       okButtonProps: { danger: true },
-      onOk: () => deleteConversation(conversationKey),
+      onOk: () => handleDeleteConversation(conversationKey),
     });
   };
 
   const openRenameConversation = (conversationKey: string) => {
-    if (isRequesting) return;
+    if (isBusy) return;
     // 菜单项只有通用会话字段，这里通过 key 取得完整的业务会话数据。
     const conversation = conversations.find(
       ({ key }) => key === conversationKey,
@@ -399,36 +432,37 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
     });
   };
 
-  const saveConversationTitle = () => {
+  const saveConversationTitle = async () => {
     if (!renameConversationState) return;
 
     // 与首次提问自动命名共用清洗规则：压缩空白并限制为 24 个字符。
     const label = createConversationTitle(renameConversationState.title);
     if (!label) return;
 
-    const conversation = conversations.find(
-      ({ key }) => key === renameConversationState.conversationKey,
-    );
-    if (conversation) {
-      /**
-       * 只更新会话元数据，不改变 key、消息或排序时间。
-       * isDraft=false 表示标题已由用户确认，避免首次提问再次自动覆盖标题；
-       * conversations 变化后由持久化 effect 自动写入 localStorage。
-       */
-      setConversation(conversation.key, {
-        ...conversation,
+    setIsConversationMutation(true);
+    try {
+      // 标题由后端清洗并返回 authoritative updatedAt，前端只投影响应结果。
+      const { data: updated } = await updatePaiConversationTitle(
+        renameConversationState.conversationKey,
         label,
-        isDraft: false,
-      });
+      );
+      const conversation = toPaiConversation(updated);
+      setConversation(conversation.key, conversation);
+      setRenameConversationState(undefined);
+    } catch {
+      messageApi.error('重命名会话失败，请稍后重试');
+    } finally {
+      setIsConversationMutation(false);
     }
-    setRenameConversationState(undefined);
   };
 
   const switchConversation = (conversationKey: string) => {
-    if (isRequesting || conversationKey === activeConversationKey) {
+    if (isBusy || conversationKey === activeConversationKey) {
       setConversationDrawerOpen(false);
       return;
     }
+
+    // conversationKey 变化后，useXChat 会创建 Store 并调用异步 defaultMessages。
     setActiveConversationKey(conversationKey);
     setSenderValue('');
     setConversationDrawerOpen(false);
@@ -438,7 +472,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
     key: conversation.key,
     label: conversation.label,
     group: getConversationGroup(conversation.updatedAt),
-    disabled: isRequesting && conversation.key !== activeConversationKey,
+    disabled: isBusy && conversation.key !== activeConversationKey,
   }));
 
   const userInitial = userName?.trim()
@@ -453,67 +487,106 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
       assistant: {
         placement: 'start',
         avatar: <Avatar icon={<OllamaFilled />} />,
-        contentRender: (content: string, info) =>
-          content ? (
+        contentRender: (content: string, info) => {
+          const errorMessage =
+            typeof info.extraInfo?.errorMessage === 'string'
+              ? info.extraInfo.errorMessage
+              : undefined;
+          return content || errorMessage ? (
             <MessageUpdatingContext.Provider
               value={isResponseUpdating(info.status)}
             >
-              <XMarkdown
-                components={MARKDOWN_COMPONENTS}
-                streaming={
-                  isResponseUpdating(info.status)
-                    ? STREAMING_ACTIVE
-                    : STREAMING_IDLE
-                }
-              >
-                {content}
-              </XMarkdown>
+              {content ? (
+                <XMarkdown
+                  components={MARKDOWN_COMPONENTS}
+                  streaming={
+                    isResponseUpdating(info.status)
+                      ? STREAMING_ACTIVE
+                      : STREAMING_IDLE
+                  }
+                >
+                  {content}
+                </XMarkdown>
+              ) : null}
+              {errorMessage ? (
+                <Typography.Text
+                  className={styles.failureMessage}
+                  type="danger"
+                >
+                  {errorMessage}
+                </Typography.Text>
+              ) : null}
             </MessageUpdatingContext.Provider>
-          ) : undefined,
+          ) : undefined;
+        },
       },
     }),
-    [userInitial],
+    [styles.failureMessage, userInitial],
   );
 
-  const bubbleItems = useMemo<BubbleItemType[]>(
-    () =>
-      messages.map(({ id, message, status }) => {
-        // Sources 只在回答完成后展示，避免流式过程中引用数量跳动；
-        // 原始候选来源仍保留在消息中，便于持久化与后续审计。
-        const citedSources =
-          status === 'success'
-            ? selectCitedMessageSources(message.content, message.sources)
-            : [];
+  const bubbleItems: BubbleItemType[] = messages.map(
+    ({ id, message, status }, messageIndex) => {
+      // Sources 只在回答完成后展示，避免流式过程中引用数量跳动；
+      // 原始候选来源仍保留在消息中，便于持久化与后续审计。
+      const citedSources =
+        status === 'success' && message.terminalStatus !== 'failed'
+          ? selectCitedMessageSources(message.content, message.sources)
+          : [];
+      // Run 的 error/done 事件位于成功建立的 SSE 响应中，不能只看 SDK HTTP 状态。
+      const isAborted =
+        status === 'abort' || message.terminalStatus === 'aborted';
+      const isFailed =
+        status === 'error' || message.terminalStatus === 'failed';
+      const retryQuestion = isFailed
+        ? findRetryQuestion(messages, messageIndex)
+        : undefined;
 
-        return {
-          key: id,
-          role: message.role,
-          content: message.content,
-          status,
-          loading:
-            message.role === 'assistant' &&
-            !message.content &&
-            (status === 'loading' || status === 'updating'),
-          streaming: isResponseUpdating(status),
-          footer:
-            status === 'abort' ? (
-              <Typography.Text type="secondary">回复已停止</Typography.Text>
-            ) : status === 'error' ? (
-              <Typography.Text type="danger">回复生成失败</Typography.Text>
-            ) : citedSources.length ? (
-              <Sources
-                defaultExpanded={false}
-                items={citedSources.map((source) => ({
-                  key: source.sourceId,
-                  title: `${source.title}（${source.sourceId}）`,
-                  url: source.sourceUrl,
-                }))}
-                title={`参考资料（${citedSources.length}）`}
-              />
-            ) : undefined,
-        };
-      }),
-    [messages],
+      return {
+        key: id,
+        role: message.role,
+        content: message.content,
+        status,
+        extraInfo:
+          isFailed && message.errorMessage
+            ? { errorMessage: message.errorMessage }
+            : undefined,
+        styles: isFailed ? { extra: { alignSelf: 'center' } } : undefined,
+        loading:
+          message.role === 'assistant' &&
+          !message.content &&
+          (status === 'loading' || status === 'updating'),
+        streaming: isResponseUpdating(status),
+        extra:
+          isFailed && message.errorMessage ? (
+            <Button
+              color="danger"
+              disabled={isBusy || !retryQuestion}
+              icon={<ReloadOutlined />}
+              size="small"
+              variant="text"
+              onClick={() => {
+                if (retryQuestion) void sendMessage(retryQuestion);
+              }}
+            >
+              重试
+            </Button>
+          ) : undefined,
+        footer: isAborted ? (
+          <Typography.Text type="secondary">回复已停止</Typography.Text>
+        ) : citedSources.length ? (
+          <Sources
+            defaultExpanded={false}
+            items={citedSources.map((source) => ({
+              icon: <span aria-hidden className={styles.sourceDot} />,
+              key: source.sourceId,
+              title: `${source.title}（${source.sourceId}）`,
+              url: source.sourceUrl,
+            }))}
+            title={`参考资料（${citedSources.length}）`}
+          />
+        ) : undefined,
+      };
+    },
   );
   const hasMessages = bubbleItems.length > 0;
 
@@ -528,22 +601,22 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
       }}
       styles={{ creation: { border: 'none' } }}
       creation={{
-        disabled: isRequesting,
+        disabled: isBusy,
         label: '新建对话',
-        onClick: createConversation,
+        onClick: handleCreateConversation,
       }}
       menu={(conversation) => ({
         items: [
           {
             key: 'rename',
-            disabled: isRequesting,
+            disabled: isBusy,
             icon: <EditOutlined />,
             label: '重命名',
           },
           {
             key: 'delete',
             danger: true,
-            disabled: isRequesting,
+            disabled: isBusy,
             icon: <DeleteOutlined />,
             label: '删除',
           },
@@ -582,7 +655,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
           <div className={styles.sidebarHeader}>
             <div className={styles.sidebarHeaderContent}>
               <h2 className={styles.sidebarTitle}>会话</h2>
-              <p className={styles.sidebarDescription}>仅保存在当前浏览器</p>
+              <p className={styles.sidebarDescription}>已保存至你的账户</p>
             </div>
             <Tooltip title="收起会话栏">
               <Button
@@ -659,7 +732,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
             <div className={styles.senderInner}>
               <Sender
                 autoSize={{ minRows: 1, maxRows: 6 }}
-                loading={isRequesting}
+                loading={isBusy}
                 placeholder="随心输入"
                 styles={{ input: { outline: 'none' } }}
                 value={senderValue}
@@ -680,7 +753,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
                             <button
                               aria-checked={knowledgeEnabled}
                               className={styles.capabilityOption}
-                              disabled={isRequesting}
+                              disabled={isBusy}
                               role="menuitemcheckbox"
                               type="button"
                               onClick={() =>
@@ -704,7 +777,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
                             <button
                               aria-checked={webSearchEnabled}
                               className={styles.capabilityOption}
-                              disabled={isRequesting}
+                              disabled={isBusy}
                               role="menuitemcheckbox"
                               type="button"
                               onClick={() =>
@@ -742,7 +815,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
                         <Button
                           aria-label="选择知识库或 Web Search"
                           className={styles.capabilityButton}
-                          disabled={isRequesting}
+                          disabled={isBusy}
                           icon={<PlusOutlined />}
                           shape="circle"
                           type="text"
@@ -756,7 +829,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
                           closeIcon={
                             <CloseOutlined aria-label="关闭知识库能力" />
                           }
-                          disabled={isRequesting}
+                          disabled={isBusy}
                           icon={<DatabaseOutlined />}
                           style={{
                             backgroundColor: tagColors.knowledge.soft,
@@ -785,7 +858,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
                           closeIcon={
                             <CloseOutlined aria-label="关闭联网检索能力" />
                           }
-                          disabled={isRequesting}
+                          disabled={isBusy}
                           icon={<GlobalOutlined />}
                           style={{
                             backgroundColor: tagColors.webSearch.soft,
@@ -827,6 +900,7 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
 
       <Modal
         cancelText="取消"
+        confirmLoading={isConversationMutation}
         destroyOnHidden
         okButtonProps={{
           disabled: !renameConversationState?.title.trim(),
@@ -858,40 +932,25 @@ const PaiWorkbench = ({ storageKey, userName }: PaiWorkbenchProps) => {
   );
 };
 
-const PlatformAssistantPage = () => {
+const AiAssistantPage = () => {
+  const { styles } = useAiAssistantStyles();
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
   const currentUser = initialState?.currentUser;
-  const scope =
-    resolveWorkspaceScopeFromPath(pathname) ?? ({ kind: 'platform' } as const);
-  const scopeKey = buildWorkspaceScopeKey(scope);
-  /**
-   * storageKey 是本地会话隔离边界：
-   * currentUser.userId 防止同一浏览器的不同账号串话，scopeKey 防止 Platform/Organization 串话。
-   */
-  const storageKey = buildPaiStorageKey(
-    currentUser?.userId ?? 'local-preview',
-    scopeKey,
+  // scope 既是后端隔离条件，也是整个工作台的 React key；路径变化时完整重建 Store。
+  const scope = useMemo(
+    () =>
+      resolveWorkspaceScopeFromPath(pathname) ??
+      ({ kind: 'platform' } as const),
+    [pathname],
   );
+  const scopeKey = buildWorkspaceScopeKey(scope);
 
   return (
-    <WorkspacePage
-      // actions={
-      //   <Tag color="blue" variant="outlined">
-      //     DeepSeek
-      //   </Tag>
-      // }
-      breadcrumb={['应用', 'pAI']}
-      description=""
-      title="pAI"
-    >
-      <PaiWorkbench
-        key={storageKey}
-        storageKey={storageKey}
-        userName={currentUser?.name}
-      />
-    </WorkspacePage>
+    <section aria-label="pAI" className={styles.pageRoot}>
+      <PaiWorkbench key={scopeKey} scope={scope} userName={currentUser?.name} />
+    </section>
   );
 };
 
-export default PlatformAssistantPage;
+export default AiAssistantPage;

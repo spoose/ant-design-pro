@@ -1,12 +1,20 @@
 import { createStyles } from 'antd-style';
 
-const usePlatformAssistantStyles = createStyles(({ css, token }) => ({
+const useAiAssistantStyles = createStyles(({ css, token }) => ({
+  pageRoot: css`
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    padding: ${token.paddingLG}px;
+    overflow-x: hidden;
+    background: ${token.colorBgLayout};
+  `,
+
   workbench: css`
     display: flex;
     width: 100%;
-    height: max(560px, calc(100vh - 286px));
+    height: max(560px, calc(100vh - 154px));
     min-height: 560px;
-    max-height: 820px;
     overflow: hidden;
     background: ${token.colorBgContainer};
     border: 1px solid ${token.colorBorderSecondary};
@@ -114,6 +122,24 @@ const usePlatformAssistantStyles = createStyles(({ css, token }) => ({
       height: 100%;
       margin: 0 auto;
     }
+  `,
+
+  failureMessage: css`
+    display: block;
+    margin-block-start: ${token.marginXS}px;
+
+    &:first-child {
+      margin-block-start: 0;
+    }
+  `,
+
+  sourceDot: css`
+    width: 6px;
+    height: 6px;
+    margin-inline-end: ${token.marginXXS}px;
+    display: inline-block;
+    background: ${token.colorPrimary};
+    border-radius: 50%;
   `,
 
   emptyState: css`
@@ -313,8 +339,12 @@ const usePlatformAssistantStyles = createStyles(({ css, token }) => ({
   `,
 
   '@media (max-width: 768px)': {
+    pageRoot: css`
+      padding: ${token.padding}px;
+    `,
+
     workbench: css`
-      height: max(560px, calc(100vh - 276px));
+      height: max(560px, calc(100vh - 144px));
       min-height: 560px;
       border-radius: ${token.borderRadius}px;
     `,
@@ -353,4 +383,4 @@ const usePlatformAssistantStyles = createStyles(({ css, token }) => ({
   },
 }));
 
-export default usePlatformAssistantStyles;
+export default useAiAssistantStyles;
