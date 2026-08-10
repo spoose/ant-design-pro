@@ -48,12 +48,6 @@ const useStyles = createStyles(({ token }) => {
       width: '144px',
       textAlign: 'center',
     },
-    area_code: {
-      width: '72px',
-    },
-    phone_number: {
-      width: '214px',
-    },
   };
 });
 

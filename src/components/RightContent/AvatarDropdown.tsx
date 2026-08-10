@@ -7,7 +7,6 @@ import { history, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
 import React, { startTransition } from 'react';
-// import { outLogin } from '@/services/ant-design-pro/api';
 import { logout } from '@/services/auth';
 import { clearAccessToken } from '@/utils/authToken';
 import HeaderDropdown from '../HeaderDropdown';

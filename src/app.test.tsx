@@ -393,4 +393,27 @@ describe('app layout guard', () => {
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
+
+  it('should hide the ProLayout sider on account routes', async () => {
+    const { layout } = await import('./app');
+    mockHistory.location = {
+      pathname: '/account/settings',
+      search: '',
+      hash: '',
+    };
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          name: 'Demo User',
+        },
+        settings: {
+          layout: 'mix',
+          siderWidth: 248,
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    expect(runtimeLayout.menuRender).toBe(false);
+  });
 });

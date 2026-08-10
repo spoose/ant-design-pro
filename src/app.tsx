@@ -95,6 +95,8 @@ export const layout: RunTimeLayoutConfig = ({
 }) => {
   // 当前地址来自 Umi Browser Router；仅 Workspace 路由使用无外边距的应用壳布局。
   const isWorkspaceRoute = history.location.pathname.startsWith('/workspace/');
+  // 个人设置 / 个人中心为账号级页面：保留顶栏，隐藏模板侧栏。
+  const isAccountRoute = history.location.pathname.startsWith('/account');
   // 头像链路：currentUser.avatar 有值时显示图片；为空或图片加载失败时显示姓名首字符。
   const currentUserName = initialState?.currentUser?.name?.trim();
   const avatarInitial = currentUserName
@@ -102,6 +104,7 @@ export const layout: RunTimeLayoutConfig = ({
     : undefined;
 
   return {
+    menuRender: isAccountRoute ? false : undefined,
     menuDataRender: (menuData) => {
       // URL 是当前 Scope、标签和 Sidebar 的唯一来源。
       const { pathname } = history.location;
