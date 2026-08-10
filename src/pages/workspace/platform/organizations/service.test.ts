@@ -39,30 +39,43 @@ describe('organization management service', () => {
     });
     await deleteOrganization('organization-1', { skipErrorHandler: true });
 
-    expect(requestMock).toHaveBeenNthCalledWith(1, '/api/admin/organizations', {
-      method: 'GET',
-      skipErrorHandler: true,
-    });
-    expect(requestMock).toHaveBeenNthCalledWith(2, '/api/admin/organizations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      data: createBody,
-      skipErrorHandler: true,
-    });
+    expect(requestMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/admin/organizations/list',
+      {
+        method: 'POST',
+        skipErrorHandler: true,
+      },
+    );
+    expect(requestMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/admin/organizations/create',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        data: createBody,
+        skipErrorHandler: true,
+      },
+    );
     expect(requestMock).toHaveBeenNthCalledWith(
       3,
-      '/api/admin/organizations/organization-1',
+      '/api/admin/organizations/update',
       {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        data: updateBody,
+        data: { organizationId: 'organization-1', ...updateBody },
         skipErrorHandler: true,
       },
     );
     expect(requestMock).toHaveBeenNthCalledWith(
       4,
-      '/api/admin/organizations/organization-1',
-      { method: 'DELETE', skipErrorHandler: true },
+      '/api/admin/organizations/delete',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        data: { organizationId: 'organization-1' },
+        skipErrorHandler: true,
+      },
     );
   });
 

@@ -11,7 +11,7 @@ Agent 链路，可用于继续开发多组织企业工作台。
 | 能力 | 仓库中的实现 | 带来的边界 |
 | --- | --- | --- |
 | WorkspaceScope | Platform / Organization 路由、切换器、应用标签与访问守卫 | 不同组织不共享菜单、标签或 Skill 上下文 |
-| 认证与授权 | JWT Bearer、`GET /api/currentUser`、MySQL 用户/组织/成员/授权数据 | 用户身份与 Scope 均由服务端结果决定 |
+| 认证与授权 | JWT Bearer、`POST /api/currentUser/get`、MySQL 用户/组织/成员/授权数据 | 用户身份与 Scope 均由服务端结果决定 |
 | pAI | Ant Design X、Express、Mastra、DeepSeek、可选 Firecrawl、项目自有 SSE | Agent 不替代 HTTP 鉴权，也不能自行扩大租户范围 |
 
 主要请求路径：

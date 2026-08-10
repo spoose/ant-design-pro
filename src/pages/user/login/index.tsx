@@ -115,7 +115,7 @@ const Login: React.FC = () => {
   const intl = useIntl();
 
   /**
-   * accessToken 保存后重新请求 GET /api/currentUser，并把认证用户写入 Umi initialState。
+   * accessToken 保存后重新请求 POST /api/currentUser/get，并把认证用户写入 Umi initialState。
    * 返回 userInfo 给落点规则使用，避免依赖异步 State 更新是否已经提交。
    */
   const fetchUserInfo = async () => {

@@ -289,7 +289,7 @@ const PlatformManagementPage = () => {
     : 'overview';
   // currentUser.organizations 仅表示可进入范围；组织管理全集由 /api/admin/organizations 提供。
   const organizations = initialState?.currentUser?.organizations ?? [];
-  // 数据链路：GET /api/currentUser -> getPlatformAccess -> 管理总览的应用和权限 Widget。
+  // 数据链路：POST /api/currentUser/get -> getPlatformAccess -> 管理总览的应用和权限 Widget。
   const platformAccess = useMemo(
     () =>
       initialState?.currentUser

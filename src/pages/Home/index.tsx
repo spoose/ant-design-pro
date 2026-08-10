@@ -5,7 +5,7 @@ import WorkspacePage from '@/components/WorkspacePage';
 const Home: React.FC = () => {
   const intl = useIntl();
   const { initialState } = useModel('@@initialState');
-  // organizationId 来自 URL；用户、权限和 Skill 均来自 GET /api/currentUser。
+  // organizationId 来自 URL；用户、权限和 Skill 均来自 POST /api/currentUser/get。
   const { organizationId } = useParams<{ organizationId?: string }>();
   const organization = initialState?.currentUser?.organizations.find(
     (candidate) => candidate.organizationId === organizationId,

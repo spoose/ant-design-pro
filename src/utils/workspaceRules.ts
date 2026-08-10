@@ -26,9 +26,9 @@ export type OrganizationMenuKey =
 
 /** 由 currentUser.platformPermissions 派生的 Platform 授权画像。 */
 export type PlatformAccess = {
-  /** GET /api/currentUser.platformPermissions 的防御性副本。 */
+  /** POST /api/currentUser/get 返回的 platformPermissions 防御性副本。 */
   permissions: string[];
-  /** GET /api/currentUser.platformSkillCodes 的防御性副本。 */
+  /** POST /api/currentUser/get 返回的 platformSkillCodes 防御性副本。 */
   availableSkillCodes: string[];
   /** 是否至少拥有一个 Platform 权限，决定能否进入管理中心。 */
   canEnterManagementCenter: boolean;

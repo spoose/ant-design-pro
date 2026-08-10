@@ -9,7 +9,7 @@ import { resolveLandingPath } from '@/utils/workspaceRoutes';
  * 页面不根据 username 或全局 role 硬编码落点。
  */
 const WorkspaceLandingPage = () => {
-  // currentUser 来源于 GET /api/currentUser，包含 Platform 权限和后端默认 Organization。
+  // currentUser 来源于 POST /api/currentUser/get，包含 Platform 权限和后端默认 Organization。
   const { initialState } = useModel('@@initialState');
   const currentUser = initialState?.currentUser;
 

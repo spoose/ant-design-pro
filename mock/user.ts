@@ -244,7 +244,7 @@ const getOrganizations = (username: MockUsername) => {
   );
 };
 
-// GET /api/currentUser 的 mock 数据由 Bearer token、Platform 与 Organization 授权共同生成。
+// POST /api/currentUser/get 的 mock 数据由 Bearer token、Platform 与 Organization 授权共同生成。
 export const buildMockCurrentUser = (username: MockUsername) => {
   const account = mockAccounts[username];
   return {
@@ -263,55 +263,59 @@ export const buildMockCurrentUser = (username: MockUsername) => {
   };
 };
 
+const getCurrentUser = (req: Request, res: Response) => {
+  const username = getAuthenticatedUsername(req);
+  if (!username) {
+    res.status(401).send({
+      data: {
+        isLogin: false,
+      },
+      errorCode: '401',
+      errorMessage: '请先登录！',
+      success: false,
+    });
+    return;
+  }
+  res.send({
+    success: true,
+    data: buildMockCurrentUser(username),
+  });
+};
+
+const setDefaultOrganization = (req: Request, res: Response) => {
+  const username = getAuthenticatedUsername(req);
+  if (!username) {
+    res.status(401).send({
+      errorCode: '401',
+      errorMessage: '请先登录！',
+      success: false,
+    });
+    return;
+  }
+  const { organizationId } = req.body;
+  const organization = getOrganizations(username).find(
+    (item) => item.organizationId === organizationId,
+  );
+  if (!organization) {
+    res.status(400).send({
+      errorCode: '400',
+      errorMessage: '组织不存在或当前用户无权进入',
+      success: false,
+    });
+    return;
+  }
+  defaultOrganizationIds[username] = organization.organizationId;
+  res.send({
+    success: true,
+    data: { defaultOrganizationId: organization.organizationId },
+  });
+};
+
 // 代码中会兼容本地 service mock 以及部署站点的静态数据
 export default {
   // 支持值为 Object 和 Array
-  'GET /api/currentUser': (req: Request, res: Response) => {
-    const username = getAuthenticatedUsername(req);
-    if (!username) {
-      res.status(401).send({
-        data: {
-          isLogin: false,
-        },
-        errorCode: '401',
-        errorMessage: '请先登录！',
-        success: false,
-      });
-      return;
-    }
-    res.send({
-      success: true,
-      data: buildMockCurrentUser(username),
-    });
-  },
-  'PUT /api/users/me/default-organization': (req: Request, res: Response) => {
-    const username = getAuthenticatedUsername(req);
-    if (!username) {
-      res.status(401).send({
-        errorCode: '401',
-        errorMessage: '请先登录！',
-        success: false,
-      });
-      return;
-    }
-    const { organizationId } = req.body;
-    const organization = getOrganizations(username).find(
-      (item) => item.organizationId === organizationId,
-    );
-    if (!organization) {
-      res.status(400).send({
-        errorCode: '400',
-        errorMessage: '组织不存在或当前用户无权进入',
-        success: false,
-      });
-      return;
-    }
-    defaultOrganizationIds[username] = organization.organizationId;
-    res.send({
-      success: true,
-      data: { defaultOrganizationId: organization.organizationId },
-    });
-  },
+  'POST /api/currentUser/get': getCurrentUser,
+  'POST /api/users/me/default-organization/set': setDefaultOrganization,
   // GET POST 可省略
   'GET /api/users': [
     {
@@ -411,7 +415,7 @@ export default {
     });
   },
 
-  'GET /api/login/captcha': async (_req: Request, res: Response) => {
+  'POST /api/login/captcha': async (_req: Request, res: Response) => {
     await waitTime(2000);
     return res.json('captcha-xxx');
   },

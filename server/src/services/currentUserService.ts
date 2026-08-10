@@ -1,6 +1,7 @@
 import { AppError } from '../errors/appError.js';
 import type {
   AuthCurrentUser,
+  UpdateCurrentUserProfileInput,
   UserRepositoryPort,
 } from '../repositories/userRepository.js';
 
@@ -10,6 +11,10 @@ export interface CurrentUserServicePort {
     userId: string,
     organizationId: string,
   ): Promise<{ defaultOrganizationId: string }>;
+  updateCurrentUserProfile(
+    userId: string,
+    input: UpdateCurrentUserProfileInput,
+  ): Promise<AuthCurrentUser>;
 }
 
 export class CurrentUserService implements CurrentUserServicePort {
@@ -47,5 +52,20 @@ export class CurrentUserService implements CurrentUserServicePort {
       });
     }
     return { defaultOrganizationId: organizationId };
+  }
+
+  async updateCurrentUserProfile(
+    userId: string,
+    input: UpdateCurrentUserProfileInput,
+  ): Promise<AuthCurrentUser> {
+    const user = await this.users.updateCurrentUserProfile(userId, input);
+    if (!user || user.status !== 'active') {
+      throw new AppError({
+        statusCode: 401,
+        errorCode: 'ACCESS_TOKEN_INVALID',
+        errorMessage: 'Access Token 无效',
+      });
+    }
+    return user;
   }
 }

@@ -122,13 +122,14 @@ export const errorConfig: RequestConfig = {
       const isPlatformApi = requestPath.startsWith('/api/platform/');
       // 认证、用户身份和默认组织接口不从当前 Organization URL 继承业务范围。
       const isScopeNeutralApi = [
-        '/api/currentUser',
+        '/api/currentUser/get',
         '/api/register',
         '/api/login/account',
         '/api/login/outLogin',
         '/api/password/forgot',
         '/api/password/reset',
-        '/api/users/me/default-organization',
+        '/api/users/me/update',
+        '/api/users/me/default-organization/set',
       ].includes(requestPath);
       // 链路：当前 Organization URL -> organizationId -> X-Organization-Id -> 后端再次鉴权。
       if (organizationId && !isPlatformApi && !isScopeNeutralApi) {

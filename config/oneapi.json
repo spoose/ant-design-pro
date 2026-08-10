@@ -13,36 +13,6 @@
     }
   ],
   "paths": {
-    "/api/currentUser": {
-      "get": {
-        "tags": ["api"],
-        "description": "获取当前的用户",
-        "operationId": "currentUser",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "x-swagger-router-controller": "api"
-    },
     "/api/login/captcha": {
       "post": {
         "description": "发送验证码",
@@ -299,93 +269,6 @@
   },
   "components": {
     "schemas": {
-      "CurrentUser": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "avatar": {
-            "type": "string"
-          },
-          "userid": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "signature": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "group": {
-            "type": "string"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "key": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "notifyCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unreadCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "country": {
-            "type": "string"
-          },
-          "access": {
-            "type": "string"
-          },
-          "geographic": {
-            "type": "object",
-            "properties": {
-              "province": {
-                "type": "object",
-                "properties": {
-                  "label": {
-                    "type": "string"
-                  },
-                  "key": {
-                    "type": "string"
-                  }
-                }
-              },
-              "city": {
-                "type": "object",
-                "properties": {
-                  "label": {
-                    "type": "string"
-                  },
-                  "key": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
-          "address": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          }
-        }
-      },
       "LoginResult": {
         "type": "object",
         "properties": {

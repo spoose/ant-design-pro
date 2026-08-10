@@ -87,7 +87,7 @@ const useStyles = createStyles(({ token }) => {
 const SelectEntry = () => {
   const { styles } = useStyles();
   const { initialState, setInitialState } = useModel('@@initialState');
-  // organizations 由 GET /api/currentUser 提供，选择页不再发起第二次列表请求。
+  // organizations 由 POST /api/currentUser/get 提供，选择页不再发起第二次列表请求。
   const organizations = initialState?.currentUser?.organizations ?? [];
   const [selectedOrganizationId, setSelectedOrganizationId] =
     useState<string>();

@@ -30,8 +30,8 @@ describe('auth service', () => {
 
     await getCurrentUser({ skipErrorHandler: true });
 
-    expect(requestMock).toHaveBeenCalledWith('/api/currentUser', {
-      method: 'GET',
+    expect(requestMock).toHaveBeenCalledWith('/api/currentUser/get', {
+      method: 'POST',
       skipErrorHandler: true,
     });
   });
@@ -164,9 +164,9 @@ describe('auth service', () => {
     await setDefaultOrganization(organizationId);
 
     expect(requestMock).toHaveBeenCalledWith(
-      '/api/users/me/default-organization',
+      '/api/users/me/default-organization/set',
       {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         data: { organizationId },
       },

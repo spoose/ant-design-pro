@@ -50,6 +50,21 @@ describe('WorkspaceSkillList', () => {
     expect(screen.getByText('当前工作区暂无可用应用')).toBeVisible();
   });
 
+  it('identifies a backend-authorized Skill missing from the frontend registry', () => {
+    render(
+      <WorkspaceSkillList
+        emptyDescription="暂无应用"
+        getSkillPath={(skillCode) => `/apps/${skillCode}`}
+        skillCodes={['backend-only-skill']}
+        title="可用应用"
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '前端未定义应用：backend-only-skill',
+    );
+  });
+
   it('places pAI first while preserving the remaining app order', () => {
     render(
       <WorkspaceSkillList

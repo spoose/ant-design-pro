@@ -347,8 +347,8 @@ describe('requestErrorConfig', () => {
     it('does not attach Organization Header to authentication APIs', () => {
       testLocation.pathname = '/workspace/org/organization-1/home';
       const result = interceptor({
-        url: '/api/currentUser',
-        method: 'GET',
+        url: '/api/currentUser/get',
+        method: 'POST',
       });
       expect(result.headers).toBeUndefined();
     });

@@ -95,7 +95,7 @@ export const getOrganizationAppPagePath = (
 
 /**
  * 登录落点的单一公开门面。
- * 页面只提供 GET /api/currentUser 的结果；内部完成权限落点计算和 URL 生成。
+ * 页面只提供 POST /api/currentUser/get 的结果；内部完成权限落点计算和 URL 生成。
  * 登录提交、应用根路由和旧 /home 兼容入口必须共用该函数。
  */
 export const resolveLandingPath = (user: AuthCurrentUser) => {

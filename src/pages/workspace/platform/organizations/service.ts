@@ -75,9 +75,9 @@ export function getOrganizationErrorDetails(
 
 export async function listOrganizations(options?: RequestOptions) {
   return request<ApiSuccess<OrganizationSummary[]>>(
-    '/api/admin/organizations',
+    '/api/admin/organizations/list',
     {
-      method: 'GET',
+      method: 'POST',
       ...(options || {}),
     },
   );
@@ -87,12 +87,15 @@ export async function createOrganization(
   body: CreateOrganizationInput,
   options?: RequestOptions,
 ) {
-  return request<ApiSuccess<OrganizationSummary>>('/api/admin/organizations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    data: body,
-    ...(options || {}),
-  });
+  return request<ApiSuccess<OrganizationSummary>>(
+    '/api/admin/organizations/create',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: body,
+      ...(options || {}),
+    },
+  );
 }
 
 export async function updateOrganization(
@@ -101,11 +104,11 @@ export async function updateOrganization(
   options?: RequestOptions,
 ) {
   return request<ApiSuccess<OrganizationSummary>>(
-    `/api/admin/organizations/${organizationId}`,
+    '/api/admin/organizations/update',
     {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      data: body,
+      data: { organizationId, ...body },
       ...(options || {}),
     },
   );
@@ -116,9 +119,11 @@ export async function deleteOrganization(
   options?: RequestOptions,
 ) {
   return request<ApiSuccess<{ organizationId: string }>>(
-    `/api/admin/organizations/${organizationId}`,
+    '/api/admin/organizations/delete',
     {
-      method: 'DELETE',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: { organizationId },
       ...(options || {}),
     },
   );

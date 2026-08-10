@@ -46,7 +46,7 @@ const isOrganizationPageKey = (
 /**
  * Workspace URL 的纯规则层。
  *
- * 输入来源：GET /api/currentUser + Umi pathname。
+ * 输入来源：POST /api/currentUser/get + Umi pathname。
  * 输出消费：WorkspaceAccess wrapper 决定渲染、规范化跳转、403 或 404。
  * 后端仍必须对每个业务 API 进行真实授权，本函数只负责前端导航边界。
  */

@@ -65,7 +65,7 @@ const WorkspaceTabsController = ({
  * Sidebar 也直接解析同一 URL，因此两者无需维护额外联动 State。
  */
 const WorkspaceTabsHeader = () => {
-  // currentUser 来源于 GET /api/currentUser；它提供用户 ID、组织白名单和 App 授权。
+  // currentUser 来源于 POST /api/currentUser/get；它提供用户 ID、组织白名单和 App 授权。
   const { initialState } = useModel('@@initialState');
   // pathname/search/hash 来源于 Umi Browser Router，刷新后浏览器会天然保留当前活动 URL。
   const { pathname, search, hash } = useLocation();

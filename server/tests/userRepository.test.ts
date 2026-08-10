@@ -71,3 +71,53 @@ describe('UserRepository.setDefaultOrganization', () => {
     expect(connection.release).toHaveBeenCalledOnce();
   });
 });
+
+describe('UserRepository.updateCurrentUserProfile', () => {
+  it('updates display_name and avatar_url for an active user', async () => {
+    const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce([{ affectedRows: 1 } as ResultSetHeader, []])
+      .mockResolvedValueOnce([
+        [
+          {
+            userId,
+            username: 'ada',
+            email: 'ada@example.com',
+            name: 'Ada',
+            avatar: 'https://example.com/a.png',
+            status: 'active',
+            isSuperAdmin: 0,
+            defaultOrganizationId: null,
+            tokenVersion: 0,
+            passwordHash: 'hash',
+          },
+        ],
+        [],
+      ])
+      .mockResolvedValueOnce([[], []])
+      .mockResolvedValueOnce([[], []]);
+    const pool = {
+      execute,
+      getConnection: vi.fn(),
+    } as unknown as Pool;
+    const repository = new UserRepository(pool);
+
+    const user = await repository.updateCurrentUserProfile(userId, {
+      name: 'Ada',
+      avatar: 'https://example.com/a.png',
+    });
+
+    expect(execute).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('display_name = ?'),
+      ['Ada', 'https://example.com/a.png', userId],
+    );
+    expect(execute.mock.calls[0]?.[0]).toContain('avatar_url = ?');
+    expect(user).toMatchObject({
+      userId,
+      name: 'Ada',
+      avatar: 'https://example.com/a.png',
+    });
+  });
+});

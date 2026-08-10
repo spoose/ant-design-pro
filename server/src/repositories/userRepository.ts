@@ -60,6 +60,11 @@ export interface AuthCurrentUser {
 
 export type SetDefaultOrganizationResult = 'updated' | 'organization_forbidden';
 
+export type UpdateCurrentUserProfileInput = {
+  name?: string;
+  avatar?: string | null;
+};
+
 export interface UserRepositoryPort {
   createUser(input: CreateUserInput): Promise<RegisteredUser>;
   findAuthenticationUserByAccount(
@@ -73,6 +78,10 @@ export interface UserRepositoryPort {
     userId: string,
     organizationId: string,
   ): Promise<SetDefaultOrganizationResult>;
+  updateCurrentUserProfile(
+    userId: string,
+    input: UpdateCurrentUserProfileInput,
+  ): Promise<AuthCurrentUser | null>;
 }
 
 interface AuthenticationUserRow extends RowDataPacket {
@@ -348,5 +357,42 @@ export class UserRepository implements UserRepositoryPort {
         return 'updated';
       }),
     );
+  }
+
+  async updateCurrentUserProfile(
+    userId: string,
+    input: UpdateCurrentUserProfileInput,
+  ): Promise<AuthCurrentUser | null> {
+    const assignments: string[] = [];
+    const params: Array<string | null> = [];
+
+    if (input.name !== undefined) {
+      assignments.push('display_name = ?');
+      params.push(input.name);
+    }
+    if (input.avatar !== undefined) {
+      assignments.push('avatar_url = ?');
+      params.push(input.avatar);
+    }
+
+    if (assignments.length > 0) {
+      const [result] = await databaseOperation(() =>
+        this.pool.execute<ResultSetHeader>(
+          `
+            UPDATE users
+            SET ${assignments.join(', ')}
+            WHERE id = ?
+              AND status = 'active'
+          `,
+          [...params, userId],
+        ),
+      );
+
+      if (result.affectedRows === 0) {
+        return this.getCurrentUser(userId);
+      }
+    }
+
+    return this.getCurrentUser(userId);
   }
 }

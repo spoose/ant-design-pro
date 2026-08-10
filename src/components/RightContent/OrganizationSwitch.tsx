@@ -27,7 +27,7 @@ export const OrganizationSwitch: React.FC = () => {
   const { styles } = useHeaderActionStyles();
   // pathname 来源于 Umi Browser Router，是当前 Platform/Organization Scope 的唯一标识。
   const { pathname } = useLocation();
-  // currentUser 来源于 GET /api/currentUser，经 getInitialState 写入 Umi initialState。
+  // currentUser 来源于 POST /api/currentUser/get，经 getInitialState 写入 Umi initialState。
   const { initialState } = useModel('@@initialState');
   const currentUser = initialState?.currentUser;
   // 后端已经过滤可进入组织；前端这里只去重，不组合或扩大权限。

@@ -35,6 +35,7 @@ function createRepository(user: AuthenticationUser | null): UserRepositoryPort {
     findAuthenticationUserById: vi.fn().mockResolvedValue(user),
     getCurrentUser: vi.fn(),
     setDefaultOrganization: vi.fn(),
+    updateCurrentUserProfile: vi.fn(),
   };
 }
 

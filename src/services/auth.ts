@@ -9,19 +9,19 @@ import {
 } from './jushu-api/currentUser';
 
 /**
- * GET /api/currentUser.organizations[].dataScopes 的元素。
+ * POST /api/currentUser/get 返回的 organizations[].dataScopes 元素。
  * DataScope 只描述 Organization 内的数据过滤范围，不参与顶栏工作区切换。
  */
 export type DataScope = JushuAPI.DataScope;
 
 /**
- * GET /api/currentUser.organizations 的元素。
+ * POST /api/currentUser/get 返回的 organizations 元素。
  * permissions 与 skillCodes 都由后端按用户和 Organization 计算，前端不跨组织合并。
  */
 export type OrganizationAccess = JushuAPI.OrganizationAccess;
 
 /**
- * GET /api/currentUser 返回后存入 Umi initialState，并在当前登录期间共享。
+ * POST /api/currentUser/get 返回后存入 Umi initialState，并在当前登录期间共享。
  * 数据链路：OpenAPI -> npm run openapi:jushu -> JushuAPI.AuthCurrentUser
  * -> getInitialState.currentUser -> Workspace 规则、Sidebar、标签和业务页面。
  * Platform 和 Organization 是两个独立授权域，不能相互推导权限。

@@ -9,7 +9,7 @@ export function createCurrentUserRouter(
 ): Router {
   const router = Router();
 
-  router.get('/', authenticate, async (_request, response, next) => {
+  const getCurrentUser: RequestHandler = async (_request, response, next) => {
     try {
       const user = await currentUserService.getCurrentUser(
         response.locals.authenticatedUserId,
@@ -18,7 +18,9 @@ export function createCurrentUserRouter(
     } catch (error) {
       next(error);
     }
-  });
+  };
+
+  router.post('/get', authenticate, getCurrentUser);
 
   return router;
 }

@@ -29,17 +29,20 @@ export const createOrganizationSchema = z
   })
   .strict();
 
-export const updateOrganizationSchema = z
+export const updateOrganizationCommandSchema = z
   .object({
+    organizationId: z.uuid('organizationId 必须是有效 UUID'),
     organizationName: organizationName.optional(),
     status: organizationStatus.optional(),
   })
   .strict()
-  .refine((value) => Object.keys(value).length > 0, {
-    message: '至少需要提交一个可更新字段',
-  });
+  .refine(
+    (value) =>
+      value.organizationName !== undefined || value.status !== undefined,
+    { message: '至少需要提交一个可更新字段' },
+  );
 
-export const organizationParamsSchema = z
+export const deleteOrganizationCommandSchema = z
   .object({
     organizationId: z.uuid('organizationId 必须是有效 UUID'),
   })
@@ -48,7 +51,9 @@ export const organizationParamsSchema = z
 export type CreateOrganizationRequest = z.infer<
   typeof createOrganizationSchema
 >;
-export type UpdateOrganizationRequest = z.infer<
-  typeof updateOrganizationSchema
+export type UpdateOrganizationCommandRequest = z.infer<
+  typeof updateOrganizationCommandSchema
 >;
-export type OrganizationParams = z.infer<typeof organizationParamsSchema>;
+export type DeleteOrganizationCommandRequest = z.infer<
+  typeof deleteOrganizationCommandSchema
+>;

@@ -19,7 +19,7 @@ const skillCardClassName =
   'group relative flex h-40 w-[min(22rem,calc(100%-2.5rem))] shrink-0 snap-start overflow-hidden rounded-[1.25rem] border border-zinc-200/80 !bg-white text-inherit shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-[background-color,border-color] hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 active:bg-zinc-100 motion-reduce:transition-none dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800/90 dark:active:bg-zinc-800';
 
 export type WorkspaceSkillListProps = {
-  /** 当前 Scope 的有效 Skill Code；来源于 GET /api/currentUser 的后端过滤结果。 */
+  /** 当前 Scope 的有效 Skill Code；来源于 POST /api/currentUser/get 的后端过滤结果。 */
   skillCodes: string[];
   /** 把 Skill Code 转成当前 Platform/Organization Scope 下的 App URL。 */
   getSkillPath: (skillCode: string) => string;
@@ -49,7 +49,7 @@ const WorkspaceSkillCard = ({
         className="h-40 w-[min(22rem,calc(100%-2.5rem))] shrink-0 snap-start rounded-[1.25rem] bg-red-50 px-5 py-5 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
         role="alert"
       >
-        未注册 Skill：<code>{skillCode}</code>
+        前端未定义应用：<code>{skillCode}</code>
       </div>
     );
   }

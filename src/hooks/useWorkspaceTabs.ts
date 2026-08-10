@@ -41,7 +41,7 @@ const createInitialWorkspace = (
 /**
  * Workspace 标签的最小 React 控制器。
  *
- * @param userId 来源于 GET /api/currentUser.userId，用于隔离 sessionStorage 快照。
+ * @param userId 来源于 POST /api/currentUser/get 的 userId，用于隔离 sessionStorage 快照。
  * @param scopeKey 来源于 Platform/Organization Scope，用于隔离恢复快照。
  * @param activeTabId 来源于当前 Umi URL 对应的 routeTab，不在 Hook 内重复保存。
  * @returns 已打开标签，以及路由同步、点击激活和关闭三个操作。

@@ -125,7 +125,9 @@ describe('organization management flow', () => {
   });
 
   it('lists organizations and creates a normalized organization', async () => {
-    const listed = await request(context.app).get('/api/admin/organizations');
+    const listed = await request(context.app).post(
+      '/api/admin/organizations/list',
+    );
     expect(listed.status).toBe(200);
     expect(listed.body.data).toEqual([
       expect.objectContaining({
@@ -137,7 +139,7 @@ describe('organization management flow', () => {
     ]);
 
     const created = await request(context.app)
-      .post('/api/admin/organizations')
+      .post('/api/admin/organizations/create')
       .send({
         organizationCode: ' org_2 ',
         organizationName: ' 组织二 ',
@@ -164,7 +166,7 @@ describe('organization management flow', () => {
 
   it('rejects duplicate codes and unknown create fields', async () => {
     const duplicate = await request(context.app)
-      .post('/api/admin/organizations')
+      .post('/api/admin/organizations/create')
       .send({
         organizationCode: 'org1',
         organizationName: '重复组织',
@@ -177,7 +179,7 @@ describe('organization management flow', () => {
     });
 
     const unknownField = await request(context.app)
-      .post('/api/admin/organizations')
+      .post('/api/admin/organizations/create')
       .send({
         organizationCode: 'ORG2',
         organizationName: '组织二',
@@ -190,8 +192,12 @@ describe('organization management flow', () => {
 
   it('updates only mutable fields and rejects empty updates', async () => {
     const updated = await request(context.app)
-      .patch(`/api/admin/organizations/${organizationId}`)
-      .send({ organizationName: '新组织名称', status: 'disabled' });
+      .post('/api/admin/organizations/update')
+      .send({
+        organizationId,
+        organizationName: '新组织名称',
+        status: 'disabled',
+      });
     expect(updated.status).toBe(200);
     expect(updated.body.data).toMatchObject({
       organizationCode: 'ORG1',
@@ -200,14 +206,14 @@ describe('organization management flow', () => {
     });
 
     const empty = await request(context.app)
-      .patch(`/api/admin/organizations/${organizationId}`)
-      .send({});
+      .post('/api/admin/organizations/update')
+      .send({ organizationId });
     expect(empty.status).toBe(400);
     expect(empty.body.errorCode).toBe('VALIDATION_ERROR');
 
     const immutableCode = await request(context.app)
-      .patch(`/api/admin/organizations/${organizationId}`)
-      .send({ organizationCode: 'RENAMED' });
+      .post('/api/admin/organizations/update')
+      .send({ organizationId, organizationCode: 'RENAMED' });
     expect(immutableCode.status).toBe(400);
     expect(immutableCode.body.errorCode).toBe('VALIDATION_ERROR');
   });
@@ -215,27 +221,42 @@ describe('organization management flow', () => {
   it('returns explicit errors for missing and referenced organizations', async () => {
     const missingId = '33333333-3333-4333-8333-333333333333';
     const missing = await request(context.app)
-      .patch(`/api/admin/organizations/${missingId}`)
-      .send({ status: 'disabled' });
+      .post('/api/admin/organizations/update')
+      .send({ organizationId: missingId, status: 'disabled' });
     expect(missing.status).toBe(404);
     expect(missing.body.errorCode).toBe('ORGANIZATION_NOT_FOUND');
 
     context.repository.markInUse(organizationId);
-    const inUse = await request(context.app).delete(
-      `/api/admin/organizations/${organizationId}`,
-    );
+    const inUse = await request(context.app)
+      .post('/api/admin/organizations/delete')
+      .send({ organizationId });
     expect(inUse.status).toBe(409);
     expect(inUse.body.errorCode).toBe('ORGANIZATION_IN_USE');
   });
 
   it('deletes an empty organization', async () => {
-    const deleted = await request(context.app).delete(
-      `/api/admin/organizations/${organizationId}`,
-    );
+    const deleted = await request(context.app)
+      .post('/api/admin/organizations/delete')
+      .send({ organizationId });
     expect(deleted.status).toBe(200);
     expect(deleted.body.data).toEqual({ organizationId });
 
-    const listed = await request(context.app).get('/api/admin/organizations');
+    const listed = await request(context.app).post(
+      '/api/admin/organizations/list',
+    );
     expect(listed.body.data).toEqual([]);
+  });
+
+  it('does not expose legacy organization routes', async () => {
+    const responses = await Promise.all([
+      request(context.app).get('/api/admin/organizations'),
+      request(context.app).post('/api/admin/organizations').send({}),
+      request(context.app)
+        .patch(`/api/admin/organizations/${organizationId}`)
+        .send({ organizationName: 'Legacy' }),
+      request(context.app).delete(`/api/admin/organizations/${organizationId}`),
+    ]);
+
+    expect(responses.map(({ status }) => status)).toEqual([404, 404, 404, 404]);
   });
 });

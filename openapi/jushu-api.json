@@ -19,14 +19,20 @@
     {
       "name": "Current User",
       "description": "当前用户及其 Platform、Organization 访问范围"
+    },
+    {
+      "name": "Platform Users",
+      "description": "Super Admin 平台人员管理"
+    },
+    {
+      "name": "Platform Organizations",
+      "description": "Super Admin 平台组织管理"
     }
   ],
   "paths": {
     "/api/register": {
       "post": {
-        "tags": [
-          "Authentication"
-        ],
+        "tags": ["Authentication"],
         "operationId": "register",
         "summary": "注册账户",
         "description": "创建账户但不自动登录，也不签发 Access Token。",
@@ -65,9 +71,7 @@
     },
     "/api/login/account": {
       "post": {
-        "tags": [
-          "Authentication"
-        ],
+        "tags": ["Authentication"],
         "operationId": "login",
         "summary": "账号密码登录",
         "description": "account 可为用户名或邮箱。成功后返回 Bearer Access Token。",
@@ -120,11 +124,9 @@
         }
       }
     },
-    "/api/currentUser": {
-      "get": {
-        "tags": [
-          "Current User"
-        ],
+    "/api/currentUser/get": {
+      "post": {
+        "tags": ["Current User"],
         "operationId": "getCurrentUser",
         "summary": "获取当前用户访问范围",
         "description": "返回用户身份、Platform 权限以及真正可以进入的 Organization。",
@@ -153,11 +155,9 @@
         }
       }
     },
-    "/api/users/me/default-organization": {
-      "put": {
-        "tags": [
-          "Current User"
-        ],
+    "/api/users/me/default-organization/set": {
+      "post": {
+        "tags": ["Current User"],
         "operationId": "setDefaultOrganization",
         "summary": "设置当前用户的默认组织",
         "description": "仅允许保存当前用户可以实时进入的活跃 Organization。用户身份只从 Bearer Token 获取。",
@@ -201,44 +201,47 @@
           }
         }
       }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
     },
-    "responses": {
-      "BadRequest": {
-        "description": "请求格式或字段不合法",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiError"
+    "/api/users/me/update": {
+      "post": {
+        "tags": ["Current User"],
+        "operationId": "updateCurrentUserProfile",
+        "summary": "更新当前用户基本资料",
+        "description": "更新 display_name / avatar_url。用户身份只从 Bearer Token 获取。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCurrentUserProfileRequest"
+              }
             }
           }
-        }
-      },
-      "Unauthorized": {
-        "description": "认证失败或 Access Token 无效",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiError"
+        },
+        "responses": {
+          "200": {
+            "description": "基本资料已更新",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              }
             }
-          }
-        }
-      },
-      "Forbidden": {
-        "description": "当前用户不能进入指定 Organization",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiError"
-            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       },
@@ -357,32 +360,364 @@
             "type": "string",
             "format": "email"
           },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/organizations/list": {
+      "post": {
+        "tags": ["Platform Organizations"],
+        "operationId": "listOrganizations",
+        "summary": "查询组织目录",
+        "description": "仅 Super Admin 可调用。返回全部组织摘要。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "组织目录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/organizations/create": {
+      "post": {
+        "tags": ["Platform Organizations"],
+        "operationId": "createOrganization",
+        "summary": "创建组织",
+        "description": "仅 Super Admin 可调用。创建组织及创建者的初始 Membership、权限和 Skill。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "组织创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/organizations/update": {
+      "post": {
+        "tags": ["Platform Organizations"],
+        "operationId": "updateOrganization",
+        "summary": "更新组织",
+        "description": "仅 Super Admin 可调用。organizationCode 不可修改。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrganizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "组织更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/organizations/delete": {
+      "post": {
+        "tags": ["Platform Organizations"],
+        "operationId": "deleteOrganization",
+        "summary": "删除未投入使用的组织",
+        "description": "仅 Super Admin 可调用。存在额外成员或授权时拒绝删除。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteOrganizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "组织删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteOrganizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求格式或字段不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "认证失败或 Access Token 无效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前用户权限不足",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "目标资源不存在",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "唯一字段冲突或资源当前状态不允许操作",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "服务器内部错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "errorCode", "errorMessage", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [false]
+          },
+          "errorCode": {
+            "type": "string",
+            "minLength": 1,
+            "example": "VALIDATION_ERROR"
+          },
+          "errorMessage": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["username", "email", "name", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64,
+            "pattern": "^[a-zA-Z0-9._-]+$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "writeOnly": true,
+            "minLength": 12,
+            "maxLength": 128
+          }
+        }
+      },
+      "RegisteredUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["userId", "username", "email", "name", "status"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
           "name": {
             "type": "string",
             "minLength": 1
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active"
-            ]
+            "enum": ["active"]
           }
         }
       },
       "RegisterResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "success",
-          "data",
-          "traceId"
-        ],
+        "required": ["success", "data", "traceId"],
         "properties": {
           "success": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "enum": [true]
           },
           "data": {
             "$ref": "#/components/schemas/RegisteredUser"
@@ -396,10 +731,7 @@
       "LoginRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "account",
-          "password"
-        ],
+        "required": ["account", "password"],
         "properties": {
           "account": {
             "type": "string",
@@ -418,12 +750,7 @@
       "AuthLoginData": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "accessToken",
-          "tokenType",
-          "expiresIn",
-          "expiresAt"
-        ],
+        "required": ["accessToken", "tokenType", "expiresIn", "expiresAt"],
         "properties": {
           "accessToken": {
             "type": "string",
@@ -431,9 +758,7 @@
           },
           "tokenType": {
             "type": "string",
-            "enum": [
-              "Bearer"
-            ]
+            "enum": ["Bearer"]
           },
           "expiresIn": {
             "type": "integer",
@@ -448,17 +773,11 @@
       "LoginResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "success",
-          "data",
-          "traceId"
-        ],
+        "required": ["success", "data", "traceId"],
         "properties": {
           "success": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "enum": [true]
           },
           "data": {
             "$ref": "#/components/schemas/AuthLoginData"
@@ -471,31 +790,16 @@
       },
       "UserStatus": {
         "type": "string",
-        "enum": [
-          "active",
-          "disabled",
-          "deleted"
-        ]
+        "enum": ["active", "disabled", "deleted"]
       },
       "DataScopeType": {
         "type": "string",
-        "enum": [
-          "organization",
-          "department",
-          "team",
-          "project",
-          "custom"
-        ]
+        "enum": ["organization", "department", "team", "project", "custom"]
       },
       "DataScope": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "dataScopeId",
-          "dataScopeCode",
-          "dataScopeName",
-          "type"
-        ],
+        "required": ["dataScopeId", "dataScopeCode", "dataScopeName", "type"],
         "properties": {
           "dataScopeId": {
             "type": "string",
@@ -634,17 +938,11 @@
       "CurrentUserResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "success",
-          "data",
-          "traceId"
-        ],
+        "required": ["success", "data", "traceId"],
         "properties": {
           "success": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "enum": [true]
           },
           "data": {
             "$ref": "#/components/schemas/AuthCurrentUser"
@@ -655,12 +953,27 @@
           }
         }
       },
+      "UpdateCurrentUserProfileRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "avatar": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "nullable": true
+          }
+        }
+      },
       "SetDefaultOrganizationRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "organizationId"
-        ],
+        "required": ["organizationId"],
         "properties": {
           "organizationId": {
             "type": "string",
@@ -671,9 +984,7 @@
       "SetDefaultOrganizationData": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "defaultOrganizationId"
-        ],
+        "required": ["defaultOrganizationId"],
         "properties": {
           "defaultOrganizationId": {
             "type": "string",
@@ -684,20 +995,448 @@
       "SetDefaultOrganizationResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "success",
-          "data",
-          "traceId"
-        ],
+        "required": ["success", "data", "traceId"],
         "properties": {
           "success": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "enum": [true]
           },
           "data": {
             "$ref": "#/components/schemas/SetDefaultOrganizationData"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "AdminUserListRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["page", "pageSize"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "keyword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          },
+          "sortBy": {
+            "type": "string",
+            "enum": ["username", "email", "name", "status", "createdAt"],
+            "default": "createdAt"
+          },
+          "sortOrder": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "default": "desc"
+          }
+        }
+      },
+      "AdminUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "userId",
+          "username",
+          "email",
+          "name",
+          "avatar",
+          "status",
+          "isSuperAdmin",
+          "defaultOrganizationId",
+          "organizations",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "avatar": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          },
+          "isSuperAdmin": {
+            "type": "boolean"
+          },
+          "defaultOrganizationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "organizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOrganization"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AdminUserOrganization": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizationId", "organizationCode", "organizationName"],
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "organizationName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      },
+      "AdminUserPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["list", "page", "pageSize", "total"],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AdminUserPageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminUserPage"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "SetAdminUserOrganizationsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["userId", "organizationIds"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "SetAdminUserOrganizationsData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizations"],
+        "properties": {
+          "organizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserOrganization"
+            }
+          }
+        }
+      },
+      "SetAdminUserOrganizationsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "$ref": "#/components/schemas/SetAdminUserOrganizationsData"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "SetAdminUserStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["userId", "status"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "disabled"]
+          }
+        }
+      },
+      "SetAdminUserStatusData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["userId", "status"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "disabled"]
+          }
+        }
+      },
+      "SetAdminUserStatusResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "$ref": "#/components/schemas/SetAdminUserStatusData"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "OrganizationStatus": {
+        "type": "string",
+        "enum": ["active", "disabled"]
+      },
+      "OrganizationSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "organizationId",
+          "organizationCode",
+          "organizationName",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "organizationName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrganizationStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateOrganizationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizationCode", "organizationName", "status"],
+        "properties": {
+          "organizationCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
+          },
+          "organizationName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrganizationStatus"
+          }
+        }
+      },
+      "UpdateOrganizationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizationId"],
+        "minProperties": 2,
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrganizationStatus"
+          }
+        }
+      },
+      "DeleteOrganizationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizationId"],
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OrganizationListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationSummary"
+            }
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "OrganizationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrganizationSummary"
+          },
+          "traceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "DeletedOrganizationData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["organizationId"],
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "DeleteOrganizationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["success", "data", "traceId"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "data": {
+            "$ref": "#/components/schemas/DeletedOrganizationData"
           },
           "traceId": {
             "type": "string",

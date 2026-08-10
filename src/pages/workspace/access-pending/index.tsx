@@ -14,8 +14,8 @@ const loginPath = '/user/login';
 /**
  * 已认证但尚无任何可进入 Scope 时的中立主页。
  *
- * 数据链路：GET /api/currentUser -> resolveLandingPath() -> 等待授权页
- * -> 用户主动刷新 -> 再次 GET /api/currentUser -> 获得授权后进入目标 Workspace。
+ * 数据链路：POST /api/currentUser/get -> resolveLandingPath() -> 等待授权页
+ * -> 用户主动刷新 -> 再次 POST /api/currentUser/get -> 获得授权后进入目标 Workspace。
  */
 const AccessPendingPage = () => {
   const { notification } = App.useApp();
