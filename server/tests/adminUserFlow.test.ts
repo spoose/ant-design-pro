@@ -9,6 +9,12 @@ import type { AdminUserServicePort } from '../src/services/adminUserService.js';
 
 class FakeAdminUserService implements AdminUserServicePort {
   lastInput?: AdminUserListInput;
+  lastOrganizationsInput?: { userId: string; organizationIds: string[] };
+  lastStatusInput?: {
+    actorUserId: string;
+    userId: string;
+    status: 'active' | 'disabled';
+  };
 
   async list(input: AdminUserListInput) {
     this.lastInput = input;
@@ -23,6 +29,7 @@ class FakeAdminUserService implements AdminUserServicePort {
           status: 'active' as const,
           isSuperAdmin: true,
           defaultOrganizationId: null,
+          organizations: [],
           createdAt: new Date('2026-07-22T00:00:00.000Z'),
           updatedAt: new Date('2026-07-22T00:00:00.000Z'),
           deletedAt: null,
@@ -33,16 +40,41 @@ class FakeAdminUserService implements AdminUserServicePort {
       total: 1,
     };
   }
+
+  async setOrganizations(userId: string, organizationIds: string[]) {
+    this.lastOrganizationsInput = { userId, organizationIds };
+    return {
+      organizations: organizationIds.map((organizationId) => ({
+        organizationId,
+        organizationCode: 'ORG1',
+        organizationName: '组织一',
+      })),
+    };
+  }
+
+  async setStatus(
+    actorUserId: string,
+    userId: string,
+    status: 'active' | 'disabled',
+  ) {
+    this.lastStatusInput = { actorUserId, userId, status };
+    return { userId, status };
+  }
 }
 
 function createTestContext() {
+  const actorUserId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   const service = new FakeAdminUserService();
   const app = express();
   app.use(traceId);
   app.use(express.json());
+  app.use((_request, response, next) => {
+    response.locals.superAdminUserId = actorUserId;
+    next();
+  });
   app.use('/api/admin/users', createAdminUsersRouter(service));
   app.use(errorHandler);
-  return { app, service };
+  return { actorUserId, app, service };
 }
 
 describe('Super Admin user list flow', () => {
@@ -53,9 +85,16 @@ describe('Super Admin user list flow', () => {
   });
 
   it('returns a validated page of all matching users', async () => {
-    const response = await request(context.app).get(
-      '/api/admin/users?page=2&pageSize=20&keyword=admin&status=active&sortBy=username&sortOrder=asc',
-    );
+    const response = await request(context.app)
+      .post('/api/admin/users/list')
+      .send({
+        page: 2,
+        pageSize: 20,
+        keyword: 'admin',
+        status: 'active',
+        sortBy: 'username',
+        sortOrder: 'asc',
+      });
 
     expect(response.status).toBe(200);
     expect(response.body.data).toMatchObject({
@@ -80,20 +119,56 @@ describe('Super Admin user list flow', () => {
     });
   });
 
-  it('rejects missing pagination and unknown query fields', async () => {
-    const response = await request(context.app).get(
-      '/api/admin/users?legacyPage=1',
-    );
+  it('rejects missing pagination and unknown body fields', async () => {
+    const response = await request(context.app)
+      .post('/api/admin/users/list')
+      .send({ legacyPage: 1 });
 
     expect(response.status).toBe(400);
     expect(response.body.errorCode).toBe('VALIDATION_ERROR');
     expect(context.service.lastInput).toBeUndefined();
   });
 
+  it('replaces user organizations through a POST command', async () => {
+    const userId = '11111111-1111-4111-8111-111111111111';
+    const organizationId = '22222222-2222-4222-8222-222222222222';
+    const response = await request(context.app)
+      .post('/api/admin/users/organizations/set')
+      .send({ userId, organizationIds: [organizationId] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.organizations).toEqual([
+      {
+        organizationId,
+        organizationCode: 'ORG1',
+        organizationName: '组织一',
+      },
+    ]);
+    expect(context.service.lastOrganizationsInput).toEqual({
+      userId,
+      organizationIds: [organizationId],
+    });
+  });
+
+  it('sets the user status through a POST command', async () => {
+    const userId = '11111111-1111-4111-8111-111111111111';
+    const response = await request(context.app)
+      .post('/api/admin/users/status/set')
+      .send({ userId, status: 'disabled' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual({ userId, status: 'disabled' });
+    expect(context.service.lastStatusInput).toEqual({
+      actorUserId: context.actorUserId,
+      userId,
+      status: 'disabled',
+    });
+  });
+
   it.each([
-    ['post', '/api/admin/users'],
-    ['patch', '/api/admin/users/11111111-1111-4111-8111-111111111111'],
-    ['delete', '/api/admin/users/11111111-1111-4111-8111-111111111111'],
+    ['post', '/api/admin/users/create'],
+    ['post', '/api/admin/users/update'],
+    ['post', '/api/admin/users/delete'],
   ] as const)('reserves %s %s without mutating data', async (method, path) => {
     const response = await request(context.app)[method](path).send({});
 
@@ -102,5 +177,16 @@ describe('Super Admin user list flow', () => {
       success: false,
       errorCode: 'FEATURE_NOT_IMPLEMENTED',
     });
+  });
+
+  it('does not expose legacy user-management routes', async () => {
+    const responses = await Promise.all([
+      request(context.app).get('/api/admin/users'),
+      request(context.app).post('/api/admin/users').send({}),
+      request(context.app).patch('/api/admin/users/user-1').send({}),
+      request(context.app).delete('/api/admin/users/user-1'),
+    ]);
+
+    expect(responses.map(({ status }) => status)).toEqual([404, 404, 404, 404]);
   });
 });

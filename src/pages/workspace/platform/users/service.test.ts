@@ -1,39 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAdminUserErrorDetails, listAdminUsers } from './service';
+import { describe, expect, it } from 'vitest';
+import { getAdminUserErrorDetails } from './service';
 
-const requestMock = vi.hoisted(() => vi.fn());
-
-vi.mock('@umijs/max', () => ({ request: requestMock }));
-
-describe('admin user service', () => {
-  beforeEach(() => {
-    requestMock.mockReset();
-    requestMock.mockResolvedValue({
-      success: true,
-      data: { list: [], page: 1, pageSize: 20, total: 0 },
-      traceId: 'trace-users',
-    });
-  });
-
-  it('requests the read-only Super Admin user endpoint with explicit paging', async () => {
-    const params = {
-      page: 1,
-      pageSize: 20,
-      keyword: 'admin',
-      status: 'active' as const,
-      sortBy: 'createdAt' as const,
-      sortOrder: 'desc' as const,
-    };
-
-    await listAdminUsers(params, { skipErrorHandler: true });
-
-    expect(requestMock).toHaveBeenCalledWith('/api/admin/users', {
-      method: 'GET',
-      params,
-      skipErrorHandler: true,
-    });
-  });
-
+describe('admin user errors', () => {
   it('keeps the backend error message and trace id', () => {
     const error = Object.assign(new Error('request failed'), {
       info: {

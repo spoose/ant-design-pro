@@ -244,121 +244,151 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
-      },
-      "Conflict": {
-        "description": "用户名或邮箱已存在",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiError"
+      }
+    },
+    "/api/admin/users/list": {
+      "post": {
+        "tags": ["Platform Users"],
+        "operationId": "listAdminUsers",
+        "summary": "分页查询平台人员",
+        "description": "仅 Super Admin 可调用。查询条件、分页和排序字段均通过 JSON Body 传入。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserListRequest"
+              }
             }
           }
-        }
-      },
-      "InternalError": {
-        "description": "服务器内部错误",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ApiError"
+        },
+        "responses": {
+          "200": {
+            "description": "平台人员分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPageResponse"
+                }
+              }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
     },
-    "schemas": {
-      "ApiError": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "success",
-          "errorCode",
-          "errorMessage",
-          "traceId"
+    "/api/admin/users/organizations/set": {
+      "post": {
+        "tags": ["Platform Users"],
+        "operationId": "setAdminUserOrganizations",
+        "summary": "替换用户的组织归属",
+        "description": "仅 Super Admin 可调用。事务内替换有效 Membership，并清理已移出组织的 Grant。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ],
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAdminUserOrganizationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "组织归属已更新",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetAdminUserOrganizationsResponse"
+                }
+              }
+            }
           },
-          "errorCode": {
-            "type": "string",
-            "minLength": 1,
-            "example": "VALIDATION_ERROR"
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
-          "errorMessage": {
-            "type": "string",
-            "minLength": 1
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
-          "details": {
-            "type": "object",
-            "additionalProperties": true
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
-          "traceId": {
-            "type": "string",
-            "minLength": 1
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
-      },
-      "RegisterRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "username",
-          "email",
-          "name",
-          "password"
-        ],
-        "properties": {
-          "username": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 64,
-            "pattern": "^[a-zA-Z0-9._-]+$"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "maxLength": 254
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
-          },
-          "password": {
-            "type": "string",
-            "format": "password",
-            "writeOnly": true,
-            "minLength": 12,
-            "maxLength": 128
+      }
+    },
+    "/api/admin/users/status/set": {
+      "post": {
+        "tags": ["Platform Users"],
+        "operationId": "setAdminUserStatus",
+        "summary": "停用或恢复平台人员",
+        "description": "仅 Super Admin 可调用。不能停用当前登录用户或最后一个有效 Super Admin。",
+        "security": [
+          {
+            "BearerAuth": []
           }
-        }
-      },
-      "RegisteredUser": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "userId",
-          "username",
-          "email",
-          "name",
-          "status"
         ],
-        "properties": {
-          "userId": {
-            "type": "string",
-            "minLength": 1
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAdminUserStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "用户状态已更新",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetAdminUserStatusResponse"
+                }
+              }
+            }
           },
-          "username": {
-            "type": "string",
-            "minLength": 1
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
-          "email": {
-            "type": "string",
-            "format": "email"
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

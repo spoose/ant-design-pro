@@ -1,22 +1,9 @@
 import { z } from 'zod';
 
-const positiveInteger = (field: string, maximum: number) =>
-  z
-    .string({ error: `${field} 必须是字符串形式的整数` })
-    .regex(/^\d+$/, `${field} 必须是正整数`)
-    .transform(Number)
-    .pipe(
-      z
-        .number()
-        .int(`${field} 必须是整数`)
-        .min(1, `${field} 必须大于等于 1`)
-        .max(maximum, `${field} 不能大于 ${maximum}`),
-    );
-
-export const adminUserListQuerySchema = z
+export const adminUserListBodySchema = z
   .object({
-    page: positiveInteger('page', 1_000_000),
-    pageSize: positiveInteger('pageSize', 100),
+    page: z.number().int().min(1).max(1_000_000),
+    pageSize: z.number().int().min(1).max(100),
     keyword: z.string().trim().min(1).max(120).optional(),
     status: z.enum(['active', 'disabled', 'deleted']).optional(),
     sortBy: z
@@ -26,4 +13,34 @@ export const adminUserListQuerySchema = z
   })
   .strict();
 
-export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>;
+export type AdminUserListRequest = z.infer<typeof adminUserListBodySchema>;
+
+export const setAdminUserOrganizationsBodySchema = z
+  .object({
+    userId: z.uuid('userId 必须是有效 UUID'),
+    organizationIds: z
+      .array(z.uuid('organizationIds 必须只包含有效 UUID'))
+      .min(1, '请至少选择一个组织')
+      .max(100, 'organizationIds 不能超过 100 项')
+      .refine(
+        (organizationIds) =>
+          new Set(organizationIds).size === organizationIds.length,
+        'organizationIds 不能包含重复项',
+      ),
+  })
+  .strict();
+
+export type SetAdminUserOrganizationsRequest = z.infer<
+  typeof setAdminUserOrganizationsBodySchema
+>;
+
+export const setAdminUserStatusBodySchema = z
+  .object({
+    userId: z.uuid('userId 必须是有效 UUID'),
+    status: z.enum(['active', 'disabled']),
+  })
+  .strict();
+
+export type SetAdminUserStatusRequest = z.infer<
+  typeof setAdminUserStatusBodySchema
+>;

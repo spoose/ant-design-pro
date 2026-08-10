@@ -1,12 +1,3 @@
-import { request } from '@umijs/max';
-import type { AdminUserListParams, AdminUserPage } from './data.d';
-
-type ApiSuccess<T> = {
-  success: true;
-  data: T;
-  traceId: string;
-};
-
 type RequestError = Error & {
   request?: unknown;
   info?: {
@@ -51,15 +42,4 @@ export function getAdminUserErrorDetails(
     };
   }
   return { message: requestError.message, errorCode, traceId };
-}
-
-export async function listAdminUsers(
-  params: AdminUserListParams,
-  options?: { [key: string]: unknown },
-) {
-  return request<ApiSuccess<AdminUserPage>>('/api/admin/users', {
-    method: 'GET',
-    params,
-    ...(options || {}),
-  });
 }
