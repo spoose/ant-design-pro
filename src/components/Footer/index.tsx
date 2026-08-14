@@ -21,7 +21,7 @@ const COMMIT_HASH = process.env.COMMIT_HASH || '';
 
 const useStyles = createStyles(({ token, css }) => ({
   footer: css`
-    padding: 16px 24px;
+    padding: 8px 24px;
     text-align: center;
     color: ${token.colorTextDescription};
     font-size: ${token.fontSizeSM}px;
@@ -29,7 +29,7 @@ const useStyles = createStyles(({ token, css }) => ({
     background: transparent;
   `,
   copyright: css`
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   `,
   link: css`
     color: ${token.colorTextDescription};
@@ -69,7 +69,10 @@ const Footer: React.FC = () => {
 
   return (
     <div className={styles.footer}>
-      <div className={styles.copyright}>Ant Design Pro &copy; {year}</div>
+      <div className={styles.copyright}>
+        {' '}
+        兰溪市城发集团 ｜ 兰溪市聚数数字产业科技有限公司 &copy; {year}
+      </div>
       <div className={styles.meta}>
         <span className={styles.group}>
           <span className={styles.label}>ver</span>
