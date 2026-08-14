@@ -1,6 +1,12 @@
-import { Helmet, history, Link, SelectLang } from '@umijs/max';
-import { App, Button, Form, Input } from 'antd';
-import type { FC } from 'react';
+import {
+  IdcardOutlined,
+  LockOutlined,
+  MailOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { Helmet, history, Link } from '@umijs/max';
+import { App, Button, Checkbox, Form, Input, theme } from 'antd';
+import type { CSSProperties, FC } from 'react';
 import { useState } from 'react';
 import { Footer } from '@/components';
 import {
@@ -13,10 +19,58 @@ import useStyles from './styles';
 
 type RegisterFormValues = RegisterParams & {
   confirmPassword: string;
+  agreement?: boolean;
+};
+
+type PasswordStrengthProps = {
+  value?: string;
+};
+
+const PasswordStrength: FC<PasswordStrengthProps> = ({ value }) => {
+  const { token } = theme.useToken();
+  const { styles } = useStyles();
+
+  if (!value) return null;
+
+  let score = 0;
+  if (value.length >= 8) score += 1;
+  if (value.length >= 12) score += 1;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
+  if (/\d/.test(value) && /[^A-Za-z0-9]/.test(value)) score += 1;
+
+  const levelColor =
+    score >= 4
+      ? token.colorSuccess
+      : score >= 3
+        ? token.colorWarning
+        : token.colorError;
+  const levelText = score >= 4 ? '强' : score >= 3 ? '中' : '弱';
+
+  return (
+    <div className={styles.strength}>
+      <meter
+        className={styles.strengthTrack}
+        min={0}
+        max={4}
+        value={score}
+        style={{ '--strength-color': levelColor } as CSSProperties}
+        aria-label={`密码强度：${levelText}`}
+      />
+      <span
+        className={styles.strengthText}
+        style={{ color: levelColor }}
+        aria-hidden="true"
+      >
+        强度：{levelText}
+      </span>
+    </div>
+  );
 };
 
 const Register: FC = () => {
   const { styles } = useStyles();
+  const [form] = Form.useForm<RegisterFormValues>();
+  const password = Form.useWatch('password', form);
   const [submitting, setSubmitting] = useState(false);
   const { message, notification } = App.useApp();
 
@@ -53,21 +107,18 @@ const Register: FC = () => {
       <Helmet>
         <title>注册 - JUSHU AI</title>
       </Helmet>
-      <div className={styles.lang} data-lang>
-        {SelectLang && <SelectLang />}
-      </div>
       <main className={styles.content}>
         <div className={styles.main}>
           <div className={styles.brand}>
             <img className={styles.logo} alt="JUSHU" src="/jushu-logo.svg" />
             <h1>创建账户</h1>
-            {/* <p>填写账户信息，注册后即可登录。</p> */}
+            {/*<p>填写账户信息，注册后即可登录。</p>*/}
           </div>
 
           <Form<RegisterFormValues>
+            form={form}
             layout="vertical"
             name="UserRegister"
-            variant="filled"
             requiredMark={false}
             scrollToFirstError={{ focus: true }}
             onFinish={onFinish}
@@ -87,6 +138,7 @@ const Register: FC = () => {
             >
               <Input
                 size="large"
+                prefix={<UserOutlined />}
                 autoComplete="username"
                 placeholder="例如：jushu.user"
               />
@@ -100,7 +152,12 @@ const Register: FC = () => {
                 { max: 120, message: '展示名称不能超过 120 个字符' },
               ]}
             >
-              <Input size="large" autoComplete="name" placeholder="你的姓名" />
+              <Input
+                size="large"
+                prefix={<IdcardOutlined />}
+                autoComplete="name"
+                placeholder="你的姓名"
+              />
             </Form.Item>
 
             <Form.Item
@@ -114,6 +171,7 @@ const Register: FC = () => {
             >
               <Input
                 size="large"
+                prefix={<MailOutlined />}
                 autoComplete="email"
                 placeholder="name@example.com"
               />
@@ -122,7 +180,7 @@ const Register: FC = () => {
             <Form.Item
               label="密码"
               name="password"
-              // extra="使用 12–128 个字符。"
+              extra={<PasswordStrength value={password} />}
               rules={[
                 { required: true, message: '请输入密码' },
                 { min: 12, message: '密码至少需要 12 个字符' },
@@ -131,6 +189,7 @@ const Register: FC = () => {
             >
               <Input.Password
                 size="large"
+                prefix={<LockOutlined />}
                 autoComplete="new-password"
                 placeholder="至少 12 个字符"
               />
@@ -154,9 +213,28 @@ const Register: FC = () => {
             >
               <Input.Password
                 size="large"
+                prefix={<LockOutlined />}
                 autoComplete="new-password"
                 placeholder="再次输入密码"
               />
+            </Form.Item>
+
+            <Form.Item
+              className={styles.agreement}
+              name="agreement"
+              valuePropName="checked"
+              rules={[
+                {
+                  validator: (_, value: boolean) =>
+                    value
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error('请先阅读并同意服务条款与隐私政策'),
+                        ),
+                },
+              ]}
+            >
+              <Checkbox>我已阅读并同意《服务条款》和《隐私政策》</Checkbox>
             </Form.Item>
 
             <Button
@@ -167,12 +245,11 @@ const Register: FC = () => {
               htmlType="submit"
               block
             >
-              注册
+              创建账户
             </Button>
           </Form>
 
           <div className={styles.login}>
-            已有账户？{' '}
             <Link to="/user/login" prefetch>
               返回登录
             </Link>
