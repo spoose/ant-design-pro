@@ -57,6 +57,7 @@ import {
 } from 'react';
 import { tagColors } from '@/theme/statusColors';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
+import { getOrganizationAccess } from '@/utils/workspaceRules';
 import type { WorkspaceScope } from '@/utils/workspaceState';
 import { buildWorkspaceScopeKey } from '@/utils/workspaceState';
 import {
@@ -64,6 +65,7 @@ import {
   createPaiRequestFallback,
   findRetryQuestion,
 } from './provider';
+import PaiResourcesPage from './resources';
 import {
   clearLegacyPaiStorage,
   createPaiConversation,
@@ -932,7 +934,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
   );
 };
 
-const AiAssistantPage = () => {
+const AiAssistantPage = ({ pageKey }: { pageKey?: string }) => {
   const { styles } = useAiAssistantStyles();
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
@@ -945,6 +947,66 @@ const AiAssistantPage = () => {
     [pathname],
   );
   const scopeKey = buildWorkspaceScopeKey(scope);
+
+  if (pageKey === 'resources') {
+    const routeOrganizationId =
+      scope.kind === 'organization' ? scope.organizationId : undefined;
+    const uploadOrganizations = (currentUser?.organizations ?? []).flatMap(
+      (organization) => {
+        if (!currentUser) return [];
+        if (
+          routeOrganizationId &&
+          organization.organizationId !== routeOrganizationId
+        ) {
+          return [];
+        }
+        const access = getOrganizationAccess(
+          currentUser,
+          organization.organizationId,
+        );
+        if (
+          !currentUser.isSuperAdmin &&
+          !access.hasPermission('organization:knowledge:manage')
+        ) {
+          return [];
+        }
+        return [
+          {
+            organizationId: organization.organizationId,
+            organizationName: organization.organizationName,
+          },
+        ];
+      },
+    );
+    const initialOrganizationId = uploadOrganizations.some(
+      ({ organizationId }) => organizationId === routeOrganizationId,
+    )
+      ? routeOrganizationId
+      : (currentUser?.defaultOrganizationId ?? undefined);
+    return (
+      <PaiResourcesPage
+        fixedOrganizationId={
+          routeOrganizationId &&
+          uploadOrganizations.some(
+            ({ organizationId }) => organizationId === routeOrganizationId,
+          )
+            ? routeOrganizationId
+            : undefined
+        }
+        initialOrganizationId={initialOrganizationId}
+        initialScopeType={
+          routeOrganizationId &&
+          uploadOrganizations.some(
+            ({ organizationId }) => organizationId === routeOrganizationId,
+          )
+            ? 'organization'
+            : 'personal'
+        }
+        key={scopeKey}
+        organizations={uploadOrganizations}
+      />
+    );
+  }
 
   return (
     <section aria-label="pAI" className={styles.pageRoot}>

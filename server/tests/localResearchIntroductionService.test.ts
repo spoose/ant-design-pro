@@ -190,7 +190,7 @@ describe('local knowledge materials and research introduction service', () => {
         interestDirections: ['去重'],
         sourceIds: ['article-001', 'article-001'],
       }),
-    ).rejects.toThrow('sourceId 重复: article-001');
+    ).rejects.toThrow('sourceId 不能重复');
     expect(generate).not.toHaveBeenCalled();
   });
 });

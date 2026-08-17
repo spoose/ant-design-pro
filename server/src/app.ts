@@ -18,6 +18,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { createSuperAdminMiddleware } from './middleware/superAdmin.js';
 import { traceId } from './middleware/traceId.js';
 import { AdminUserRepository } from './repositories/adminUserRepository.js';
+import { KnowledgeDocumentRepository } from './repositories/knowledgeDocumentRepository.js';
 import { OrganizationRepository } from './repositories/organizationRepository.js';
 import { PaiConversationRepository } from './repositories/paiConversationRepository.js';
 import { PasswordResetRepository } from './repositories/passwordResetRepository.js';
@@ -27,6 +28,7 @@ import { createAdminUsersRouter } from './routes/adminUsers.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createCurrentUserRouter } from './routes/currentUser.js';
 import { createHealthRouter } from './routes/health.js';
+import { createKnowledgeDocumentsRouter } from './routes/knowledgeDocuments.js';
 import { createLogoutRouter } from './routes/logout.js';
 import { createPaiConversationsRouter } from './routes/paiConversations.js';
 import { createPasswordResetRouter } from './routes/passwordReset.js';
@@ -53,6 +55,7 @@ export function createApp(options: CreateAppOptions): Express {
   const app = express();
   const users = new UserRepository(options.pool);
   const adminUsers = new AdminUserRepository(options.pool);
+  const knowledgeDocuments = new KnowledgeDocumentRepository(options.pool);
   const organizations = new OrganizationRepository(options.pool);
   const paiConversations = new PaiConversationRepository(options.pool);
   const passwordResets = new PasswordResetRepository(options.pool);
@@ -126,6 +129,11 @@ export function createApp(options: CreateAppOptions): Express {
     '/api/pai/conversations',
     authenticate,
     createPaiConversationsRouter(paiConversationService),
+  );
+  app.use(
+    '/api/knowledge/documents',
+    authenticate,
+    createKnowledgeDocumentsRouter(knowledgeDocuments, currentUserService),
   );
   app.use('/api/admin', authenticate, requireSuperAdmin);
   app.use('/api/admin/users', createAdminUsersRouter(adminUserService));

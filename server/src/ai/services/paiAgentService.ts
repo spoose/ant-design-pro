@@ -100,6 +100,15 @@ export class PaiAgentService {
             : new Error('Mastra Agent returned an invalid error chunk');
         }
 
+        // DeepSeek 可能以 HTTP 200 + length 结束并返回不完整正文，不能按成功落库。
+        if (
+          chunk.type === 'finish' &&
+          isRecord(chunk.payload.stepResult) &&
+          chunk.payload.stepResult.reason === 'length'
+        ) {
+          throw new Error('模型回答因达到上下文或 Token 上限而被截断');
+        }
+
         if (
           (chunk.type === 'reasoning-delta' || chunk.type === 'text-delta') &&
           typeof chunk.payload.text === 'string'

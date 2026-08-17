@@ -57,6 +57,12 @@ conversationId + 本轮用户消息 + knowledgeEnabled + webSearchEnabled
 允许提交本轮用户消息和能力开关，不能提交历史或伪造系统上下文。当前不启用 Mastra
 Memory，因为 MySQL 会话存储是唯一持久化来源，模型历史由 PaiConversationService 统一组装。
 
+## 下一步：上传资料接入 Agent
+
+- [ ] 先调整资源页 UI 结构，明确上传入口、个人/组织范围和已上传资料的展示关系。
+- [ ] UI 结构稳定后，将 MySQL 中已上传的资料按会话范围和用户权限读取为 `KnowledgeMaterial[]`，替换 pAI 当前的本地目录读取。
+- [ ] 首版直接注入授权文本完成端到端验证；资料量需要时再增加切片和向量检索。
+
 ## 本地真实验证
 
 后端 `.env` 配置 `DEEPSEEK_API_KEY` 后，可从 `server` 目录运行：

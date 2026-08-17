@@ -25,6 +25,7 @@ vi.mock('@umijs/max', async () => {
   return {
     generatePath,
     Helmet: ({ children }: any) => children,
+    Link: ({ children, to }: any) => <a href={to}>{children}</a>,
     history: { replace: testState.replace },
     useModel: () => ({
       initialState: testState.initialState,
@@ -35,6 +36,10 @@ vi.mock('@umijs/max', async () => {
 
 vi.mock('./service', () => ({
   setDefaultOrganization: vi.fn(),
+}));
+
+vi.mock('@/components', () => ({
+  Footer: () => null,
 }));
 
 const organization: OrganizationAccess = {

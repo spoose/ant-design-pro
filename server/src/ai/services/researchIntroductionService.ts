@@ -3,33 +3,23 @@ import {
   articleSourceIdSchema,
   loadLocalKnowledgeMaterials,
 } from '../knowledge/loadLocalKnowledgeMaterials.js';
-import type {
-  createResearchIntroductionWorkflow,
-  ResearchIntroductionOutput,
+import {
+  type createResearchIntroductionWorkflow,
+  type ResearchIntroductionOutput,
+  researchIntroductionInputSchema,
 } from '../workflows/researchIntroductionWorkflow.js';
 
-const researchIntroductionServiceInputSchema = z
-  .object({
-    researchPurpose: z.string().trim().min(1).max(2_000),
-    interestDirections: z
-      .array(z.string().trim().min(1).max(300))
-      .min(1)
-      .max(10),
+/*
+ * Service 接收 sourceIds，Workflow 接收已加载的 materials；其余输入约束共用。
+ */
+const researchIntroductionServiceInputSchema = researchIntroductionInputSchema
+  .omit({ materials: true })
+  .extend({
     sourceIds: z.array(articleSourceIdSchema).min(1).max(20),
   })
-  .strict()
-  .superRefine(({ sourceIds }, context) => {
-    const seen = new Set<string>();
-    sourceIds.forEach((sourceId, index) => {
-      if (seen.has(sourceId)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['sourceIds', index],
-          message: `sourceId 重复: ${sourceId}`,
-        });
-      }
-      seen.add(sourceId);
-    });
+  .refine(({ sourceIds }) => new Set(sourceIds).size === sourceIds.length, {
+    path: ['sourceIds'],
+    message: 'sourceId 不能重复',
   });
 
 type ResearchIntroductionServiceInput = z.infer<

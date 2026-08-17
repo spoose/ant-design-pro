@@ -159,6 +159,35 @@ export async function deletePaiConversation(conversationId: string) {
   );
 }
 
+export type UploadKnowledgeDocumentInput =
+  | { scopeType: 'personal'; fileName: string; content: string }
+  | {
+      scopeType: 'organization';
+      organizationId: string;
+      fileName: string;
+      content: string;
+    };
+
+export async function uploadKnowledgeDocument(
+  input: UploadKnowledgeDocumentInput,
+) {
+  return request<
+    ApiSuccess<{
+      sourceId: string;
+      documentId: string;
+      fileName: string;
+      scopeType: 'personal' | 'organization';
+      organizationId: string | null;
+      characterCount: number;
+      createdAt: string;
+    }>
+  >('/api/knowledge/documents', {
+    method: 'POST',
+    data: input,
+    skipErrorHandler: true,
+  });
+}
+
 /** 旧浏览器历史不迁移；升级后一次性删除所有 pAI v1 快照。 */
 export function clearLegacyPaiStorage(storage: Storage = window.localStorage) {
   const keys = Array.from({ length: storage.length }, (_, index) =>

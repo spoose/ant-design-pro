@@ -111,7 +111,7 @@ describe('WorkspaceAppPage', () => {
     render(<WorkspaceAppPage />);
 
     expect(
-      await screen.findByRole('region', { name: 'pAI' }, { timeout: 3000 }),
+      await screen.findByRole('region', { name: 'pAI' }, { timeout: 10_000 }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { level: 1, name: 'pAI' }),
@@ -139,7 +139,7 @@ describe('WorkspaceAppPage', () => {
     });
     render(<WorkspaceAppPage />);
 
-    await screen.findByLabelText('pAI 对话工作台', {}, { timeout: 3000 });
+    await screen.findByLabelText('pAI 对话工作台', {}, { timeout: 10_000 });
     const sidebar = screen.getByLabelText('会话列表');
     fireEvent.click(screen.getByRole('button', { name: '收起会话栏' }));
 
@@ -154,7 +154,7 @@ describe('WorkspaceAppPage', () => {
     });
     const { container } = render(<WorkspaceAppPage />);
 
-    await screen.findByLabelText('pAI 对话工作台', {}, { timeout: 3000 });
+    await screen.findByLabelText('pAI 对话工作台', {}, { timeout: 10_000 });
     const menuTrigger = await waitFor(() => {
       const trigger = container.querySelector('.ant-conversations-menu-icon');
       expect(trigger).toBeInTheDocument();

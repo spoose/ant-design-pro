@@ -154,8 +154,8 @@ export default defineConfig({
           fontFamily: 'AlibabaSans, sans-serif',
           colorPrimaryBg: surfaceColors.selectedSoft,
           controlItemBgActiveHover: surfaceColors.hoverSoft,
-          // borderRadius: 8,
-          // borderRadiusLG: 8,
+          borderRadius: 6,
+          borderRadiusLG: 8,
         },
         // components: {
         //   Table: {
@@ -225,6 +225,7 @@ export default defineConfig({
     exclude: ['mock/requestRecord.mock.js'],
   },
   utoopack: {
+    root: '.',
     module: {
       rules: {
         '*.md': {

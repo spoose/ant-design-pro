@@ -23,7 +23,7 @@ describe('skillRegistry', () => {
       title: 'pAI',
       navigation: [
         { pathSegment: 'overview', title: '通用助手' },
-        { pathSegment: 'resources', title: '资源', placeholder: true },
+        { pathSegment: 'resources', title: '资源' },
         { pathSegment: 'memory', title: '记忆', placeholder: true },
       ],
     });

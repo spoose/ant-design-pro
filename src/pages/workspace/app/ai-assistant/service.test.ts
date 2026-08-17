@@ -8,6 +8,7 @@ import {
   listPaiConversations,
   toPaiDefaultMessages,
   updatePaiConversationTitle,
+  uploadKnowledgeDocument,
 } from './service';
 
 const requestMock = vi.hoisted(() => vi.fn());
@@ -53,6 +54,24 @@ describe('pAI conversation service', () => {
       '/api/pai/conversations/conversation%2F1',
       { method: 'PATCH', data: { title: '合同审查' } },
     );
+  });
+
+  it('uploads plain text through the authenticated knowledge endpoint', async () => {
+    await uploadKnowledgeDocument({
+      scopeType: 'personal',
+      fileName: '资料.txt',
+      content: '正文',
+    });
+
+    expect(requestMock).toHaveBeenCalledWith('/api/knowledge/documents', {
+      method: 'POST',
+      data: {
+        scopeType: 'personal',
+        fileName: '资料.txt',
+        content: '正文',
+      },
+      skipErrorHandler: true,
+    });
   });
 
   it('projects persisted messages without recreating reasoning', () => {

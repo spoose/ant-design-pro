@@ -177,4 +177,29 @@ describe('PaiAgentService', () => {
       })(),
     ).rejects.toBe(upstreamError);
   });
+
+  it('rejects a length-limited response instead of completing partial text', async () => {
+    const stream = vi.fn<PaiAgentRunner['stream']>().mockResolvedValue({
+      fullStream: createStream([
+        { type: 'text-delta', payload: { text: '不完整回答' } },
+        {
+          type: 'finish',
+          payload: { stepResult: { reason: 'length' } },
+        },
+      ]),
+    });
+    const service = new PaiAgentService({ stream });
+    const events = await service.stream(
+      [{ role: 'user', content: '生成长回答' }],
+      { webSearchEnabled: false },
+    );
+
+    await expect(
+      (async () => {
+        for await (const _event of events) {
+          // Consume until the terminal finish chunk is validated.
+        }
+      })(),
+    ).rejects.toThrow('模型回答因达到上下文或 Token 上限而被截断');
+  });
 });

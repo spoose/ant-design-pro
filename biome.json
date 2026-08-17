@@ -20,6 +20,7 @@
       "!**/public",
       "!**/coverage",
       "!**/node_modules",
+      "!website",
       "!biome.json",
       "!tailwind.css",
       "!package-lock.json",

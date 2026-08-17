@@ -13,7 +13,7 @@ export const radii = {
   /** 标准卡片 / 容器 */
   md: 8,
   /** ProTable 查询卡与列表卡等业务表格面 */
-  tableCard: 12,
+  tableCard: 8,
   /** 业务卡片上限提示值，勿日常直接用更大值 */
   cardMax: 16,
 } as const;

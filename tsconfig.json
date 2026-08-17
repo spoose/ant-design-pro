@@ -20,5 +20,5 @@
     }
   },
   "include": ["./**/*.d.ts", "./**/*.ts", "./**/*.tsx"],
-  "exclude": ["server"]
+  "exclude": ["server", "website"]
 }

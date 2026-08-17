@@ -70,7 +70,6 @@ export const skillRegistry = {
         pathSegment: 'resources',
         title: '资源',
         icon: FolderOutlined,
-        placeholder: true,
       },
       {
         pathSegment: 'memory',

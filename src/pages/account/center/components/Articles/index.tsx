@@ -10,8 +10,9 @@ import useStyles from './index.style';
 const IconText: React.FC<{
   icon: React.ReactNode;
   text: React.ReactNode;
-}> = ({ icon, text }) => (
-  <span>
+  className?: string;
+}> = ({ icon, text, className }) => (
+  <span className={className}>
     {icon} {text}
   </span>
 );
@@ -38,12 +39,23 @@ const Articles: React.FC = () => {
         <List.Item
           key={item.id}
           actions={[
-            <IconText key="star" icon={<StarTwoTone />} text={item.star} />,
-            <IconText key="like" icon={<LikeOutlined />} text={item.like} />,
+            <IconText
+              key="star"
+              icon={<StarTwoTone />}
+              text={item.star}
+              className={styles.listItemAction}
+            />,
+            <IconText
+              key="like"
+              icon={<LikeOutlined />}
+              text={item.like}
+              className={styles.listItemAction}
+            />,
             <IconText
               key="message"
               icon={<MessageFilled />}
               text={item.message}
+              className={styles.listItemAction}
             />,
           ]}
         >

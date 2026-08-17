@@ -51,25 +51,26 @@ const formItemLayout = {
 const IconText: React.FC<{
   type: string;
   text: React.ReactNode;
-}> = ({ type, text }) => {
+  className?: string;
+}> = ({ type, text, className }) => {
   switch (type) {
     case 'star-o':
       return (
-        <span>
+        <span className={className}>
           <StarOutlined style={{ marginRight: 8 }} />
           {text}
         </span>
       );
     case 'like-o':
       return (
-        <span>
+        <span className={className}>
           <LikeOutlined style={{ marginRight: 8 }} />
           {text}
         </span>
       );
     case 'message':
       return (
-        <span>
+        <span className={className}>
           <MessageOutlined style={{ marginRight: 8 }} />
           {text}
         </span>
@@ -246,9 +247,24 @@ const Articles: FC = () => {
             <List.Item
               key={item.id}
               actions={[
-                <IconText key="star" type="star-o" text={item.star} />,
-                <IconText key="like" type="like-o" text={item.like} />,
-                <IconText key="message" type="message" text={item.message} />,
+                <IconText
+                  key="star"
+                  type="star-o"
+                  text={item.star}
+                  className={styles.listItemAction}
+                />,
+                <IconText
+                  key="like"
+                  type="like-o"
+                  text={item.like}
+                  className={styles.listItemAction}
+                />,
+                <IconText
+                  key="message"
+                  type="message"
+                  text={item.message}
+                  className={styles.listItemAction}
+                />,
               ]}
               extra={listItemExtra}
             >
