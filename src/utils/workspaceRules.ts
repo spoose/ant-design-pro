@@ -40,6 +40,8 @@ export type PlatformAccess = {
   canGrantPlatformPermissions: boolean;
   /** 是否具备平台审计查看能力。 */
   canViewPlatformAudit: boolean;
+  /** 是否可查看平台统计；与进入管理中心同一道门。 */
+  canViewStats: boolean;
   /** 由上述布尔能力按固定顺序生成的 Platform Sidebar Key。 */
   visibleMenuKeys: PlatformMenuKey[];
   /** 供页面按钮和操作入口复用的 Platform 权限判断函数。 */
@@ -64,6 +66,8 @@ export type ResolvedOrganizationAccess = {
   canManageRoles: boolean;
   /** 是否允许修改当前 Organization 设置。 */
   canUpdateSettings: boolean;
+  /** 是否可查看本组织统计；任一组织管理能力即可。 */
+  canViewStats: boolean;
   /** 由当前 Organization 权限生成的 Sidebar Key。 */
   visibleMenuKeys: OrganizationMenuKey[];
   /** 仅在当前 Organization 内判断权限。 */
@@ -111,6 +115,7 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
     'platform:permission:grant',
   );
   const canViewPlatformAudit = hasPermission('platform:audit:view');
+  const canViewStats = canEnterManagementCenter;
   const visibleMenuKeys: PlatformMenuKey[] = [];
 
   if (canEnterManagementCenter) visibleMenuKeys.push('overview');
@@ -127,6 +132,7 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
     canManagePlatformUsers,
     canGrantPlatformPermissions,
     canViewPlatformAudit,
+    canViewStats,
     visibleMenuKeys,
     hasPermission,
     canUseSkill,
@@ -168,6 +174,7 @@ export const getOrganizationAccess = (
     hasPermission('organization:role:manage') ||
     hasPermission('organization:permission:grant');
   const canUpdateSettings = hasPermission('organization:settings:update');
+  const canViewStats = canManageMembers || canManageRoles || canUpdateSettings;
   const visibleMenuKeys: OrganizationMenuKey[] = [];
 
   if (organization) visibleMenuKeys.push('home');
@@ -183,6 +190,7 @@ export const getOrganizationAccess = (
     canManageMembers,
     canManageRoles,
     canUpdateSettings,
+    canViewStats,
     visibleMenuKeys,
     hasPermission,
     canUseSkill,

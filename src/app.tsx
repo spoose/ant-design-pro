@@ -158,27 +158,26 @@ export const layout: RunTimeLayoutConfig = ({
        */
       header: ({
         antCls,
-        colorBgContainer,
+        colorBgLayout,
         colorBorder,
-        colorBorderSecondary,
         margin,
         paddingXS,
         proComponentsCls,
       }) => {
-        // 来源：antd 的 colorBgContainer；70% 保留顶栏层次，同时继续适配明暗主题。
-        const workspaceHeaderBackground = `color-mix(in srgb, ${colorBgContainer} 70%, transparent)`;
+        // 来源：antd 的 colorBgLayout（#f5f5f5）；70% 保留顶栏层次，同时继续适配明暗主题。
+        const workspaceHeaderBackground = `color-mix(in srgb, ${colorBgLayout} 70%, transparent)`;
 
         return {
           ...(isWorkspaceRoute
             ? {
                 height: 56,
-                backgroundColor: colorBgContainer,
+                backgroundColor: colorBgLayout,
                 background: workspaceHeaderBackground,
-                borderBlockEnd: `1px solid ${colorBorder}`,
+                borderBlockEnd: 0,
                 [`${proComponentsCls}-global-header`]: {
                   marginInline: 0,
                   paddingInlineEnd: margin,
-                  backgroundColor: colorBgContainer,
+                  backgroundColor: colorBgLayout,
                   background: workspaceHeaderBackground,
                   // 暂时隐藏 Workspace 顶栏头像容器；avatarProps 与下拉菜单逻辑继续保留。
                   // [`${proComponentsCls}-global-header-header-actions-avatar`]: {
@@ -189,6 +188,14 @@ export const layout: RunTimeLayoutConfig = ({
                     minWidth: 0,
                     height: '100%',
                   },
+                  [`${proComponentsCls}-global-header-collapsed-button:hover`]:
+                    {
+                      background: surfaceColors.navChromeRaised,
+                    },
+                  [`${proComponentsCls}-global-header-header-actions-item ${antCls}-btn:hover`]:
+                    {
+                      background: `${surfaceColors.navChromeRaised} !important`,
+                    },
                   '@media (min-width: 768px)': {
                     [`${proComponentsCls}-global-header-logo-mix`]: {
                       boxSizing: 'border-box',
@@ -197,9 +204,9 @@ export const layout: RunTimeLayoutConfig = ({
                       marginInlineEnd: 0,
                       paddingInline: margin,
                       flex: '0 0 248px',
-                      backgroundColor: colorBgContainer,
+                      backgroundColor: colorBgLayout,
                       background: workspaceHeaderBackground,
-                      borderInlineEnd: `1px solid ${colorBorderSecondary}`,
+                      borderInlineEnd: `1px solid ${colorBgLayout}`,
                     },
                   },
                 },
@@ -211,7 +218,7 @@ export const layout: RunTimeLayoutConfig = ({
                     marginInline: 0,
                     paddingInline: paddingXS,
                     alignItems: 'center',
-                    backgroundColor: colorBgContainer,
+                    backgroundColor: colorBgLayout,
                     background: workspaceHeaderBackground,
                     [`${proComponentsCls}-global-header-collapsed-button`]: {
                       width: 44,
@@ -272,7 +279,7 @@ export const layout: RunTimeLayoutConfig = ({
                       insetInline: 0,
                       height: 48,
                       minWidth: 0,
-                      backgroundColor: colorBgContainer,
+                      backgroundColor: colorBgLayout,
                       background: workspaceHeaderBackground,
                       borderBlockStart: `1px solid ${colorBorder}`,
                     },
@@ -286,30 +293,35 @@ export const layout: RunTimeLayoutConfig = ({
       sider: ({
         antCls,
         borderRadius,
-        colorBgContainer,
-        colorBorderSecondary,
+        colorBgLayout,
         colorPrimary,
-        colorPrimaryBg,
         paddingXXS,
         paddingXS,
       }) => ({
-        // 正式 Workspace 与 demo 使用相同的白色导航表面；暗色模式自动跟随容器 Token。
+        // 正式 Workspace 与 demo 使用相同的 #f5f5f5 导航表面；暗色模式自动跟随容器 Token。
+        // 侧栏无右边框：与圆弧缝隙、顶栏同为 #f5f5f5，视觉上连成一体，白色页面靠色差区分。
         ...(isWorkspaceRoute
           ? {
-              background: colorBgContainer,
-              borderInlineEnd: `1px solid ${colorBorderSecondary}`,
+              background: colorBgLayout,
               [`& ${antCls}-layout-sider-children`]: {
-                background: colorBgContainer,
+                background: colorBgLayout,
+                borderInlineEnd: 0,
+                // marginInlineEnd: 0,
               },
               [`${antCls}-menu`]: {
-                background: colorBgContainer,
+                background: colorBgLayout,
               },
-              [`${antCls}-menu-item-selected`]: {
-                color: colorPrimary,
-                background: colorPrimaryBg,
-              },
-              [`${antCls}-menu-item:not(${antCls}-menu-item-selected):hover`]: {
-                background: surfaceColors.selectedSoft,
+              [`${antCls}-menu-item-selected, ${antCls}-menu-submenu-selected > ${antCls}-menu-submenu-title`]:
+                {
+                  color: colorPrimary,
+                  background: surfaceColors.navChromeRaised,
+                },
+              [`${antCls}-menu-item:not(${antCls}-menu-item-selected):hover, ${antCls}-menu-submenu:not(${antCls}-menu-submenu-selected) > ${antCls}-menu-submenu-title:hover`]:
+                {
+                  background: surfaceColors.navChromeRaised,
+                },
+              [`${antCls}-pro-sider-collapsed-button:hover`]: {
+                background: surfaceColors.navChromeRaised,
               },
               // 折叠侧栏已有 8px 外层留白；菜单再留 4px，正好容纳并居中 ProLayout 的 40px 折叠标题。
               [`&${antCls}-pro-sider-collapsed ${antCls}-pro-sider-menu`]: {
@@ -319,24 +331,50 @@ export const layout: RunTimeLayoutConfig = ({
           : {}),
         [`${antCls}-pro-sider-extra`]: {
           margin: 0,
-          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
+          ...(isWorkspaceRoute ? { background: colorBgLayout } : {}),
         },
         [`${antCls}-pro-sider-menu`]: {
           padding: paddingXS,
-          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
+          ...(isWorkspaceRoute ? { background: colorBgLayout } : {}),
         },
-        [`${antCls}-menu-item`]: {
+        [`${antCls}-menu-submenu`]: {
+          width: '100%',
+        },
+        // pAI 等带子项的菜单走 submenu-title；高度和左边距必须与普通 menu-item 一致，图标才对齐。
+        [`${antCls}-menu-item, ${antCls}-menu-submenu-title`]: {
           width: '100%',
           height: 40,
           minHeight: 40,
           marginBlock: 2,
           marginInline: 0,
           borderRadius,
+          display: 'flex',
+          alignItems: 'center',
         },
+        [`${antCls}-menu-item a, ${antCls}-menu-submenu-title a`]: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          minWidth: 0,
+          color: 'inherit',
+        },
+        [`${antCls}-menu-item .anticon, ${antCls}-menu-submenu-title .anticon`]:
+          {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 14,
+            minWidth: 14,
+            height: 14,
+            fontSize: 14,
+            lineHeight: 0,
+          },
       }),
     },
     // Workspace 页面使用自己的标题区和内容间距，不能再叠加 ProLayout 页面留白。
-    contentStyle: isWorkspaceRoute ? { margin: 0, padding: 0 } : undefined,
+    // 右侧 16px 留给顶栏同色缝隙，由 global.less 控制，不能在这里用 margin: 0 覆盖。
+    contentStyle: isWorkspaceRoute
+      ? { padding: 0, marginBlock: 0, marginInlineStart: 0 }
+      : undefined,
     menuItemRender: (item, dom) => {
       if (item.path) {
         return (

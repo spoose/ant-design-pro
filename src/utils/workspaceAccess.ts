@@ -2,13 +2,18 @@ import { getSkillDefinition } from '@/config/skillRegistry';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
   getOrganizationAppPagePath,
+  getOrganizationStatsPagePath,
   getPlatformAppPagePath,
+  getPlatformStatsPagePath,
   getWorkspaceAppKey,
   getWorkspaceAppPageKey,
   getWorkspaceOrganizationId,
   getWorkspaceOrganizationPageKey,
   getWorkspacePlatformPageKey,
+  getWorkspaceStatsPageKey,
   isPlatformWorkspacePath,
+  isStatsPageKey,
+  isWorkspaceStatsPath,
   type OrganizationPageKey,
   type PlatformPageKey,
 } from './workspaceRoutes';
@@ -77,6 +82,20 @@ export const resolveWorkspaceRouteDecision = (
         : { kind: 'not-found' };
     }
 
+    if (isWorkspaceStatsPath(pathname)) {
+      if (!access.canViewStats) return { kind: 'forbidden' };
+      const statsPageKey = getWorkspaceStatsPageKey(pathname);
+      if (!statsPageKey) {
+        return {
+          kind: 'redirect',
+          to: getPlatformStatsPagePath('users'),
+        };
+      }
+      return isStatsPageKey(statsPageKey)
+        ? { kind: 'allow' }
+        : { kind: 'not-found' };
+    }
+
     const pageKey = getWorkspacePlatformPageKey(pathname);
     if (!isPlatformPageKey(pageKey)) return { kind: 'not-found' };
     return access.visibleMenuKeys.includes(pageKey)
@@ -104,6 +123,20 @@ export const resolveWorkspaceRouteDecision = (
       };
     }
     return definition.navigation.some((item) => item.pathSegment === pageKey)
+      ? { kind: 'allow' }
+      : { kind: 'not-found' };
+  }
+
+  if (isWorkspaceStatsPath(pathname)) {
+    if (!access.canViewStats) return { kind: 'forbidden' };
+    const statsPageKey = getWorkspaceStatsPageKey(pathname);
+    if (!statsPageKey) {
+      return {
+        kind: 'redirect',
+        to: getOrganizationStatsPagePath(organizationId, 'users'),
+      };
+    }
+    return isStatsPageKey(statsPageKey)
       ? { kind: 'allow' }
       : { kind: 'not-found' };
   }

@@ -9,6 +9,7 @@ import type { UploadFile, UploadProps } from 'antd';
 import { App, Button, Segmented, Select, Upload } from 'antd';
 import { useState } from 'react';
 import WorkspacePage from '@/components/WorkspacePage';
+import { getSkillDefinition } from '@/config/skillRegistry';
 import { uploadKnowledgeDocument } from './service';
 
 const { Dragger } = Upload;
@@ -140,7 +141,10 @@ const PaiResourcesPage = ({
 
   return (
     <WorkspacePage
-      breadcrumb={['pAI', '资源']}
+      breadcrumb={[
+        getSkillDefinition('ai-assistant')?.title ?? 'xOneAI',
+        '资源',
+      ]}
       description="上传 TXT 或 Markdown 资料，作为后续知识检索与回答的可信来源。"
       title="资源"
     >

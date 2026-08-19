@@ -21,14 +21,23 @@ const testState = vi.hoisted(() => ({
 }));
 testState.initialState.currentUser.organizations = [organization];
 
-vi.mock('@umijs/max', () => ({
-  useIntl: () => ({
-    formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
-      defaultMessage,
-  }),
-  useModel: () => ({ initialState: testState.initialState }),
-  useParams: () => ({ organizationId: testState.organizationId }),
-}));
+vi.mock('@umijs/max', async () => {
+  const { generatePath, matchPath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    matchPath,
+    useIntl: () => ({
+      formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
+        defaultMessage,
+    }),
+    useLocation: () => ({ pathname: '/workspace/org/organization-1/home' }),
+    useModel: () => ({ initialState: testState.initialState }),
+    useParams: () => ({ organizationId: testState.organizationId }),
+  };
+});
 
 vi.mock('@/components/CurrentAccessOverview', () => ({
   CurrentAccessOverview: ({
@@ -45,7 +54,8 @@ describe('Home', () => {
 
   it('renders the Organization access overview from the URL', () => {
     render(<Home />);
-    expect(screen.getByRole('heading', { name: '首页' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '组织首页' })).toBeVisible();
+    expect(screen.getByText('组织一')).toBeVisible();
     expect(screen.getByText('overview:organization-1')).toBeVisible();
   });
 

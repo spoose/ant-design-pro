@@ -1,6 +1,8 @@
+import { useLocation, useModel } from '@umijs/max';
 import type { TableProps } from 'antd';
 import { Input, Table, Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 export type KnowledgeSearchPageKey = 'overview' | 'sources' | 'history';
 
@@ -295,6 +297,8 @@ const KnowledgeSearchOverview = () => (
 
 /** 知识检索 Skill 静态页面；不保存搜索条件，也不发起业务请求。 */
 const KnowledgeSearchPage = ({ pageKey }: { pageKey?: string }) => {
+  const { pathname } = useLocation();
+  const { initialState } = useModel('@@initialState');
   const resolvedPageKey = resolveKnowledgeSearchPageKey(pageKey);
   const pageMeta = knowledgeSearchPageMeta[resolvedPageKey];
   const pageContent =
@@ -308,7 +312,11 @@ const KnowledgeSearchPage = ({ pageKey }: { pageKey?: string }) => {
 
   return (
     <WorkspacePage
-      breadcrumb={['知识检索', pageMeta.title]}
+      breadcrumb={buildWorkspaceBreadcrumb(
+        initialState?.currentUser,
+        pathname,
+        ['知识检索', pageMeta.title],
+      )}
       title={pageMeta.title}
       description={pageMeta.description}
       actions={<Tag color="blue">静态演示</Tag>}

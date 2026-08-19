@@ -60,8 +60,10 @@ vi.mock('@ant-design/pro-components', () => ({
 vi.mock('@ant-design/icons', () => ({
   AppstoreOutlined: () => null,
   AuditOutlined: () => null,
+  BarChartOutlined: () => null,
   DatabaseOutlined: () => null,
   DashboardOutlined: () => null,
+  DesktopOutlined: () => null,
   FileDoneOutlined: () => null,
   FileSearchOutlined: () => null,
   FileTextOutlined: () => null,
@@ -76,6 +78,7 @@ vi.mock('@ant-design/icons', () => ({
   SearchOutlined: () => null,
   SettingOutlined: () => null,
   TeamOutlined: () => null,
+  ThunderboltOutlined: () => null,
 }));
 
 vi.mock('./components/RightContent/OrganizationSwitch', () => ({
@@ -362,8 +365,44 @@ describe('app layout guard', () => {
     } as any);
 
     expect(runtimeLayout.menuDataRender?.([]).map((item) => item.path)).toEqual(
-      ['/workspace/platform/overview', '/workspace/platform/organizations'],
+      ['/workspace/platform/overview', '/workspace/platform/stats'],
     );
+  });
+
+  it('should keep the Platform home menu with nested pAI on assistant URLs', async () => {
+    const { layout } = await import('./app');
+    mockHistory.location = {
+      pathname: '/workspace/platform/apps/ai-assistant/overview',
+      search: '',
+      hash: '',
+    };
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          userId: 'super-admin',
+          platformPermissions: ['platform:organization:update'],
+          platformSkillCodes: ['ai-assistant'],
+          organizations: [],
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+
+    const menuItems = runtimeLayout.menuDataRender?.([]) ?? [];
+    expect(menuItems.map((item) => item.path)).toEqual([
+      '/workspace/platform/overview',
+      '/workspace/platform/apps/ai-assistant',
+      '/workspace/platform/stats',
+    ]);
+    expect(
+      menuItems
+        .find((item) => item.name === 'xOneAI')
+        ?.children?.map((child) => child.path),
+    ).toEqual([
+      '/workspace/platform/apps/ai-assistant/overview',
+      '/workspace/platform/apps/ai-assistant/resources',
+      '/workspace/platform/apps/ai-assistant/memory',
+    ]);
   });
 
   it('should not redirect on user public pages', async () => {

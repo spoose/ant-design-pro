@@ -1,6 +1,8 @@
+import { useLocation, useModel } from '@umijs/max';
 import type { TableProps } from 'antd';
 import { Table, Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 export type FileReviewPageKey = 'overview' | 'queue' | 'history';
 
@@ -203,6 +205,8 @@ const ReviewOverview = () => (
 
 /** 文件审查 Skill 的静态页面；pageKey 只控制当前 App 标签内部视图。 */
 const FileReviewPage = ({ pageKey }: { pageKey?: string }) => {
+  const { pathname } = useLocation();
+  const { initialState } = useModel('@@initialState');
   const resolvedPageKey = resolveFileReviewPageKey(pageKey);
   const pageMeta = fileReviewPageMeta[resolvedPageKey];
   const pageContent =
@@ -218,7 +222,11 @@ const FileReviewPage = ({ pageKey }: { pageKey?: string }) => {
 
   return (
     <WorkspacePage
-      breadcrumb={['文件审查', pageMeta.title]}
+      breadcrumb={buildWorkspaceBreadcrumb(
+        initialState?.currentUser,
+        pathname,
+        ['文件审查', pageMeta.title],
+      )}
       title={pageMeta.title}
       description={pageMeta.description}
       actions={<Tag color="blue">静态演示</Tag>}

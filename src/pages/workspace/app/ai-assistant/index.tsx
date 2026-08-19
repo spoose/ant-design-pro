@@ -12,6 +12,8 @@ import {
   OllamaFilled,
   PlusOutlined,
   ReloadOutlined,
+  RobotFilled,
+  RobotOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import {
@@ -130,7 +132,7 @@ const promptItems: PromptsItemType[] = [
   },
   {
     key: 'ambiguity',
-    icon: <OllamaFilled />,
+    icon: <RobotOutlined />,
     label: '分析表述歧义',
     description: '检查责任边界和前置条件',
   },
@@ -488,7 +490,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
       },
       assistant: {
         placement: 'start',
-        avatar: <Avatar icon={<OllamaFilled />} />,
+        avatar: <Avatar icon={<RobotFilled />} />,
         contentRender: (content: string, info) => {
           const errorMessage =
             typeof info.extraInfo?.errorMessage === 'string'
@@ -705,7 +707,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
               <div className={styles.emptyState}>
                 <div className={styles.emptyContent}>
                   <span aria-hidden className={styles.emptyIcon}>
-                    <OllamaFilled />
+                    <RobotFilled />
                   </span>
                   <h2 className={styles.emptyTitle}>从一个审查问题开始</h2>
                   <p className={styles.emptyDescription}>

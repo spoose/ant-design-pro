@@ -67,6 +67,15 @@ describe('main routes', () => {
       findRoute(appRoutes, '/workspace/org/:organizationId/settings'),
     ).toMatchObject({ component: './workspace/settings' });
     expect(
+      findRoute(appRoutes, '/workspace/platform/stats/:statsPageKey'),
+    ).toMatchObject({ component: './workspace/stats' });
+    expect(
+      findRoute(
+        appRoutes,
+        '/workspace/org/:organizationId/stats/:statsPageKey',
+      ),
+    ).toMatchObject({ component: './workspace/stats' });
+    expect(
       findRoute(appRoutes, '/workspace/org/:organizationId/apps/:appKey/*'),
     ).toMatchObject({ component: './workspace/app' });
   });
@@ -74,11 +83,15 @@ describe('main routes', () => {
   it('guards every formal Workspace route with the shared route boundary', () => {
     const workspacePaths = [
       '/workspace/platform/apps/:appKey/*',
+      '/workspace/platform/stats/:statsPageKey',
+      '/workspace/platform/stats',
       '/workspace/platform/:platformPageKey',
       '/workspace/org/:organizationId/home',
       '/workspace/org/:organizationId/members',
       '/workspace/org/:organizationId/roles',
       '/workspace/org/:organizationId/settings',
+      '/workspace/org/:organizationId/stats/:statsPageKey',
+      '/workspace/org/:organizationId/stats',
       '/workspace/org/:organizationId/apps/:appKey/*',
     ];
 

@@ -1,4 +1,5 @@
 import { createStyles } from 'antd-style';
+import { surfaceColors } from '@/theme/colors';
 
 const useHeaderActionStyles = createStyles(({ token, css }) => ({
   action: css`
@@ -10,6 +11,10 @@ const useHeaderActionStyles = createStyles(({ token, css }) => ({
     padding-inline: 8px !important;
     padding-block: 0 !important;
     border-radius: ${token.borderRadius}px !important;
+
+    &:hover {
+      background: ${surfaceColors.navChromeRaised} !important;
+    }
   `,
 }));
 

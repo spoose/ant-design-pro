@@ -44,7 +44,7 @@ export type SkillDefinition = {
     React.ComponentType<SkillPageProps>
   >;
   /**
-   * 当前 Skill 独立 Sidebar 的静态页面定义。
+   * Skill 内部页面定义。pAI 并入首页侧栏二级菜单，其它 Skill 仍使用独立 App Sidebar。
    * 数据链路：skillCode -> SkillDefinition.navigation -> menuData -> ProLayout Sidebar。
    */
   navigation: readonly SkillNavigationItem[];
@@ -57,13 +57,13 @@ export type SkillDefinition = {
  */
 export const skillRegistry = {
   'ai-assistant': {
-    title: 'pAI',
-    icon: OllamaFilled,
+    title: 'xOneAI',
+    icon: RobotOutlined,
     pageComponent: lazy(() => import('@/pages/workspace/app/ai-assistant')),
     navigation: [
       {
         pathSegment: 'overview',
-        title: '通用助手',
+        title: 'AI助手',
         icon: RobotOutlined,
       },
       {

@@ -1,6 +1,7 @@
 import { createStyles } from 'antd-style';
+import { surfaceColors } from '@/theme/colors';
 
-/** 从已确认 Demo 提取的紧凑标签轨道样式；只使用项目 antd Token。 */
+/** 顶栏标签：hover 略深灰，选中白底；侧栏仍用 navChromeRaised。 */
 const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
   rail: css`
     width: 100%;
@@ -48,12 +49,16 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
           color ${token.motionDurationFast},
           background ${token.motionDurationFast};
 
-        &:hover {
-          background: ${token.colorFillTertiary};
+        &:hover:not(.ant-tabs-tab-active) {
+          background: ${surfaceColors.navChromeRaised};
         }
 
         &.ant-tabs-tab-active {
-          background: ${token.colorPrimaryBg};
+          background: ${token.colorBgContainer};
+
+          .ant-tabs-tab-btn {
+            color: ${token.colorPrimary};
+          }
         }
 
         .ant-tabs-tab-btn {
@@ -81,7 +86,7 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
 
           &:hover {
             color: ${token.colorText};
-            background: ${token.colorFillSecondary};
+            background: ${surfaceColors.navChromeRaised};
           }
         }
       }
@@ -96,7 +101,7 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
         border-radius: ${token.borderRadiusLG}px;
 
         &:hover {
-          background: ${token.colorFillTertiary};
+          background: ${surfaceColors.navChromeRaised};
         }
       }
     }

@@ -8,7 +8,8 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     min-height: 100%;
     overflow-x: hidden;
-    background: ${token.colorBgLayout};
+    background: ${token.colorBgContainer};
+    /* 圆角改由 .ant-pro-layout-content 滚动容器裁剪提供，滚动时弧度常驻。 */
   `,
 
   heading: css`
@@ -18,8 +19,30 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     align-items: flex-end;
     justify-content: space-between;
     gap: ${token.marginLG}px;
-    background: ${token.colorBgLayout};
+    background: ${token.colorBgContainer};
     border-bottom: 1px solid ${token.colorBorderSecondary};
+  `,
+
+  headingMain: css`
+    min-width: 0;
+  `,
+
+  headingMainWithLeading: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${token.marginSM}px;
+    min-width: 0;
+  `,
+
+  headingRow: css`
+    display: flex;
+    align-items: center;
+    gap: ${token.marginMD}px;
+    min-width: 0;
+  `,
+
+  leading: css`
+    flex: none;
   `,
 
   headingCopy: css`
@@ -33,6 +56,10 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     font-weight: 600;
     line-height: 1.35;
     text-wrap: balance;
+  `,
+
+  titleWithLeading: css`
+    margin-top: 0;
   `,
 
   description: css`
@@ -57,7 +84,7 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     padding: ${token.paddingLG}px;
     overflow-x: hidden;
-    background: ${token.colorBgLayout};
+    background: ${token.colorBgContainer};
 
     .ant-table-wrapper {
       width: 100%;
@@ -93,6 +120,14 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
       padding: ${token.padding}px;
       align-items: stretch;
       flex-direction: column;
+    `,
+
+    headingMainWithLeading: css`
+      gap: ${token.marginXS}px;
+    `,
+
+    headingRow: css`
+      align-items: flex-start;
     `,
 
     actions: css`

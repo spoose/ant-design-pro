@@ -79,6 +79,16 @@ export default [
     wrappers: ['@/wrappers/workspaceAccess'],
   },
   {
+    path: '/workspace/platform/stats/:statsPageKey',
+    component: './workspace/stats',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/platform/stats',
+    component: './workspace/stats',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
     path: '/workspace/platform/:platformPageKey',
     component: './workspace/platform',
     wrappers: ['@/wrappers/workspaceAccess'],
@@ -101,6 +111,16 @@ export default [
   {
     path: '/workspace/org/:organizationId/settings',
     component: './workspace/settings',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/stats/:statsPageKey',
+    component: './workspace/stats',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/stats',
+    component: './workspace/stats',
     wrappers: ['@/wrappers/workspaceAccess'],
   },
   {

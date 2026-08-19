@@ -1,7 +1,8 @@
-import { useModel, useParams } from '@umijs/max';
+import { useLocation, useModel } from '@umijs/max';
 import type { TableProps } from 'antd';
 import { Table, Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 /** Organization 角色表静态行；后续由当前 organizationId 对应的角色接口替换。 */
 type OrganizationRoleRecord = {
@@ -73,15 +74,16 @@ const roleColumns: TableProps<OrganizationRoleRecord>['columns'] = [
 
 /** 当前 Organization 首页标签内的角色管理页面。 */
 const OrganizationRolesPage = () => {
+  const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
-  const { organizationId } = useParams<{ organizationId?: string }>();
-  const organization = initialState?.currentUser?.organizations.find(
-    (item) => item.organizationId === organizationId,
-  );
 
   return (
     <WorkspacePage
-      breadcrumb={[organization?.organizationName ?? '当前组织', '角色管理']}
+      breadcrumb={buildWorkspaceBreadcrumb(
+        initialState?.currentUser,
+        pathname,
+        ['角色管理'],
+      )}
       title="角色管理"
       description="查看当前组织内的角色与权限摘要。"
       actions={<Tag color="blue">静态演示</Tag>}

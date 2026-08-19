@@ -6,16 +6,21 @@ import {
   getOrganizationAppWorkspacePath,
   getOrganizationHomePath,
   getOrganizationPagePath,
+  getOrganizationStatsPagePath,
   getPlatformAppPagePath,
   getPlatformAppWorkspacePath,
   getPlatformHomePath,
   getPlatformPagePath,
+  getPlatformStatsPagePath,
+  getPlatformStatsRootPath,
   getWorkspaceAppKey,
   getWorkspaceAppPageKey,
   getWorkspaceOrganizationId,
   getWorkspaceOrganizationPageKey,
   getWorkspacePlatformPageKey,
+  getWorkspaceStatsPageKey,
   isPlatformWorkspacePath,
+  isWorkspaceStatsPath,
   ORGANIZATION_APP_PATTERN,
   ORGANIZATION_PAGE_PATTERN,
   ORGANIZATION_WORKSPACE_PATTERN,
@@ -96,6 +101,18 @@ describe('workspaceRoutes', () => {
     expect(
       getWorkspaceOrganizationPageKey('/workspace/org/organization-1/members'),
     ).toBe('members');
+    expect(getPlatformStatsRootPath()).toBe('/workspace/platform/stats');
+    expect(getPlatformStatsPagePath('users')).toBe(
+      '/workspace/platform/stats/users',
+    );
+    expect(getOrganizationStatsPagePath('organization-1', 'traces')).toBe(
+      '/workspace/org/organization-1/stats/traces',
+    );
+    expect(getWorkspaceStatsPageKey('/workspace/platform/stats/requests')).toBe(
+      'requests',
+    );
+    expect(isWorkspaceStatsPath('/workspace/platform/stats')).toBe(true);
+    expect(isWorkspaceStatsPath('/workspace/platform/overview')).toBe(false);
     expect(resolveWorkspaceScopeFromPath(organizationAppPath)).toEqual({
       kind: 'organization',
       organizationId: 'organization/a',
@@ -104,12 +121,18 @@ describe('workspaceRoutes', () => {
       resolveWorkspaceScopeFromPath('/workspace/platform/overview'),
     ).toEqual({ kind: 'platform' });
     expect(
+      resolveWorkspaceScopeFromPath('/workspace/platform/stats/requests'),
+    ).toEqual({ kind: 'platform' });
+    expect(
       resolveWorkspaceScopeFromPath('/dashboard/analysis'),
     ).toBeUndefined();
   });
 
   it('does not mistake Organization routes for Platform routes', () => {
     expect(isPlatformWorkspacePath('/workspace/platform/users')).toBe(true);
+    expect(isPlatformWorkspacePath('/workspace/platform/stats/users')).toBe(
+      true,
+    );
     expect(isPlatformWorkspacePath('/workspace/org/organization-1/home')).toBe(
       false,
     );

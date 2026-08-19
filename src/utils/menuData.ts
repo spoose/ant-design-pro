@@ -1,10 +1,13 @@
 import {
   AppstoreOutlined,
-  DashboardOutlined,
+  AuditOutlined,
+  BarChartOutlined,
+  DesktopOutlined,
   HomeOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   TeamOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { MenuDataItem } from '@ant-design/pro-components';
 import { createElement } from 'react';
@@ -12,12 +15,19 @@ import { getSkillDefinition } from '@/config/skillRegistry';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
   getOrganizationAppPagePath,
+  getOrganizationAppWorkspacePath,
   getOrganizationPagePath,
+  getOrganizationStatsPagePath,
+  getOrganizationStatsRootPath,
   getPlatformAppPagePath,
+  getPlatformAppWorkspacePath,
   getPlatformPagePath,
+  getPlatformStatsPagePath,
+  getPlatformStatsRootPath,
   getWorkspaceAppKey,
   getWorkspaceOrganizationId,
   isPlatformWorkspacePath,
+  type StatsPageKey,
 } from './workspaceRoutes';
 import {
   getOrganizationAccess,
@@ -72,47 +82,203 @@ const organizationMenuDefinitions: Record<
   settings: { name: '组织设置', icon: SettingOutlined },
 };
 
-/** 组织首页固定标签内部菜单；点击只更新当前 Home 标签 URL。 */
+/**
+ * 并入首页侧栏、不再切换独立 App 侧栏的 Skill。
+ * 其它 Skill 仍走 createAppWorkspaceMenus。
+ */
+const HOME_SIDEBAR_SKILL_CODE = 'ai-assistant';
+
+const isHomeSidebarSkill = (appKey: string | undefined) =>
+  appKey === HOME_SIDEBAR_SKILL_CODE;
+
+/** 组织首页侧栏顺序；无授权的槽位直接跳过，不再二次插入。 */
+const ORGANIZATION_HOME_SIDEBAR_ORDER = [
+  'home',
+  'ai-assistant',
+  'stats',
+  'members',
+  'roles',
+  'settings',
+] as const;
+
+/** 平台首页侧栏顺序；audit 仍未实现，不进入此表。 */
+const PLATFORM_HOME_SIDEBAR_ORDER = [
+  'overview',
+  'ai-assistant',
+  'stats',
+  'organizations',
+  'users',
+  'permissions',
+] as const;
+
+/** 只从侧栏隐藏，路由和授权仍保留；去掉集合即可恢复菜单。 */
+const HIDDEN_PLATFORM_HOME_MENU_KEYS = new Set<PlatformMenuKey>([
+  'organizations',
+  'users',
+  'permissions',
+]);
+
+/** 把 pAI 做成首页侧栏二级菜单；子路径仍使用现有 App URL。 */
+const createHomeSidebarSkillMenu = (
+  organizationId: string | undefined,
+  skillCode: string,
+): MenuDataItem | undefined => {
+  const definition = getSkillDefinition(skillCode);
+  if (!definition) return undefined;
+
+  const getPagePath = (pageKey: string) =>
+    organizationId
+      ? getOrganizationAppPagePath(organizationId, skillCode, pageKey)
+      : getPlatformAppPagePath(skillCode, pageKey);
+  // 与 /list → /list/table-list 相同：父级 path/key 用 App 根路径，子项用更长的独立 path。
+  // 点父级会落到无 pageKey 的 App 根 URL，由 workspaceAccess 重定向到 overview。
+  const appWorkspacePath = organizationId
+    ? getOrganizationAppWorkspacePath(organizationId, skillCode)
+    : getPlatformAppWorkspacePath(skillCode);
+
+  return {
+    path: appWorkspacePath,
+    key: appWorkspacePath,
+    name: definition.title,
+    // 侧栏父级图标来自 skillRegistry.icon（与首页卡片共用）；子项用 navigation[].icon。
+    icon: createElement(definition.icon),
+    locale: false,
+    children: definition.navigation.map((item) => ({
+      path: getPagePath(item.pathSegment),
+      name: item.title,
+      icon: createElement(item.icon),
+      locale: false,
+    })),
+  };
+};
+
+const statsPageDefinitions: Record<
+  StatsPageKey,
+  { name: string; icon: typeof HomeOutlined }
+> = {
+  users: { name: '用户规模', icon: TeamOutlined },
+  requests: { name: '请求用量', icon: ThunderboltOutlined },
+  traces: { name: '操作痕迹', icon: AuditOutlined },
+};
+
+/** 与 /dashboard 相同：父级 path 是 /stats 前缀，子项使用更长的独立 path。 */
+const createStatsHomeMenu = (
+  organizationId: string | undefined,
+): MenuDataItem => {
+  const rootPath = organizationId
+    ? getOrganizationStatsRootPath(organizationId)
+    : getPlatformStatsRootPath();
+  const getPagePath = (statsPageKey: StatsPageKey) =>
+    organizationId
+      ? getOrganizationStatsPagePath(organizationId, statsPageKey)
+      : getPlatformStatsPagePath(statsPageKey);
+
+  return {
+    path: rootPath,
+    key: rootPath,
+    name: '统计',
+    icon: createElement(BarChartOutlined),
+    locale: false,
+    children: (['users', 'requests', 'traces'] as const).map((statsPageKey) => {
+      const definition = statsPageDefinitions[statsPageKey];
+      const path = getPagePath(statsPageKey);
+      return {
+        path,
+        key: path,
+        name: definition.name,
+        icon: createElement(definition.icon),
+        locale: false,
+      };
+    }),
+  };
+};
+
+const createFixedHomeMenuItem = (
+  definition: { name: string; icon: typeof HomeOutlined },
+  path: string,
+): MenuDataItem => ({
+  path,
+  name: definition.name,
+  icon: createElement(definition.icon),
+  locale: false,
+});
+
+/** 组织首页固定标签内部菜单；xOneAI 子项会打开 App 标签，其余项只更新 Home 标签 URL。 */
 export const createOrganizationWorkspaceMenus = (
   organizationId: string,
   visibleMenuKeys: OrganizationMenuKey[],
-): MenuDataItem[] =>
-  visibleMenuKeys.map((key) => {
-    const definition = organizationMenuDefinitions[key];
-    return {
-      path: getOrganizationPagePath(organizationId, key),
-      name: definition.name,
-      icon: createElement(definition.icon),
-      locale: false,
-    };
+  availableSkillCodes: readonly string[] = [],
+  canViewStats = false,
+): MenuDataItem[] => {
+  const visibleKeys = new Set(visibleMenuKeys);
+  const hasAiAssistant = availableSkillCodes.includes(HOME_SIDEBAR_SKILL_CODE);
+
+  return ORGANIZATION_HOME_SIDEBAR_ORDER.flatMap((slot) => {
+    if (slot === 'ai-assistant') {
+      if (!hasAiAssistant) return [];
+      const skillMenu = createHomeSidebarSkillMenu(
+        organizationId,
+        HOME_SIDEBAR_SKILL_CODE,
+      );
+      return skillMenu ? [skillMenu] : [];
+    }
+    if (slot === 'stats') {
+      return canViewStats ? [createStatsHomeMenu(organizationId)] : [];
+    }
+    if (!visibleKeys.has(slot)) return [];
+    return [
+      createFixedHomeMenuItem(
+        organizationMenuDefinitions[slot],
+        getOrganizationPagePath(organizationId, slot),
+      ),
+    ];
   });
+};
 
 const platformMenuDefinitions: Record<
   Exclude<PlatformMenuKey, 'audit'>,
   { name: string; icon: typeof HomeOutlined }
 > = {
-  overview: { name: '管理总览', icon: DashboardOutlined },
+  // 工作台用 DesktopOutlined，与 Ant Design Pro 工作台入口同一套图标。
+  overview: { name: '工作台', icon: DesktopOutlined },
   organizations: { name: '组织管理', icon: AppstoreOutlined },
   users: { name: '人员管理', icon: TeamOutlined },
   permissions: { name: '权限管理', icon: SafetyCertificateOutlined },
 };
 
-/** Platform 固定首页菜单；审计页面尚未实现，因此本阶段不生成审计菜单项。 */
+/** Platform 固定首页菜单；顺序见 PLATFORM_HOME_SIDEBAR_ORDER。 */
 export const createPlatformWorkspaceMenus = (
   visibleMenuKeys: PlatformMenuKey[],
-): MenuDataItem[] =>
-  visibleMenuKeys.flatMap((key) => {
-    if (key === 'audit') return [];
-    const definition = platformMenuDefinitions[key];
+  availableSkillCodes: readonly string[] = [],
+  canViewStats = false,
+): MenuDataItem[] => {
+  const visibleKeys = new Set(visibleMenuKeys);
+  const hasAiAssistant = availableSkillCodes.includes(HOME_SIDEBAR_SKILL_CODE);
+
+  return PLATFORM_HOME_SIDEBAR_ORDER.flatMap((slot) => {
+    if (slot === 'ai-assistant') {
+      if (!hasAiAssistant) return [];
+      const skillMenu = createHomeSidebarSkillMenu(
+        undefined,
+        HOME_SIDEBAR_SKILL_CODE,
+      );
+      return skillMenu ? [skillMenu] : [];
+    }
+    if (slot === 'stats') {
+      return canViewStats ? [createStatsHomeMenu(undefined)] : [];
+    }
+    if (slot !== 'ai-assistant' && HIDDEN_PLATFORM_HOME_MENU_KEYS.has(slot)) {
+      return [];
+    }
+    if (!visibleKeys.has(slot)) return [];
     return [
-      {
-        path: getPlatformPagePath(key),
-        name: definition.name,
-        icon: createElement(definition.icon),
-        locale: false,
-      },
+      createFixedHomeMenuItem(
+        platformMenuDefinitions[slot],
+        getPlatformPagePath(slot),
+      ),
     ];
   });
+};
 
 /**
  * App 标签拥有自己的 Sidebar。
@@ -170,8 +336,8 @@ export const resolveWorkspaceMenuDescriptor = (
   if (isPlatformWorkspacePath(pathname)) {
     const access = getPlatformAccess(user);
     if (!access.canEnterManagementCenter) return undefined;
-    if (appKey) {
-      if (!access.canUseSkill(appKey)) return undefined;
+    if (appKey && !access.canUseSkill(appKey)) return undefined;
+    if (appKey && !isHomeSidebarSkill(appKey)) {
       return {
         kind: 'app',
         badge: 'AP',
@@ -183,7 +349,11 @@ export const resolveWorkspaceMenuDescriptor = (
       kind: 'platform',
       badge: 'MC',
       title: '管理中心',
-      items: createPlatformWorkspaceMenus(access.visibleMenuKeys),
+      items: createPlatformWorkspaceMenus(
+        access.visibleMenuKeys,
+        access.availableSkillCodes,
+        access.canViewStats,
+      ),
     };
   }
 
@@ -193,8 +363,8 @@ export const resolveWorkspaceMenuDescriptor = (
   const organization = access.organization;
   if (!organization) return undefined;
 
-  if (appKey) {
-    if (!access.canUseSkill(appKey)) return undefined;
+  if (appKey && !access.canUseSkill(appKey)) return undefined;
+  if (appKey && !isHomeSidebarSkill(appKey)) {
     return {
       kind: 'app',
       // Badge 保留 Organization Scope 识别；文字只显示 App 名，不再重复组织名称。
@@ -211,6 +381,25 @@ export const resolveWorkspaceMenuDescriptor = (
     items: createOrganizationWorkspaceMenus(
       organization.organizationId,
       access.visibleMenuKeys,
+      access.availableSkillCodes,
+      access.canViewStats,
     ),
   };
+};
+
+/**
+ * 面包屑第一段与侧栏身份对齐：Platform 为「管理中心」，Organization 为组织名。
+ * trail 使用侧栏菜单名，例如 ['工作台']、['统计', '用户规模']、['文件审查', '审查工作台']。
+ */
+export const buildWorkspaceBreadcrumb = (
+  user: AuthCurrentUser | undefined,
+  pathname: string,
+  trail: readonly string[],
+): string[] => {
+  const root = isPlatformWorkspacePath(pathname)
+    ? '管理中心'
+    : (user?.organizations.find(
+        (item) => item.organizationId === getWorkspaceOrganizationId(pathname),
+      )?.organizationName ?? '当前组织');
+  return [root, ...trail];
 };

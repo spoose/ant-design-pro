@@ -68,6 +68,7 @@ describe('workspace access rules', () => {
     expect(access.canManageOrganizations).toBe(true);
     expect(access.canManagePlatformUsers).toBe(false);
     expect(access.canViewPlatformAudit).toBe(true);
+    expect(access.canViewStats).toBe(true);
     expect(access.canUseSkill('ai-assistant')).toBe(true);
     expect(access.canUseSkill('file-review')).toBe(false);
     expect(access.visibleMenuKeys).toEqual([
@@ -110,6 +111,8 @@ describe('workspace access rules', () => {
       'roles',
       'settings',
     ]);
+    expect(getOrganizationAccess(user, 'org-1').canViewStats).toBe(true);
+    expect(getOrganizationAccess(user, 'org-2').canViewStats).toBe(false);
     expect(
       getOrganizationAccess(user, 'org-1').canUseSkill('file-review'),
     ).toBe(true);

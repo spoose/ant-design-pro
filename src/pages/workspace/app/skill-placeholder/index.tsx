@@ -1,6 +1,8 @@
+import { useLocation, useModel } from '@umijs/max';
 import { Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
 import { getSkillDefinition } from '@/config/skillRegistry';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 type SkillPlaceholderPageProps = {
   /** 来源于 Workspace App URL 的 :appKey。 */
@@ -17,6 +19,8 @@ const SkillPlaceholderPage = ({
   appKey,
   pageKey,
 }: SkillPlaceholderPageProps) => {
+  const { pathname } = useLocation();
+  const { initialState } = useModel('@@initialState');
   const definition = getSkillDefinition(appKey);
   // Registry 中所有菜单使用并列 pathSegment，当前页面按 URL pageKey 精确命中。
   const navigationItem =
@@ -26,9 +30,15 @@ const SkillPlaceholderPage = ({
   const pageTitle = navigationItem?.title ?? '应用首页';
   const SkillIcon = definition?.icon;
 
+  const trail = [skillTitle, pageTitle];
+
   return (
     <WorkspacePage
-      breadcrumb={[skillTitle, pageTitle]}
+      breadcrumb={
+        appKey === 'ai-assistant'
+          ? trail
+          : buildWorkspaceBreadcrumb(initialState?.currentUser, pathname, trail)
+      }
       title={pageTitle}
       description={`${skillTitle}的标签、路由和侧栏结构已经接入，业务内容将在后续步骤实现。`}
       actions={<Tag color="default">待开发</Tag>}

@@ -1,17 +1,19 @@
-import { useModel, useParams } from '@umijs/max';
+import { useLocation, useModel } from '@umijs/max';
 import WorkspacePage from '@/components/WorkspacePage';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 /** Organization 首页固定标签内的设置占位页；本阶段只确认路由和 Sidebar 行为。 */
 const OrganizationSettingsPage = () => {
+  const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
-  const { organizationId } = useParams<{ organizationId?: string }>();
-  const organization = initialState?.currentUser?.organizations.find(
-    (item) => item.organizationId === organizationId,
-  );
 
   return (
     <WorkspacePage
-      breadcrumb={[organization?.organizationName ?? '当前组织', '组织设置']}
+      breadcrumb={buildWorkspaceBreadcrumb(
+        initialState?.currentUser,
+        pathname,
+        ['组织设置'],
+      )}
       title="组织设置"
       description="维护当前组织的基础信息与工作区设置。"
     >

@@ -1,6 +1,10 @@
 import { useNavigate } from '@umijs/max';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  pushWorkspaceRecent,
+  titleForWorkspaceRecent,
+} from '@/utils/workspaceRecents';
+import {
   readWorkspaceSession,
   writeWorkspaceSession,
 } from '@/utils/workspaceSession';
@@ -70,30 +74,42 @@ export const useWorkspaceTabs = (
    * 把当前路由代表的标签插入或更新到标签集合。
    * 相同业务 ID 会更新标题和最后 URL，但保留原显示位置。
    */
-  const upsertRouteTab = useCallback((input: WorkspaceTabInput) => {
-    const routeTab = createWorkspaceTab(input);
-
-    setWorkspace((currentState) => {
-      const existingIndex = currentState.tabs.findIndex(
-        (tab) => tab.id === routeTab.id,
+  const upsertRouteTab = useCallback(
+    (input: WorkspaceTabInput) => {
+      const routeTab = createWorkspaceTab(input);
+      pushWorkspaceRecent(
+        userId,
+        scopeKey,
+        {
+          title: titleForWorkspaceRecent(routeTab.url, routeTab.title),
+          url: routeTab.url,
+        },
+        homeTab.url,
       );
-      if (existingIndex === -1) {
-        return { tabs: [...currentState.tabs, routeTab] };
-      }
 
-      const existingTab = currentState.tabs[existingIndex];
-      if (
-        existingTab.title === routeTab.title &&
-        existingTab.url === routeTab.url
-      ) {
-        return currentState;
-      }
+      setWorkspace((currentState) => {
+        const existingIndex = currentState.tabs.findIndex(
+          (tab) => tab.id === routeTab.id,
+        );
+        if (existingIndex === -1) {
+          return { tabs: [...currentState.tabs, routeTab] };
+        }
 
-      const tabs = [...currentState.tabs];
-      tabs[existingIndex] = routeTab;
-      return { tabs };
-    });
-  }, []);
+        const existingTab = currentState.tabs[existingIndex];
+        if (
+          existingTab.title === routeTab.title &&
+          existingTab.url === routeTab.url
+        ) {
+          return currentState;
+        }
+
+        const tabs = [...currentState.tabs];
+        tabs[existingIndex] = routeTab;
+        return { tabs };
+      });
+    },
+    [homeTab.url, scopeKey, userId],
+  );
 
   /** 点击已有标签时只进入其最后 URL；activeKey 将由新 URL 自动派生。 */
   const activateTab = useCallback(

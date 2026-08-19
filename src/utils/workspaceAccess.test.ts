@@ -109,4 +109,39 @@ describe('resolveWorkspaceRouteDecision', () => {
       ),
     ).toEqual({ kind: 'not-found' });
   });
+
+  it('allows admin stats pages and rejects unknown or unauthorized stats URLs', () => {
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/stats/users'),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/stats'),
+    ).toEqual({
+      kind: 'redirect',
+      to: '/workspace/platform/stats/users',
+    });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-1/stats/traces',
+      ),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/stats/unknown'),
+    ).toEqual({ kind: 'not-found' });
+
+    const memberOnly = {
+      ...user,
+      organizations: user.organizations.map((organization) => ({
+        ...organization,
+        permissions: [],
+      })),
+    } as AuthCurrentUser;
+    expect(
+      resolveWorkspaceRouteDecision(
+        memberOnly,
+        '/workspace/org/organization-1/stats/users',
+      ),
+    ).toEqual({ kind: 'forbidden' });
+  });
 });

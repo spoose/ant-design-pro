@@ -1,4 +1,5 @@
 import { Breadcrumb } from 'antd';
+import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { useId } from 'react';
 import useWorkspacePageStyles from './style';
@@ -8,8 +9,10 @@ export type WorkspacePageProps = {
   breadcrumb: string[];
   /** 当前路由的页面标题。 */
   title: string;
-  /** 解释页面用途的简短说明，控制在一行到两行。 */
-  description: string;
+  /** 解释页面用途的简短说明；空字符串时不渲染说明行。 */
+  description?: string;
+  /** 标题区左侧内容，例如工作台欢迎头像。 */
+  leading?: ReactNode;
   /** 页面级操作或状态标识；不存在时标题区保持自然宽度。 */
   actions?: ReactNode;
   /** 页面主体，统一落入从 demo 提取的 24px 内容区。 */
@@ -24,6 +27,7 @@ const WorkspacePage = ({
   breadcrumb,
   title,
   description,
+  leading,
   actions,
   children,
 }: WorkspacePageProps) => {
@@ -33,12 +37,40 @@ const WorkspacePage = ({
   return (
     <section aria-labelledby={titleId} className={styles.page}>
       <header className={styles.heading}>
-        <div className={styles.headingCopy}>
-          <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
-          <h1 className={styles.title} id={titleId}>
-            {title}
-          </h1>
-          <p className={styles.description}>{description}</p>
+        <div
+          className={
+            leading ? styles.headingMainWithLeading : styles.headingMain
+          }
+        >
+          {leading ? (
+            <>
+              <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
+              <div className={styles.headingRow}>
+                <div className={styles.leading}>{leading}</div>
+                <div className={styles.headingCopy}>
+                  <h1
+                    className={clsx(styles.title, styles.titleWithLeading)}
+                    id={titleId}
+                  >
+                    {title}
+                  </h1>
+                  {description ? (
+                    <p className={styles.description}>{description}</p>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className={styles.headingCopy}>
+              <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
+              <h1 className={styles.title} id={titleId}>
+                {title}
+              </h1>
+              {description ? (
+                <p className={styles.description}>{description}</p>
+              ) : null}
+            </div>
+          )}
         </div>
         {actions ? <div className={styles.actions}>{actions}</div> : null}
       </header>

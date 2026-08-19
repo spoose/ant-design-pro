@@ -1,7 +1,8 @@
-import { useModel, useParams } from '@umijs/max';
+import { useLocation, useModel } from '@umijs/max';
 import type { TableProps } from 'antd';
 import { Table, Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
 /** Organization 成员表静态行；后续由当前 organizationId 对应的成员接口替换。 */
 type OrganizationMemberRecord = {
@@ -68,15 +69,16 @@ const memberColumns: TableProps<OrganizationMemberRecord>['columns'] = [
 
 /** 当前 Organization 首页标签内的成员管理页面。 */
 const OrganizationMembersPage = () => {
+  const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
-  const { organizationId } = useParams<{ organizationId?: string }>();
-  const organization = initialState?.currentUser?.organizations.find(
-    (item) => item.organizationId === organizationId,
-  );
 
   return (
     <WorkspacePage
-      breadcrumb={[organization?.organizationName ?? '当前组织', '成员管理']}
+      breadcrumb={buildWorkspaceBreadcrumb(
+        initialState?.currentUser,
+        pathname,
+        ['成员管理'],
+      )}
       title="成员管理"
       description="管理当前组织内的成员及其组织角色。"
       actions={<Tag color="blue">静态演示</Tag>}

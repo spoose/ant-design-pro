@@ -1,5 +1,5 @@
 import { BankOutlined, RightOutlined } from '@ant-design/icons';
-import { Link, useModel, useParams } from '@umijs/max';
+import { Link, useLocation, useModel, useParams } from '@umijs/max';
 import type { TableProps } from 'antd';
 import { Table, Tag } from 'antd';
 import { useMemo } from 'react';
@@ -8,6 +8,7 @@ import WorkspaceSkillList from '@/components/WorkspaceSkillList';
 import type { OrganizationAccess } from '@/services/auth';
 import { workspaceIconColorVariables } from '@/theme/colors';
 import { statusColors } from '@/theme/statusColors';
+import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 import {
   getOrganizationHomePath,
   getPlatformAppPagePath,
@@ -15,7 +16,17 @@ import {
 } from '@/utils/workspaceRoutes';
 import { getPlatformAccess } from '@/utils/workspaceRules';
 import OrganizationManagement from './organizations';
+import PlatformMockCalendar from './overview/PlatformMockCalendar';
+import PlatformMockChart from './overview/PlatformMockChart';
+import PlatformQuickEntry from './overview/PlatformQuickEntry';
+import { PlatformWelcomeAvatar } from './overview/PlatformWelcomeAvatar';
+import {
+  formatPlatformWelcomeDate,
+  getPlatformWelcomeHeading,
+} from './overview/welcome';
 import UserManagement from './users';
+
+export { formatPlatformWelcomeDate, getPlatformWelcomeHeading };
 
 /** Platform 页面标题与说明，key 来源于 /workspace/platform/:platformPageKey。 */
 const platformPageMeta: Record<
@@ -23,8 +34,8 @@ const platformPageMeta: Record<
   { title: string; description: string }
 > = {
   overview: {
-    title: '管理总览',
-    description: '总览所组织、应用和权限',
+    title: '工作台',
+    description: '',
   },
   organizations: {
     title: '组织管理',
@@ -155,7 +166,7 @@ const PlatformPermissionWidget = ({
   </section>
 );
 
-/** 管理总览：平台应用横排启动卡在上；组织与权限宽屏双栏，窄屏单列。 */
+/** 工作台：平台应用横排启动卡；组织与权限宽屏双栏，窄屏单列。 */
 export const PlatformOverview = ({
   organizationRows,
   skillCodes,
@@ -168,6 +179,14 @@ export const PlatformOverview = ({
   permissions: string[];
 }) => (
   <div className="grid gap-5">
+    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] md:items-start">
+      <div className="grid min-w-0 gap-5">
+        <PlatformMockChart />
+        <PlatformQuickEntry />
+      </div>
+      <PlatformMockCalendar />
+    </div>
+
     <WorkspaceSkillList
       emptyDescription="当前账号暂无平台应用，请联系平台管理员授权。"
       getSkillPath={(skillCode) =>
@@ -281,6 +300,7 @@ const PlatformPageContent = ({
 
 /** Super Admin 固定“管理中心”标签的路由页面。 */
 const PlatformManagementPage = () => {
+  const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
   // platformPageKey 由 Umi Browser Router 从当前 URL 提供。
   const { platformPageKey } = useParams<{ platformPageKey?: string }>();
@@ -289,7 +309,7 @@ const PlatformManagementPage = () => {
     : 'overview';
   // currentUser.organizations 仅表示可进入范围；组织管理全集由 /api/admin/organizations 提供。
   const organizations = initialState?.currentUser?.organizations ?? [];
-  // 数据链路：POST /api/currentUser/get -> getPlatformAccess -> 管理总览的应用和权限 Widget。
+  // 数据链路：POST /api/currentUser/get -> getPlatformAccess -> 工作台的应用和权限 Widget。
   const platformAccess = useMemo(
     () =>
       initialState?.currentUser
@@ -304,12 +324,30 @@ const PlatformManagementPage = () => {
     [organizations],
   );
   const pageMeta = platformPageMeta[pageKey];
+  const currentUser = initialState?.currentUser;
+  const pageHeading =
+    pageKey === 'overview'
+      ? getPlatformWelcomeHeading({
+          isSuperAdmin: currentUser?.isSuperAdmin,
+          userName: currentUser?.name,
+        })
+      : pageMeta;
 
   return (
     <WorkspacePage
-      breadcrumb={['管理中心', pageMeta.title]}
-      title={pageMeta.title}
-      description={pageMeta.description}
+      breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, [
+        pageMeta.title,
+      ])}
+      description={pageHeading.description || undefined}
+      leading={
+        pageKey === 'overview' && currentUser ? (
+          <PlatformWelcomeAvatar
+            avatar={currentUser.avatar}
+            userName={currentUser.name}
+          />
+        ) : undefined
+      }
+      title={pageHeading.title}
       actions={
         pageKey === 'permissions' ? <Tag color="blue">静态演示</Tag> : undefined
       }

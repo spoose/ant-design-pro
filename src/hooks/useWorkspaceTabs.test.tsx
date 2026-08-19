@@ -1,14 +1,23 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readWorkspaceRecents } from '@/utils/workspaceRecents';
 import { writeWorkspaceSession } from '@/utils/workspaceSession';
 import { createWorkspaceTab } from '@/utils/workspaceState';
 import { useWorkspaceTabs } from './useWorkspaceTabs';
 
 const testNavigate = vi.hoisted(() => vi.fn());
 
-vi.mock('@umijs/max', () => ({
-  useNavigate: () => testNavigate,
-}));
+vi.mock('@umijs/max', async () => {
+  const { generatePath, matchPath } =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
+  return {
+    generatePath,
+    matchPath,
+    useNavigate: () => testNavigate,
+  };
+});
 
 const scopeKey = 'organization:organization-1';
 const homeTab = {
@@ -60,6 +69,10 @@ describe('useWorkspaceTabs', () => {
     expect(result.current.tabs[1]).toMatchObject({
       id: 'app:file-review',
       title: '待审文件',
+    });
+    expect(readWorkspaceRecents('user-1', scopeKey)[0]).toMatchObject({
+      title: '文件审查',
+      url: `${appTab.url}?status=pending`,
     });
     await waitFor(() => {
       expect(

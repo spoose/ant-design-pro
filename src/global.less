@@ -64,12 +64,30 @@ body,
 .ant-pro-sider-collapsed .ant-pro-sider-link span:not([role='img']) {
   display: none;
 }
-
+/* 内容区内部滚动：顶栏固定在上方。圆角/缝隙仅在侧栏可见的桌面模式启用。 */
+.workspace-layout .ant-pro-layout-content {
+  height: calc(100vh - 56px);   /* 顶栏以下的空间，桌面 56px */
+  overflow: auto;
+  background: transparent;
+}
 /*
  * Workspace 继续使用 ProLayout 的 mix DOM，只在视觉上把 Logo 并入 Sidebar。
  * 248/64 分别来自 defaultSettings.siderWidth 与 menu.collapsedWidth。
  */
+
 @media (min-width: 768px) {
+  /* 侧栏可见：卡片圆角 + 右侧 12px 缝隙，露出与顶栏同色的 layout 底色。 */
+  .workspace-layout .ant-pro-layout-container {
+    background: var(--ant-color-bg-layout);
+  }
+
+  .workspace-layout .ant-pro-layout-content {
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    width: calc(100% - 12px);
+    margin-inline-end: 12px;
+  }
+
   .workspace-layout:has(.ant-pro-sider-collapsed) {
     .ant-pro-global-header-logo-mix {
       width: 64px !important;
@@ -116,6 +134,11 @@ body,
     height: 104px !important;
     min-height: 104px;
     line-height: normal !important;
+  }
+
+  /* 窄屏顶栏 104px（56px 操作行 + 48px 标签行），内容区高度相应收缩。 */
+  .workspace-layout .ant-pro-layout-content {
+    height: calc(100vh - 104px);
   }
 
   .account-layout header.ant-pro-layout-header,

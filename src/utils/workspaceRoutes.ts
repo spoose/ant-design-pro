@@ -20,6 +20,20 @@ export type PlatformPageKey =
 
 export type OrganizationPageKey = 'home' | 'members' | 'roles' | 'settings';
 
+/** 统计子页；与 /dashboard/analysis 一样挂在父级前缀下，互不共用 path。 */
+export type StatsPageKey = 'users' | 'requests' | 'traces';
+
+export const STATS_PAGE_KEYS = [
+  'users',
+  'requests',
+  'traces',
+] as const satisfies readonly StatsPageKey[];
+
+export const isStatsPageKey = (
+  value: string | undefined,
+): value is StatsPageKey =>
+  Boolean(value && (STATS_PAGE_KEYS as readonly string[]).includes(value));
+
 /** Platform 固定首页及其内部管理页的 URL 模板。 */
 export const PLATFORM_PAGE_PATTERN = '/workspace/platform/:platformPageKey';
 /** Platform App 标签及 App 内部子路由的 URL 模板。 */
@@ -40,6 +54,14 @@ export const ORGANIZATION_APP_PATTERN =
   '/workspace/org/:organizationId/apps/:appKey/*';
 const ORGANIZATION_APP_ROOT_PATTERN =
   '/workspace/org/:organizationId/apps/:appKey';
+
+/** 统计父级与 /dashboard 相同：根路径 redirect，子页使用更长的独立 path。 */
+export const PLATFORM_STATS_ROOT_PATTERN = '/workspace/platform/stats';
+export const PLATFORM_STATS_PATTERN = '/workspace/platform/stats/:statsPageKey';
+export const ORGANIZATION_STATS_ROOT_PATTERN =
+  '/workspace/org/:organizationId/stats';
+export const ORGANIZATION_STATS_PATTERN =
+  '/workspace/org/:organizationId/stats/:statsPageKey';
 
 /** 根据稳定页面 Key 生成 Platform URL，供菜单和首页标签共同使用。 */
 export const getPlatformPagePath = (platformPageKey: PlatformPageKey) =>
@@ -93,6 +115,25 @@ export const getOrganizationAppPagePath = (
     pageKey,
   )}`;
 
+export const getPlatformStatsRootPath = () => PLATFORM_STATS_ROOT_PATTERN;
+
+export const getPlatformStatsPagePath = (statsPageKey: StatsPageKey) =>
+  generatePath(PLATFORM_STATS_PATTERN, { statsPageKey });
+
+export const getOrganizationStatsRootPath = (organizationId: string) =>
+  generatePath(ORGANIZATION_STATS_ROOT_PATTERN, {
+    organizationId: encodeRouteParam(organizationId),
+  });
+
+export const getOrganizationStatsPagePath = (
+  organizationId: string,
+  statsPageKey: StatsPageKey,
+) =>
+  generatePath(ORGANIZATION_STATS_PATTERN, {
+    organizationId: encodeRouteParam(organizationId),
+    statsPageKey,
+  });
+
 /**
  * 登录落点的单一公开门面。
  * 页面只提供 POST /api/currentUser/get 的结果；内部完成权限落点计算和 URL 生成。
@@ -128,6 +169,18 @@ export const getWorkspacePlatformPageKey = (pathname: string) =>
 export const getWorkspaceOrganizationPageKey = (pathname: string) =>
   matchPath(ORGANIZATION_PAGE_PATTERN, pathname)?.params.pageKey;
 
+export const getWorkspaceStatsPageKey = (pathname: string) =>
+  matchPath(PLATFORM_STATS_PATTERN, pathname)?.params.statsPageKey ??
+  matchPath(ORGANIZATION_STATS_PATTERN, pathname)?.params.statsPageKey;
+
+export const isWorkspaceStatsPath = (pathname: string) =>
+  Boolean(
+    matchPath(PLATFORM_STATS_ROOT_PATTERN, pathname) ||
+      matchPath(PLATFORM_STATS_PATTERN, pathname) ||
+      matchPath(ORGANIZATION_STATS_ROOT_PATTERN, pathname) ||
+      matchPath(ORGANIZATION_STATS_PATTERN, pathname),
+  );
+
 /**
  * 从 App 通配路由读取 Skill 内部页面 Key；App 根路径返回 undefined。
  * 该值只选择当前 App 标签内的页面，不参与标签 ID 生成。
@@ -148,7 +201,9 @@ export const getWorkspaceAppPageKey = (pathname: string) => {
 export const isPlatformWorkspacePath = (pathname: string) =>
   Boolean(
     matchPath(PLATFORM_PAGE_PATTERN, pathname) ||
-      matchPath(PLATFORM_APP_PATTERN, pathname),
+      matchPath(PLATFORM_APP_PATTERN, pathname) ||
+      matchPath(PLATFORM_STATS_ROOT_PATTERN, pathname) ||
+      matchPath(PLATFORM_STATS_PATTERN, pathname),
   );
 
 /** Sidebar、标签和请求层共用的 Scope 解析器，不维护第二份活动组织 State。 */
