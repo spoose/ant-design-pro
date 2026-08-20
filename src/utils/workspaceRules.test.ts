@@ -74,7 +74,7 @@ describe('workspace access rules', () => {
     expect(access.visibleMenuKeys).toEqual([
       'overview',
       'organizations',
-      'audit',
+      'logs',
     ]);
   });
 

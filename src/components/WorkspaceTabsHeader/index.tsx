@@ -90,7 +90,7 @@ const WorkspaceTabsHeader = () => {
       }
       const homeTab = {
         kind: 'home' as const,
-        title: '管理中心',
+        title: '工作台',
         url: getPlatformHomePath(),
       };
       const activeTab: WorkspaceTabInput = appKey

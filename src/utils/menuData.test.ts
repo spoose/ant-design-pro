@@ -93,9 +93,38 @@ describe('Workspace menus', () => {
     ]);
     expect(
       createPlatformWorkspaceMenus(['overview', 'organizations', 'users']).map(
-        ({ name, path }) => ({ name, path }),
+        ({ name, path, children }) => ({
+          name,
+          path,
+          ...(children
+            ? {
+                children: children.map((child) => ({
+                  name: child.name,
+                  path: child.path,
+                })),
+              }
+            : {}),
+        }),
       ),
-    ).toEqual([{ name: '工作台', path: '/workspace/platform/overview' }]);
+    ).toEqual([
+      { name: '工作台', path: '/workspace/platform/overview' },
+      {
+        name: '系统管理',
+        path: '/workspace/platform/system',
+        children: [{ name: '用户管理', path: '/workspace/platform/users' }],
+      },
+    ]);
+  });
+
+  it('nests 日志 before 用户管理 under 系统管理', () => {
+    expect(
+      createPlatformWorkspaceMenus(['overview', 'users', 'logs']).flatMap(
+        (item) =>
+          item.name === '系统管理'
+            ? (item.children?.map((child) => child.name) ?? [])
+            : [],
+      ),
+    ).toEqual(['日志', '用户管理']);
   });
 
   it('nests xOneAI under Organization and Platform home menus when authorized', () => {
@@ -298,12 +327,21 @@ describe('Workspace menus', () => {
         name: '统计',
         path: '/workspace/platform/stats',
       },
+      {
+        name: '系统管理',
+        path: '/workspace/platform/system',
+      },
     ]);
     expect(
       platformMenu?.items
         .find((item) => item.name === 'xOneAI')
         ?.children?.map(({ name }) => name),
     ).toEqual(['AI助手', '资源', '记忆']);
+    expect(
+      platformMenu?.items
+        .find((item) => item.name === '系统管理')
+        ?.children?.map(({ name, path }) => ({ name, path })),
+    ).toEqual([{ name: '用户管理', path: '/workspace/platform/users' }]);
 
     const organizationMenu = resolveWorkspaceMenuDescriptor(
       userWithPai,

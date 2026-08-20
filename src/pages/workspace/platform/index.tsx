@@ -16,8 +16,10 @@ import {
 } from '@/utils/workspaceRoutes';
 import { getPlatformAccess } from '@/utils/workspaceRules';
 import OrganizationManagement from './organizations';
+import PlatformAppCatalog from './overview/PlatformAppCatalog';
 import PlatformMockCalendar from './overview/PlatformMockCalendar';
 import PlatformMockChart from './overview/PlatformMockChart';
+import { PlatformStartConversation } from './overview/PlatformMockConversations';
 import PlatformQuickEntry from './overview/PlatformQuickEntry';
 import { PlatformWelcomeAvatar } from './overview/PlatformWelcomeAvatar';
 import {
@@ -42,12 +44,20 @@ const platformPageMeta: Record<
     description: '统一查看和管理已接入的组织。',
   },
   users: {
-    title: '人员管理',
+    title: '用户管理',
     description: '查看平台人员及其跨组织管理范围。',
   },
   permissions: {
     title: '权限管理',
     description: '查看平台级角色与权限范围。',
+  },
+  logs: {
+    title: '日志',
+    description: '查看系统操作与访问日志。',
+  },
+  system: {
+    title: '系统管理',
+    description: '',
   },
 };
 
@@ -179,13 +189,20 @@ export const PlatformOverview = ({
   permissions: string[];
 }) => (
   <div className="grid gap-5">
-    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] md:items-start">
-      <div className="grid min-w-0 gap-5">
-        <PlatformMockChart />
-        <PlatformQuickEntry />
-      </div>
+    {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
+    <div className="grid min-h-0 items-stretch gap-5 max-lg:h-auto lg:h-[min(22rem,_calc(100dvh-56px-21rem))] lg:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]">
+      <PlatformStartConversation />
       <PlatformMockCalendar />
     </div>
+
+    <PlatformQuickEntry permissions={permissions} />
+
+    <PlatformAppCatalog
+      getSkillPath={(skillCode) =>
+        getPlatformAppPagePath(skillCode, 'overview')
+      }
+      skillCodes={skillCodes}
+    />
 
     <WorkspaceSkillList
       emptyDescription="当前账号暂无平台应用，请联系平台管理员授权。"
@@ -195,6 +212,8 @@ export const PlatformOverview = ({
       skillCodes={skillCodes}
       title="平台应用"
     />
+
+    <PlatformMockChart />
 
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
       <section
@@ -285,6 +304,25 @@ const PlatformPageContent = ({
 
   if (pageKey === 'users') {
     return <UserManagement />;
+  }
+
+  if (pageKey === 'logs') {
+    return (
+      <section className="grid min-h-64 place-items-center border border-zinc-200 bg-white px-6 py-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="grid max-w-md justify-items-center gap-3">
+          <h2 className="m-0 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+            日志页面待开发
+          </h2>
+          <p className="m-0 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            侧栏入口已接入；明细列表后续补齐。
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (pageKey === 'system') {
+    return null;
   }
 
   return (

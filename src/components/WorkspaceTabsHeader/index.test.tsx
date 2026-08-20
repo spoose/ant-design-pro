@@ -31,7 +31,7 @@ vi.mock('@/hooks/useWorkspaceTabs', () => ({
       {
         id: 'home',
         kind: 'home',
-        title: '管理中心',
+        title: '工作台',
         url: '/workspace/platform/overview',
       },
     ],
@@ -70,10 +70,10 @@ describe('WorkspaceTabsHeader', () => {
     render(<WorkspaceTabsHeader />);
 
     expect(screen.getByRole('navigation', { name: '应用标签' })).toBeVisible();
-    expect(screen.getByText('管理中心')).toBeVisible();
+    expect(screen.getByText('工作台')).toBeVisible();
     await waitFor(() => {
       expect(testState.upsertRouteTab).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'home', title: '管理中心' }),
+        expect.objectContaining({ kind: 'home', title: '工作台' }),
       );
     });
   });

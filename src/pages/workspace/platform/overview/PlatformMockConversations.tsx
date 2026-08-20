@@ -1,0 +1,130 @@
+import {
+  BulbOutlined,
+  FileSearchOutlined,
+  SafetyCertificateOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
+import { Prompts, type PromptsItemType, Sender } from '@ant-design/x';
+import { createAvatar } from '@bible-strong/avatar-react';
+import { useNavigate } from '@umijs/max';
+import { useState } from 'react';
+import { actionColors, statusColors } from '@/theme/statusColors';
+import { getPlatformAppPagePath } from '@/utils/workspaceRoutes';
+import '@bible-strong/avatar-react/styles.css';
+import {
+  platformOverviewCardClassName,
+  platformOverviewCardHeaderClassName,
+} from './cardChrome';
+import strobiDefinition from './strobi.avatar.json';
+
+const StrobiAvatar = createAvatar(strobiDefinition);
+
+const xoneAiOverview = getPlatformAppPagePath('ai-assistant', 'overview');
+const composerHint = '问问权限、用量或成员…';
+
+const promptItems: PromptsItemType[] = [
+  {
+    key: 'permissions',
+    icon: (
+      <SafetyCertificateOutlined style={{ color: statusColors.warning.ink }} />
+    ),
+    label: '平台权限该怎么配',
+    description: '了解角色与权限范围的配置方式',
+  },
+  {
+    key: 'usage',
+    icon: <ThunderboltOutlined style={{ color: statusColors.success.ink }} />,
+    label: '本周用量为什么偏高',
+    description: '查看用量明细与计费构成',
+  },
+  {
+    key: 'import',
+    icon: <FileSearchOutlined style={{ color: actionColors.ink }} />,
+    label: '组织成员如何导入',
+    description: '批量导入并管理组织成员',
+  },
+];
+
+/** 工作台起草口：建议或 Sender 提交后把 prompt 交给 xOne。 */
+export const PlatformStartConversation = () => {
+  const navigate = useNavigate();
+  const [senderValue, setSenderValue] = useState('');
+
+  const launchXone = (raw: string) => {
+    const prompt = raw.trim();
+    if (!prompt) return;
+    navigate(xoneAiOverview, { state: { prompt } });
+  };
+
+  return (
+    <section
+      aria-labelledby="platform-start-conversation-title"
+      className={`${platformOverviewCardClassName} relative @container`}
+    >
+      <header className={platformOverviewCardHeaderClassName}>
+        <div className="flex min-w-0 items-center gap-2">
+          <StrobiAvatar
+            ariaLabel="xOneAI 助手 Strobi"
+            className="shrink-0"
+            defaultAnimation="listening"
+            size={36}
+          />
+          <h2
+            className="m-0 translate-y-1 truncate text-base font-semibold leading-7 text-zinc-950 dark:text-zinc-50"
+            id="platform-start-conversation-title"
+          >
+            问问小One
+          </h2>
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-24">
+        <Prompts
+          aria-label="对话建议"
+          className="min-w-0 [&_h6]:line-clamp-2 [&_p]:line-clamp-1"
+          fadeIn={false}
+          items={promptItems}
+          title={
+            <span className="inline-flex items-center gap-2">
+              <BulbOutlined aria-hidden style={{ color: '#FFD700' }} />
+              你可以这样提问
+            </span>
+          }
+          classNames={{
+            title: '!mb-2',
+            list: '!m-0 !grid !w-full !grid-cols-1 !gap-2 @min-[28rem]:!grid-cols-2',
+            item: '!min-w-0 !border !border-zinc-200 !bg-white hover:!bg-zinc-50 dark:!border-zinc-700 dark:!bg-zinc-900 dark:hover:!bg-zinc-800',
+            itemContent: 'min-w-0',
+          }}
+          styles={{
+            item: {
+              paddingBlock: 12,
+              paddingInline: 12,
+            },
+          }}
+          onItemClick={({ data }) => {
+            const label = data.label;
+            if (typeof label === 'string') launchXone(label);
+          }}
+        />
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 bg-white px-3 pb-3 pt-3 dark:bg-zinc-900">
+        <Sender
+          autoSize={{ minRows: 1, maxRows: 4 }}
+          className="shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+          placeholder={composerHint}
+          styles={{ input: { outline: 'none' } }}
+          value={senderValue}
+          onChange={setSenderValue}
+          onSubmit={(message) => {
+            launchXone(message);
+            setSenderValue('');
+          }}
+        />
+      </div>
+    </section>
+  );
+};
+
+export default PlatformStartConversation;

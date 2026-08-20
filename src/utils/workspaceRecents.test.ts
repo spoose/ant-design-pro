@@ -80,7 +80,7 @@ describe('workspaceRecents', () => {
     expect(recents).toHaveLength(WORKSPACE_RECENT_LIMIT);
     expect(recents[0]?.url).toContain(`skill-${WORKSPACE_RECENT_LIMIT + 1}`);
     expect(titleForWorkspaceRecent('/workspace/platform/users', 'x')).toBe(
-      '人员管理',
+      '用户管理',
     );
     expect(
       titleForWorkspaceRecent(

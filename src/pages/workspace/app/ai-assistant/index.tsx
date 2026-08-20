@@ -9,7 +9,6 @@ import {
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
-  OllamaFilled,
   PlusOutlined,
   ReloadOutlined,
   RobotFilled,
@@ -33,7 +32,7 @@ import {
   useXChat,
   useXConversations,
 } from '@ant-design/x-sdk';
-import { useLocation, useModel } from '@umijs/max';
+import { useLocation, useModel, useNavigate } from '@umijs/max';
 import {
   App,
   Avatar,
@@ -55,6 +54,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { tagColors } from '@/theme/statusColors';
@@ -187,7 +187,14 @@ const createRequestPlaceholder = (): PaiChatMessage => ({
 const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
   const { styles } = useAiAssistantStyles();
   const { token } = theme.useToken();
+  const { pathname, state: locationState } = useLocation();
+  const navigate = useNavigate();
   const { message: messageApi, modal } = App.useApp();
+  const launchPromptRef = useRef(
+    typeof (locationState as { prompt?: unknown } | null)?.prompt === 'string'
+      ? (locationState as { prompt: string }).prompt.trim()
+      : '',
+  );
   const [senderValue, setSenderValue] = useState('');
   const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(true);
   const [isConversationMutation, setIsConversationMutation] = useState(false);
@@ -288,7 +295,9 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
         const loadedConversations = summaries.map(toPaiConversation);
         const firstConversation = loadedConversations[0];
         setConversations(loadedConversations);
-        setActiveConversationKey(firstConversation?.key ?? '');
+        if (!launchPromptRef.current) {
+          setActiveConversationKey(firstConversation?.key ?? '');
+        }
       } catch {
         if (!cancelled) messageApi.error('会话加载失败，请稍后重试');
       } finally {
@@ -359,6 +368,15 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
       setIsConversationMutation(false);
     }
   };
+
+  useEffect(() => {
+    if (isWorkspaceLoading) return;
+    const prompt = launchPromptRef.current;
+    if (!prompt) return;
+    launchPromptRef.current = '';
+    navigate(pathname, { replace: true, state: {} });
+    void sendMessage(prompt);
+  }, [isWorkspaceLoading, navigate, pathname, sendMessage]);
 
   const handleCreateConversation = async () => {
     if (isBusy) return;

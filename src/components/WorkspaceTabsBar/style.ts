@@ -1,7 +1,7 @@
 import { createStyles } from 'antd-style';
 import { surfaceColors } from '@/theme/colors';
 
-/** 顶栏标签：hover 略深灰，选中白底；侧栏仍用 navChromeRaised。 */
+/** 顶栏标签：hover / 选中为低饱和浅蓝。 */
 const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
   rail: css`
     width: 100%;
@@ -37,6 +37,7 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
       }
 
       .ant-tabs-tab {
+        position: relative;
         height: 100%;
         margin: 0;
         padding: 0 ${token.paddingXS}px;
@@ -54,10 +55,21 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
         }
 
         &.ant-tabs-tab-active {
-          background: ${token.colorBgContainer};
+          background: ${surfaceColors.navChromeRaised};
 
           .ant-tabs-tab-btn {
-            color: ${token.colorPrimary};
+             color: ${surfaceColors.navActiveInk};
+          }
+
+          &::after {
+            content: '';
+            position: absolute;
+            right: ${token.paddingXS}px;
+            bottom: 0;
+            left: ${token.paddingXS}px;
+            height: 2px;
+            background: ${surfaceColors.navActiveInk};
+            border-radius: 1px;
           }
         }
 
@@ -65,6 +77,19 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
           height: 100%;
           display: inline-flex;
           align-items: center;
+          gap: ${token.marginXXS}px;
+
+          .ant-tabs-tab-icon {
+            display: inline-flex;
+            flex: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+          }
+
+          .ant-tabs-tab-icon:not(:last-child) {
+            margin-inline-end: 0;
+          }
         }
 
         .ant-tabs-tab-btn:focus-visible,
@@ -81,13 +106,25 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          opacity: 0;
+          pointer-events: none;
           color: ${token.colorTextQuaternary};
           border-radius: ${token.borderRadiusSM}px;
+          transition:
+            opacity ${token.motionDurationFast},
+            color ${token.motionDurationFast},
+            background ${token.motionDurationFast};
 
           &:hover {
             color: ${token.colorText};
             background: ${surfaceColors.navChromeRaised};
           }
+        }
+
+        &:hover .ant-tabs-tab-remove,
+        &:focus-within .ant-tabs-tab-remove {
+          opacity: 1;
+          pointer-events: auto;
         }
       }
 
@@ -141,16 +178,39 @@ const useWorkspaceTabsBarStyles = createStyles(({ css, token }) => ({
       }
     }
 
+    @media (hover: none), (pointer: coarse) {
+      > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-remove {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      .ant-tabs-tab {
+      .ant-tabs-tab,
+      .ant-tabs-tab-remove {
         transition: none;
       }
     }
   `,
 
+  tabIcon: css`
+    width: 1em;
+    height: 1em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: ${token.fontSizeLG}px;
+    line-height: 1;
+
+    svg {
+      display: block;
+    }
+  `,
+
   labelText: css`
     max-width: 160px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

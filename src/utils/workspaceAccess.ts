@@ -4,6 +4,7 @@ import {
   getOrganizationAppPagePath,
   getOrganizationStatsPagePath,
   getPlatformAppPagePath,
+  getPlatformPagePath,
   getPlatformStatsPagePath,
   getWorkspaceAppKey,
   getWorkspaceAppPageKey,
@@ -30,6 +31,8 @@ const platformPageKeys = new Set<PlatformPageKey>([
   'organizations',
   'users',
   'permissions',
+  'logs',
+  'system',
 ]);
 const organizationPageKeys = new Set<OrganizationPageKey>([
   'home',
@@ -98,6 +101,15 @@ export const resolveWorkspaceRouteDecision = (
 
     const pageKey = getWorkspacePlatformPageKey(pathname);
     if (!isPlatformPageKey(pageKey)) return { kind: 'not-found' };
+    if (pageKey === 'system') {
+      if (access.canViewPlatformAudit) {
+        return { kind: 'redirect', to: getPlatformPagePath('logs') };
+      }
+      if (access.canManagePlatformUsers) {
+        return { kind: 'redirect', to: getPlatformPagePath('users') };
+      }
+      return { kind: 'forbidden' };
+    }
     return access.visibleMenuKeys.includes(pageKey)
       ? { kind: 'allow' }
       : { kind: 'forbidden' };

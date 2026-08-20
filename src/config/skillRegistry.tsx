@@ -7,7 +7,6 @@ import {
   FolderOutlined,
   HistoryOutlined,
   InboxOutlined,
-  OllamaFilled,
   RobotOutlined,
   SearchOutlined,
 } from '@ant-design/icons';

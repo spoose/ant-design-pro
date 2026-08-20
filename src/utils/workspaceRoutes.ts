@@ -16,7 +16,9 @@ export type PlatformPageKey =
   | 'overview'
   | 'organizations'
   | 'users'
-  | 'permissions';
+  | 'permissions'
+  | 'logs'
+  | 'system';
 
 export type OrganizationPageKey = 'home' | 'members' | 'roles' | 'settings';
 

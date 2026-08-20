@@ -144,4 +144,31 @@ describe('resolveWorkspaceRouteDecision', () => {
       ),
     ).toEqual({ kind: 'forbidden' });
   });
+
+  it('redirects 系统管理 to the first granted child and gates 日志', () => {
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/system'),
+    ).toEqual({
+      kind: 'redirect',
+      to: '/workspace/platform/users',
+    });
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/logs'),
+    ).toEqual({ kind: 'forbidden' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        { ...user, platformPermissions: ['platform:audit:view'] },
+        '/workspace/platform/system',
+      ),
+    ).toEqual({
+      kind: 'redirect',
+      to: '/workspace/platform/logs',
+    });
+    expect(
+      resolveWorkspaceRouteDecision(
+        { ...user, platformPermissions: ['platform:audit:view'] },
+        '/workspace/platform/logs',
+      ),
+    ).toEqual({ kind: 'allow' });
+  });
 });

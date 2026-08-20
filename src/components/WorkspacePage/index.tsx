@@ -34,35 +34,37 @@ const WorkspacePage = ({
   const { styles } = useWorkspacePageStyles();
   const titleId = useId();
 
+  const crumb = (
+    <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
+  );
+
   return (
     <section aria-labelledby={titleId} className={styles.page}>
-      <header className={styles.heading}>
+      {leading ? <div className={styles.breadcrumb}>{crumb}</div> : null}
+      <header className={clsx(styles.heading, leading && styles.headingCard)}>
         <div
           className={
             leading ? styles.headingMainWithLeading : styles.headingMain
           }
         >
           {leading ? (
-            <>
-              <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
-              <div className={styles.headingRow}>
-                <div className={styles.leading}>{leading}</div>
-                <div className={styles.headingCopy}>
-                  <h1
-                    className={clsx(styles.title, styles.titleWithLeading)}
-                    id={titleId}
-                  >
-                    {title}
-                  </h1>
-                  {description ? (
-                    <p className={styles.description}>{description}</p>
-                  ) : null}
-                </div>
+            <div className={styles.headingRow}>
+              <div className={styles.leading}>{leading}</div>
+              <div className={styles.headingCopy}>
+                <h1
+                  className={clsx(styles.title, styles.titleWithLeading)}
+                  id={titleId}
+                >
+                  {title}
+                </h1>
+                {description ? (
+                  <p className={styles.description}>{description}</p>
+                ) : null}
               </div>
-            </>
+            </div>
           ) : (
             <div className={styles.headingCopy}>
-              <Breadcrumb items={breadcrumb.map((item) => ({ title: item }))} />
+              {crumb}
               <h1 className={styles.title} id={titleId}>
                 {title}
               </h1>

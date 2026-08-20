@@ -18,7 +18,7 @@ const appTab = createWorkspaceTab({
 describe('WorkspaceTabsBar', () => {
   it('uses antd activeKey and onChange for activation', () => {
     const onActivate = vi.fn();
-    render(
+    const { container } = render(
       <WorkspaceTabsBar
         tabs={[homeTab, appTab]}
         activeTabId={homeTab.id}
@@ -31,6 +31,8 @@ describe('WorkspaceTabsBar', () => {
       'aria-selected',
       'true',
     );
+    expect(container.querySelector('.anticon-home')).toBeInTheDocument();
+    expect(container.querySelector('.anticon-audit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /文件审查/ }));
     expect(onActivate).toHaveBeenCalledWith(appTab.id);
   });

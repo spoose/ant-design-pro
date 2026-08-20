@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,13 @@ import {
 } from '.';
 import { getMockScheduleForDate } from './overview/mockSchedule';
 import { PlatformWelcomeAvatar } from './overview/PlatformWelcomeAvatar';
+
+vi.mock('@bible-strong/avatar-react', () => ({
+  createAvatar: () => {
+    const MockStrobiAvatar = () => <div data-testid="strobi-avatar" />;
+    return MockStrobiAvatar;
+  },
+}));
 
 vi.mock('@umijs/max', () => ({
   generatePath: (pattern: string, params: Record<string, string | undefined>) =>
@@ -23,6 +30,7 @@ vi.mock('@umijs/max', () => ({
   ),
   matchPath: () => undefined,
   useModel: () => ({ initialState: undefined }),
+  useNavigate: () => vi.fn(),
   useParams: () => ({}),
 }));
 
@@ -206,8 +214,27 @@ describe('PlatformOverview', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'AI 数据洞悉' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '问问小One' })).toBeVisible();
+    expect(screen.getByPlaceholderText('问问权限、用量或成员…')).toBeVisible();
+    expect(
+      screen.queryByRole('link', { name: '新对话' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('平台权限该怎么配')).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '你可以这样提问' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: '最近' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('知识库检索失败')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '快速入口' })).toBeVisible();
-    expect(screen.getByRole('link', { name: '打开 xOneAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '个人设置' })).toHaveAttribute(
+      'href',
+      '/account/settings',
+    );
+    expect(
+      screen.queryByRole('link', { name: '打开 xOneAI' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId('platform-mock-chart')).toBeVisible();
     expect(screen.getByText('输入 Token')).toBeVisible();
     expect(screen.getByText('输出 Token')).toBeVisible();
@@ -218,11 +245,26 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('button', { name: '下一条用量洞察' }),
     ).toBeVisible();
-    expect(screen.getByRole('heading', { name: '日历' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '日程' })).toBeVisible();
     expect(screen.getByTestId('platform-calendar')).toBeVisible();
-    expect(screen.getByText('今日安排')).toBeVisible();
+    expect(
+      screen.getByRole('region', { name: '问问小One' }).parentElement
+        ?.className,
+    ).toContain('lg:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]');
+    expect(
+      screen.getByRole('region', { name: '问问小One' }).parentElement
+        ?.className,
+    ).toContain('lg:h-[min(22rem,_calc(100dvh-56px-21rem))]');
+    expect(screen.getByTestId('platform-calendar-grid').className).toContain(
+      'overflow-y-auto',
+    );
+    expect(screen.getByRole('button', { name: '今日安排' })).toBeVisible();
+    expect(screen.queryByText('用量周报')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '今日安排' }));
     expect(screen.getByText('用量周报')).toBeVisible();
     expect(screen.getByText('10:00')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '收起' }));
+    expect(screen.queryByText('用量周报')).not.toBeInTheDocument();
   });
 
   it('prioritizes the organization workspace and links real platform apps', () => {
@@ -268,7 +310,7 @@ describe('PlatformOverview', () => {
     );
 
     expect(screen.getByText('当前账号暂无可进入组织')).toBeVisible();
-    expect(screen.getByRole('link', { name: '打开 xOneAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '个人设置' })).toBeVisible();
     expect(
       screen.getByText('当前账号暂无平台应用，请联系平台管理员授权。'),
     ).toBeVisible();
@@ -290,11 +332,19 @@ describe('PlatformOverview', () => {
     );
 
     expect(screen.getByRole('heading', { name: '平台应用' })).toBeVisible();
-    expect(
-      screen.getByRole('button', { name: '更多，还有 1 个应用' }),
-    ).toBeVisible();
+    expect(screen.getByRole('heading', { name: '全部应用' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '知识检索' })).toHaveAttribute(
+      'href',
+      '/workspace/platform/apps/knowledge-search/overview',
+    );
+    const skillList = screen
+      .getByRole('heading', { name: '平台应用' })
+      .closest('section');
+    expect(skillList).not.toBeNull();
     fireEvent.click(
-      screen.getByRole('button', { name: '更多，还有 1 个应用' }),
+      within(skillList as HTMLElement).getByRole('button', {
+        name: '更多，还有 1 个应用',
+      }),
     );
     expect(screen.getByRole('link', { name: '打开 知识检索' })).toHaveAttribute(
       'href',

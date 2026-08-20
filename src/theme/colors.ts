@@ -18,8 +18,10 @@ export const surfaceColors = {
    */
   selectedSoft: brandColors.surface,
   hoverSoft: brandColors.surface,
-  /** 比 canvas #f5f5f5 略深，用于灰壳导航 hover/selected（试比白底更沉一档）。 */
-  navChromeRaised: '#ebebeb',
+  /** 导航 hover / 选中底：低饱和浅蓝，白壳上可辨、不抢主色。 */
+  navChromeRaised: '#e8eef5',
+  /** 标签激活：图标、文字、底部指示条。 */
+  navActiveInk: '#3b82f6',
 } as const;
 
 /** Workspace 身份标识与组织图标共用的中性颜色。 */

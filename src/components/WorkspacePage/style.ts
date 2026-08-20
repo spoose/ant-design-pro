@@ -8,7 +8,7 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     min-height: 100%;
     overflow-x: hidden;
-    background: ${token.colorBgContainer};
+    background: ${token.colorBgLayout};
     /* 圆角改由 .ant-pro-layout-content 滚动容器裁剪提供，滚动时弧度常驻。 */
   `,
 
@@ -19,8 +19,23 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     align-items: flex-end;
     justify-content: space-between;
     gap: ${token.marginLG}px;
-    background: ${token.colorBgContainer};
+    background: ${token.colorBgLayout};
     border-bottom: 1px solid ${token.colorBorderSecondary};
+  `,
+
+  /** 工作台欢迎区：与内容区卡片同壳（白底、描边、圆角、左右留白对齐）。 */
+  headingCard: css`
+    min-height: auto;
+    margin: 0 ${token.paddingLG}px;
+    padding: ${token.padding}px ${token.paddingLG}px;
+    align-items: center;
+    background: ${token.colorBgContainer};
+    border: 1px solid ${token.colorBorderSecondary};
+    border-radius: ${token.borderRadiusLG}px;
+  `,
+
+  breadcrumb: css`
+    padding: ${token.padding}px ${token.paddingLG}px ${token.paddingXS}px;
   `,
 
   headingMain: css`
@@ -84,14 +99,14 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     padding: ${token.paddingLG}px;
     overflow-x: hidden;
-    background: ${token.colorBgContainer};
+    background: ${token.colorBgLayout};
 
     .ant-table-wrapper {
       width: 100%;
       min-width: 0;
       max-width: 100%;
       overflow: hidden;
-      background: ${token.colorBgContainer};
+      background: ${token.colorBgLayout};
     }
 
     .ant-table-content {
@@ -120,6 +135,15 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
       padding: ${token.padding}px;
       align-items: stretch;
       flex-direction: column;
+    `,
+
+    headingCard: css`
+      margin: 0 ${token.padding}px;
+      padding: ${token.padding}px;
+    `,
+
+    breadcrumb: css`
+      padding: ${token.padding}px ${token.padding}px ${token.paddingXXS}px;
     `,
 
     headingMainWithLeading: css`

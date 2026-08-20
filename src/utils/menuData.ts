@@ -3,6 +3,7 @@ import {
   AuditOutlined,
   BarChartOutlined,
   DesktopOutlined,
+  FileTextOutlined,
   HomeOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -101,13 +102,14 @@ const ORGANIZATION_HOME_SIDEBAR_ORDER = [
   'settings',
 ] as const;
 
-/** 平台首页侧栏顺序；audit 仍未实现，不进入此表。 */
+/** 平台首页侧栏顺序；organizations / users / permissions 一级隐藏，users 挂在系统管理下。 */
 const PLATFORM_HOME_SIDEBAR_ORDER = [
   'overview',
   'ai-assistant',
   'stats',
   'organizations',
   'users',
+  'system',
   'permissions',
 ] as const;
 
@@ -193,6 +195,44 @@ const createStatsHomeMenu = (
   };
 };
 
+/** 系统管理：日志 / 用户管理，一级 users 仍在顺序表里但隐藏。 */
+const createSystemAdminMenu = (
+  visibleKeys: Set<PlatformMenuKey>,
+): MenuDataItem[] => {
+  const children: MenuDataItem[] = [];
+  if (visibleKeys.has('logs')) {
+    children.push({
+      path: getPlatformPagePath('logs'),
+      key: getPlatformPagePath('logs'),
+      name: '日志',
+      icon: createElement(FileTextOutlined),
+      locale: false,
+    });
+  }
+  if (visibleKeys.has('users')) {
+    children.push({
+      path: getPlatformPagePath('users'),
+      key: getPlatformPagePath('users'),
+      name: '用户管理',
+      icon: createElement(TeamOutlined),
+      locale: false,
+    });
+  }
+  if (!children.length) return [];
+
+  const path = getPlatformPagePath('system');
+  return [
+    {
+      path,
+      key: path,
+      name: '系统管理',
+      icon: createElement(SettingOutlined),
+      locale: false,
+      children,
+    },
+  ];
+};
+
 const createFixedHomeMenuItem = (
   definition: { name: string; icon: typeof HomeOutlined },
   path: string,
@@ -236,13 +276,13 @@ export const createOrganizationWorkspaceMenus = (
 };
 
 const platformMenuDefinitions: Record<
-  Exclude<PlatformMenuKey, 'audit'>,
+  Exclude<PlatformMenuKey, 'logs'>,
   { name: string; icon: typeof HomeOutlined }
 > = {
   // 工作台用 DesktopOutlined，与 Ant Design Pro 工作台入口同一套图标。
   overview: { name: '工作台', icon: DesktopOutlined },
   organizations: { name: '组织管理', icon: AppstoreOutlined },
-  users: { name: '人员管理', icon: TeamOutlined },
+  users: { name: '用户管理', icon: TeamOutlined },
   permissions: { name: '权限管理', icon: SafetyCertificateOutlined },
 };
 
@@ -267,7 +307,10 @@ export const createPlatformWorkspaceMenus = (
     if (slot === 'stats') {
       return canViewStats ? [createStatsHomeMenu(undefined)] : [];
     }
-    if (slot !== 'ai-assistant' && HIDDEN_PLATFORM_HOME_MENU_KEYS.has(slot)) {
+    if (slot === 'system') {
+      return createSystemAdminMenu(visibleKeys);
+    }
+    if (HIDDEN_PLATFORM_HOME_MENU_KEYS.has(slot)) {
       return [];
     }
     if (!visibleKeys.has(slot)) return [];

@@ -10,8 +10,8 @@ export type PlatformMenuKey =
   | 'users'
   /** Platform 权限配置页。 */
   | 'permissions'
-  /** Platform 审计页；页面尚未实现，当前菜单生成器会忽略它。 */
-  | 'audit';
+  /** 系统日志页。 */
+  | 'logs';
 
 /** Organization 固定首页侧栏的稳定菜单标识。 */
 export type OrganizationMenuKey =
@@ -122,7 +122,7 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
   if (canManageOrganizations) visibleMenuKeys.push('organizations');
   if (canManagePlatformUsers) visibleMenuKeys.push('users');
   if (canGrantPlatformPermissions) visibleMenuKeys.push('permissions');
-  if (canViewPlatformAudit) visibleMenuKeys.push('audit');
+  if (canViewPlatformAudit) visibleMenuKeys.push('logs');
 
   return {
     permissions,

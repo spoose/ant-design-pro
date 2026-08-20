@@ -16,8 +16,9 @@ export type WorkspaceRecent = {
 
 const PLATFORM_PAGE_TITLES: Record<string, string> = {
   organizations: '组织管理',
-  users: '人员管理',
+  users: '用户管理',
   permissions: '权限管理',
+  logs: '日志',
 };
 
 const ORGANIZATION_PAGE_TITLES: Record<string, string> = {

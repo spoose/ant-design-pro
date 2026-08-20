@@ -158,26 +158,26 @@ export const layout: RunTimeLayoutConfig = ({
        */
       header: ({
         antCls,
-        colorBgLayout,
+        colorBgContainer,
         colorBorder,
         margin,
         paddingXS,
         proComponentsCls,
       }) => {
-        // 来源：antd 的 colorBgLayout（#f5f5f5）；70% 保留顶栏层次，同时继续适配明暗主题。
-        const workspaceHeaderBackground = `color-mix(in srgb, ${colorBgLayout} 70%, transparent)`;
+        // 导航壳用容器白；70% 混合保留层次，暗色模式仍跟 token。
+        const workspaceHeaderBackground = `color-mix(in srgb, ${colorBgContainer} 70%, transparent)`;
 
         return {
           ...(isWorkspaceRoute
             ? {
                 height: 56,
-                backgroundColor: colorBgLayout,
+                backgroundColor: colorBgContainer,
                 background: workspaceHeaderBackground,
                 borderBlockEnd: 0,
                 [`${proComponentsCls}-global-header`]: {
                   marginInline: 0,
                   paddingInlineEnd: margin,
-                  backgroundColor: colorBgLayout,
+                  backgroundColor: colorBgContainer,
                   background: workspaceHeaderBackground,
                   // 暂时隐藏 Workspace 顶栏头像容器；avatarProps 与下拉菜单逻辑继续保留。
                   // [`${proComponentsCls}-global-header-header-actions-avatar`]: {
@@ -204,9 +204,9 @@ export const layout: RunTimeLayoutConfig = ({
                       marginInlineEnd: 0,
                       paddingInline: margin,
                       flex: '0 0 248px',
-                      backgroundColor: colorBgLayout,
+                      backgroundColor: colorBgContainer,
                       background: workspaceHeaderBackground,
-                      borderInlineEnd: `1px solid ${colorBgLayout}`,
+                      borderInlineEnd: `1px solid ${colorBgContainer}`,
                     },
                   },
                 },
@@ -218,7 +218,7 @@ export const layout: RunTimeLayoutConfig = ({
                     marginInline: 0,
                     paddingInline: paddingXS,
                     alignItems: 'center',
-                    backgroundColor: colorBgLayout,
+                    backgroundColor: colorBgContainer,
                     background: workspaceHeaderBackground,
                     [`${proComponentsCls}-global-header-collapsed-button`]: {
                       width: 44,
@@ -279,7 +279,7 @@ export const layout: RunTimeLayoutConfig = ({
                       insetInline: 0,
                       height: 48,
                       minWidth: 0,
-                      backgroundColor: colorBgLayout,
+                      backgroundColor: colorBgContainer,
                       background: workspaceHeaderBackground,
                       borderBlockStart: `1px solid ${colorBorder}`,
                     },
@@ -293,28 +293,35 @@ export const layout: RunTimeLayoutConfig = ({
       sider: ({
         antCls,
         borderRadius,
-        colorBgLayout,
-        colorPrimary,
+        colorBgContainer,
+        fontSize,
+        fontSizeLG,
         paddingXXS,
         paddingXS,
       }) => ({
-        // 正式 Workspace 与 demo 使用相同的 #f5f5f5 导航表面；暗色模式自动跟随容器 Token。
-        // 侧栏无右边框：与圆弧缝隙、顶栏同为 #f5f5f5，视觉上连成一体，白色页面靠色差区分。
+        // 导航壳白底；hover / 选中用低饱和浅蓝，激活图标/文字用 navActiveInk。
         ...(isWorkspaceRoute
           ? {
-              background: colorBgLayout,
+              background: colorBgContainer,
               [`& ${antCls}-layout-sider-children`]: {
-                background: colorBgLayout,
+                background: colorBgContainer,
                 borderInlineEnd: 0,
                 // marginInlineEnd: 0,
               },
               [`${antCls}-menu`]: {
-                background: colorBgLayout,
+                background: colorBgContainer,
+                fontSize,
               },
               [`${antCls}-menu-item-selected, ${antCls}-menu-submenu-selected > ${antCls}-menu-submenu-title`]:
                 {
-                  color: colorPrimary,
+                  color: surfaceColors.navActiveInk,
                   background: surfaceColors.navChromeRaised,
+                  '.anticon': {
+                    color: surfaceColors.navActiveInk,
+                  },
+                  svg: {
+                    fill: 'currentColor',
+                  },
                 },
               [`${antCls}-menu-item:not(${antCls}-menu-item-selected):hover, ${antCls}-menu-submenu:not(${antCls}-menu-submenu-selected) > ${antCls}-menu-submenu-title:hover`]:
                 {
@@ -331,11 +338,11 @@ export const layout: RunTimeLayoutConfig = ({
           : {}),
         [`${antCls}-pro-sider-extra`]: {
           margin: 0,
-          ...(isWorkspaceRoute ? { background: colorBgLayout } : {}),
+          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
         },
         [`${antCls}-pro-sider-menu`]: {
           padding: paddingXS,
-          ...(isWorkspaceRoute ? { background: colorBgLayout } : {}),
+          ...(isWorkspaceRoute ? { background: colorBgContainer } : {}),
         },
         [`${antCls}-menu-submenu`]: {
           width: '100%',
@@ -362,10 +369,10 @@ export const layout: RunTimeLayoutConfig = ({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 14,
-            minWidth: 14,
-            height: 14,
-            fontSize: 14,
+            width: fontSizeLG,
+            minWidth: fontSizeLG,
+            height: fontSizeLG,
+            fontSize: fontSizeLG,
             lineHeight: 0,
           },
       }),

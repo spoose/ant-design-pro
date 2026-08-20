@@ -1,5 +1,7 @@
+import { AppstoreOutlined, HomeOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import { Tabs } from 'antd';
+import { getSkillDefinition } from '@/config/skillRegistry';
 import type { WorkspaceTab } from '@/utils/workspaceState';
 import useWorkspaceTabsBarStyles from './style';
 
@@ -28,12 +30,24 @@ const WorkspaceTabsBar = ({
 }: WorkspaceTabsBarProps) => {
   const { styles } = useWorkspaceTabsBarStyles();
 
-  const items: TabsProps['items'] = tabs.map((tab) => ({
-    key: tab.id,
-    label: <span className={styles.labelText}>{tab.title}</span>,
-    // antd 标签默认可关闭；当前 Scope 的首页是唯一例外。
-    closable: tab.kind !== 'home',
-  }));
+  const items: TabsProps['items'] = tabs.map((tab) => {
+    const TabIcon =
+      tab.kind === 'home'
+        ? HomeOutlined
+        : (getSkillDefinition(tab.appKey)?.icon ?? AppstoreOutlined);
+
+    return {
+      key: tab.id,
+      icon: (
+        <span className={styles.tabIcon} aria-hidden="true">
+          <TabIcon />
+        </span>
+      ),
+      label: <span className={styles.labelText}>{tab.title}</span>,
+      // antd 标签默认可关闭；当前 Scope 的首页是唯一例外。
+      closable: tab.kind !== 'home',
+    };
+  });
 
   const handleEdit: TabsProps['onEdit'] = (targetKey, action) => {
     if (action === 'remove' && typeof targetKey === 'string') {
