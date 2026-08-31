@@ -5,6 +5,8 @@ describe('appRegistry', () => {
   it('maps every configured app code to static UI metadata', () => {
     expect(Object.keys(appRegistry)).toEqual([
       'ai-assistant',
+      'integrated-operations',
+      'drone-operations',
       'file-review',
       'document-summary',
       'knowledge-search',
@@ -19,6 +21,14 @@ describe('appRegistry', () => {
     });
     expect(getAppDefinition('file-review')?.pageComponent).toBeDefined();
     expect(getAppDefinition('knowledge-search')?.pageComponent).toBeDefined();
+    expect(getAppDefinition('integrated-operations')).toMatchObject({
+      title: '集约运维',
+      navigation: [{ pathSegment: 'overview', title: '运维总览' }],
+    });
+    expect(getAppDefinition('drone-operations')).toMatchObject({
+      title: '政务低空',
+      navigation: [{ pathSegment: 'overview', title: '运行总览' }],
+    });
     expect(getAppDefinition('ai-assistant')).toMatchObject({
       title: 'xOneAI',
       navigation: [

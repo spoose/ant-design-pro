@@ -167,14 +167,53 @@ describe('auth session normalization', () => {
     ).toThrow('XOne Token 缺少身份字段 sub，请重新登录');
   });
 
-  it('preserves the Legacy current-user model unchanged', () => {
+  it('uses the Legacy application fields without renaming them', () => {
     const legacyUser = createLegacyCurrentUser();
     const currentUser = normalizeAuthCurrentUser({
       source: 'legacy',
       currentUser: legacyUser,
     });
 
-    expect(currentUser).toBe(legacyUser);
+    expect(currentUser).not.toBe(legacyUser);
+    expect(currentUser.projectAppCodes).toEqual([
+      'integrated-operations',
+      'knowledge-search',
+    ]);
+    expect(currentUser.organizations[0]?.appCodes).toEqual([
+      'integrated-operations',
+      'file-review',
+    ]);
+    expect(currentUser).toHaveProperty('projectAppCodes');
+    expect(currentUser.organizations[0]).toHaveProperty('appCodes');
+  });
+
+  it('uses Legacy database app grants without inferring them from sadmin', () => {
+    const legacyUser = createLegacyCurrentUser();
+    legacyUser.isSuperAdmin = true;
+
+    const withoutDatabaseGrant = normalizeAuthCurrentUser({
+      source: 'legacy',
+      currentUser: legacyUser,
+    });
+
+    expect(withoutDatabaseGrant.projectAppCodes).not.toContain(
+      'drone-operations',
+    );
+    expect(withoutDatabaseGrant.organizations[0]?.appCodes).not.toContain(
+      'drone-operations',
+    );
+
+    legacyUser.projectAppCodes.push('drone-operations');
+    legacyUser.organizations[0]?.appCodes.push('drone-operations');
+    const withDatabaseGrant = normalizeAuthCurrentUser({
+      source: 'legacy',
+      currentUser: legacyUser,
+    });
+
+    expect(withDatabaseGrant.projectAppCodes).toContain('drone-operations');
+    expect(withDatabaseGrant.organizations[0]?.appCodes).toContain(
+      'drone-operations',
+    );
   });
 
   it('clears a token created by another configured backend', async () => {

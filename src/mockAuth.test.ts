@@ -33,7 +33,10 @@ describe('mock auth users', () => {
     expect(user.name).toBe('Admin User');
     expect(user.platformPermissions).toContain('platform:organization:create');
     expect(user.platformPermissions).toContain('platform:permission:grant');
-    expect(user.projectAppCodes).toEqual(['knowledge-search']);
+    expect(user.projectAppCodes).toEqual([
+      'drone-operations',
+      'knowledge-search',
+    ]);
     expect(user.defaultOrganizationId).toBe('organization-1');
     expect(
       user.organizations.map((organization) => organization.organizationId),

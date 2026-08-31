@@ -6,9 +6,9 @@ import {
 } from '@/utils/workspaceRoutes';
 import { getPlatformAccess } from '@/utils/workspaceRules';
 
-/** Icons8 Fluency：https://icons8.com/icons/fluency */
-const fluencySrc = (name: string) =>
-  `https://img.icons8.com/fluency/96/${name}.png`;
+/** 从 public 静态目录读取快速入口图标，确保内网或离线环境也能正常显示。 */
+const quickEntryIconSrc = (name: string) =>
+  `/assets/icons/quick-entry/${name}.png`;
 
 type QuickEntryItem = {
   key: string;
@@ -20,15 +20,41 @@ type QuickEntryItem = {
 type PlatformQuickEntryProps = {
   /** 来源于 currentUser.platformPermissions，与侧栏同一套授权。 */
   permissions: string[];
+  /** 当前 Project/Organization Scope 已授权的应用代码。 */
+  appCodes: string[];
+  /** 为当前 Scope 生成应用总览地址。 */
+  getAppPath: (appCode: string) => string;
 };
 
-/** 工作台快速入口：系统管理 / 统计叶子页 + 个人设置。不开应用标签。 */
-const PlatformQuickEntry = ({ permissions }: PlatformQuickEntryProps) => {
+/** 工作台快速入口：已授权重点应用 + 系统设置 / 统计叶子页 + 个人设置。 */
+const PlatformQuickEntry = ({
+  permissions,
+  appCodes,
+  getAppPath,
+}: PlatformQuickEntryProps) => {
   const access = getPlatformAccess({
     // 当前首页传空数组时按演示全开；实际页面访问仍由路由权限控制。
     platformPermissions: permissions.length ? permissions : ['*'],
   } as AuthCurrentUser);
   const entries: QuickEntryItem[] = [];
+
+  if (appCodes.includes('integrated-operations')) {
+    entries.push({
+      key: 'integrated-operations',
+      title: '集约运维',
+      icon: 'server',
+      to: getAppPath('integrated-operations'),
+    });
+  }
+
+  if (appCodes.includes('drone-operations')) {
+    entries.push({
+      key: 'drone-operations',
+      title: '政务低空',
+      icon: 'drone',
+      to: getAppPath('drone-operations'),
+    });
+  }
 
   if (access.canManagePlatformUsers) {
     entries.push({
@@ -102,7 +128,7 @@ const PlatformQuickEntry = ({ permissions }: PlatformQuickEntryProps) => {
                 alt=""
                 className="size-10"
                 draggable={false}
-                src={fluencySrc(entry.icon)}
+                src={quickEntryIconSrc(entry.icon)}
               />
             </span>
             <span className="w-full truncate text-center text-xs text-zinc-950 dark:text-zinc-50">

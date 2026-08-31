@@ -4,6 +4,8 @@
  */
 export const ALL_APP_CODES = [
   'ai-assistant',
+  'integrated-operations',
+  'drone-operations',
   'file-review',
   'document-summary',
   'knowledge-search',

@@ -19,13 +19,15 @@ vi.mock('@umijs/max', async () => {
   };
 });
 
-const fluencySrc = (name: string) =>
-  `https://img.icons8.com/fluency/96/${name}.png`;
+const quickEntryIconSrc = (name: string) =>
+  `/assets/icons/quick-entry/${name}.png`;
 
 describe('PlatformQuickEntry', () => {
   it('lists granted admin and stats pages plus account settings', () => {
     render(
       <PlatformQuickEntry
+        appCodes={[]}
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
         permissions={['platform:user:manage', 'platform:audit:view']}
       />,
     );
@@ -54,15 +56,23 @@ describe('PlatformQuickEntry', () => {
           link.querySelector('img')?.getAttribute('src'),
         ]),
     ).toEqual([
-      ['用户管理', '/workspace/platform/users', fluencySrc('conference')],
-      ['日志', '/workspace/platform/logs', fluencySrc('document')],
-      ['用户规模', '/workspace/platform/stats/users', fluencySrc('bar-chart')],
+      [
+        '用户管理',
+        '/workspace/platform/users',
+        quickEntryIconSrc('conference'),
+      ],
+      ['日志', '/workspace/platform/logs', quickEntryIconSrc('document')],
+      [
+        '用户规模',
+        '/workspace/platform/stats/users',
+        quickEntryIconSrc('bar-chart'),
+      ],
       [
         '请求用量',
         '/workspace/platform/stats/requests',
-        fluencySrc('combo-chart'),
+        quickEntryIconSrc('combo-chart'),
       ],
-      ['个人设置', '/account/settings', fluencySrc('settings')],
+      ['个人设置', '/account/settings', quickEntryIconSrc('settings')],
     ]);
     expect(
       screen.queryByRole('link', { name: '操作痕迹' }),
@@ -83,7 +93,11 @@ describe('PlatformQuickEntry', () => {
 
   it('hides user and log shortcuts without those grants', () => {
     render(
-      <PlatformQuickEntry permissions={['platform:organization:update']} />,
+      <PlatformQuickEntry
+        appCodes={[]}
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
+        permissions={['platform:organization:update']}
+      />,
     );
 
     expect(
@@ -94,7 +108,13 @@ describe('PlatformQuickEntry', () => {
   });
 
   it('keeps the original shortcuts when the shared home passes no grants', () => {
-    render(<PlatformQuickEntry permissions={[]} />);
+    render(
+      <PlatformQuickEntry
+        appCodes={[]}
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
+        permissions={[]}
+      />,
+    );
 
     expect(screen.getByText('5 项')).toBeVisible();
     expect(
@@ -102,5 +122,45 @@ describe('PlatformQuickEntry', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('aria-label')),
     ).toEqual(['用户管理', '日志', '用户规模', '请求用量', '个人设置']);
+  });
+
+  it('adds the drone operations app when the current Scope grants it', () => {
+    render(
+      <PlatformQuickEntry
+        appCodes={['drone-operations']}
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
+        permissions={[]}
+      />,
+    );
+
+    expect(screen.getByText('6 项')).toBeVisible();
+    expect(screen.getByRole('link', { name: '政务低空' })).toHaveAttribute(
+      'href',
+      '/apps/drone-operations/overview',
+    );
+  });
+
+  it('adds the integrated operations entry for its universal app code', () => {
+    render(
+      <PlatformQuickEntry
+        appCodes={['integrated-operations']}
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
+        permissions={[]}
+      />,
+    );
+
+    expect(screen.getByText('6 项')).toBeVisible();
+    const integratedOperationsLink = screen.getByRole('link', {
+      name: '集约运维',
+    });
+
+    expect(integratedOperationsLink).toHaveAttribute(
+      'href',
+      '/apps/integrated-operations/overview',
+    );
+    expect(integratedOperationsLink.querySelector('img')).toHaveAttribute(
+      'src',
+      quickEntryIconSrc('server'),
+    );
   });
 });

@@ -18,6 +18,22 @@ vi.mock('@umijs/max', () => ({
 }));
 
 describe('WorkspaceAppList', () => {
+  it('links the drone operations mock from the app launch strip', () => {
+    render(
+      <WorkspaceAppList
+        emptyDescription="暂无应用"
+        getAppPath={(appCode) => `/apps/${appCode}/overview`}
+        appCodes={['drone-operations']}
+        title="项目应用"
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: '打开 政务低空' })).toHaveAttribute(
+      'href',
+      '/apps/drone-operations/overview',
+    );
+  });
+
   it('uses the current Scope path builder for App links', () => {
     render(
       <WorkspaceAppList

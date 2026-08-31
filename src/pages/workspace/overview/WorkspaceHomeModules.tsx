@@ -34,7 +34,11 @@ export const WorkspaceHomeModules = ({
     </div>
 
     {/* 首页只保留普通快捷入口；管理能力统一从 Project Admin 侧栏进入。 */}
-    <PlatformQuickEntry permissions={[]} />
+    <PlatformQuickEntry
+      appCodes={appCodes}
+      getAppPath={getAppPath}
+      permissions={[]}
+    />
 
     <PlatformAppCatalog getAppPath={getAppPath} appCodes={appCodes} />
 

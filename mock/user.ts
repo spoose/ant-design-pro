@@ -80,7 +80,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
       'platform:permission:grant',
       'platform:audit:view',
     ],
-    projectAppCodes: ['knowledge-search'],
+    projectAppCodes: ['drone-operations', 'knowledge-search'],
     defaultOrganizationId: 'organization-1',
     profile: {
       userId: '00000001',
@@ -102,6 +102,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:admin',
         ],
         appCodes: [
+          'drone-operations',
           'file-review',
           'document-summary',
           'knowledge-search',
@@ -116,7 +117,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:ai-assistant',
           'page:admin',
         ],
-        appCodes: ['file-review', 'knowledge-search'],
+        appCodes: ['drone-operations', 'file-review', 'knowledge-search'],
       },
     },
   },

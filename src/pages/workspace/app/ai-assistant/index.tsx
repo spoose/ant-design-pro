@@ -1,19 +1,23 @@
 import {
   CheckOutlined,
   CloseOutlined,
+  CloudOutlined,
   DatabaseOutlined,
   DeleteOutlined,
   EditOutlined,
   FileSearchOutlined,
+  FileTextOutlined,
   GlobalOutlined,
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
   PlusOutlined,
+  RadarChartOutlined,
   ReloadOutlined,
   RobotFilled,
   RobotOutlined,
   SafetyCertificateOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Bubble,
@@ -115,6 +119,14 @@ const promptTextByKey = {
   'risk-review': '帮我检查一段内容中的逻辑风险，并按严重程度给出修改建议。',
   'review-list': '为一份业务合同整理一份通用审查清单。',
   ambiguity: '如何识别文本中的表述歧义、责任缺口和缺失条件？',
+  'ops-daily-report':
+    '作为运维值班助手，请根据以下运维数据自动生成日报：告警数量与等级分布、故障处理记录、资源使用率变化、未解决事项清单。请提炼风险点和需要升级处理的事项，语气专业简洁，适合汇报给管理层。',
+  'lowalt-flight-analysis':
+    '请分析低空飞行器回传的飞行日志（飞行轨迹、高度、速度、电量、告警事件），识别异常飞行模式、设备损耗趋势和潜在安全隐患，输出改进建议（如航线优化、维护周期调整、操作规范改进）。',
+  'lowalt-route-risk':
+    '你是低空运行安全专家。请结合未来天气（如台风、大风、暴雨、雷电等）和明日的航线飞行计划，进行低空飞行风险预测分析：① 逐航线评估天气影响等级（对照风速、降雨、能见度阈值）；② 识别高风险时段与航线，给出停飞、改期或绕飞建议；③ 输出风险清单与应急备选方案。',
+  'user-lookup':
+    '请帮我查找特定用户（按姓名、账号或邮箱）在平台中的权限信息：所属角色、权限范围、可访问的应用与组织、权限变更记录，并评估其权限边界是否存在越权风险。',
 } as const;
 
 const promptItems: PromptsItemType[] = [
@@ -135,6 +147,30 @@ const promptItems: PromptsItemType[] = [
     icon: <RobotOutlined />,
     label: '分析表述歧义',
     description: '检查责任边界和前置条件',
+  },
+  {
+    key: 'ops-daily-report',
+    icon: <FileTextOutlined />,
+    label: '运维日报生成',
+    description: '自动汇总告警与故障，提炼风险点',
+  },
+  {
+    key: 'lowalt-flight-analysis',
+    icon: <RadarChartOutlined />,
+    label: '低空飞行数据分析',
+    description: '识别异常模式与设备损耗趋势',
+  },
+  {
+    key: 'lowalt-route-risk',
+    icon: <CloudOutlined />,
+    label: '低空航线风险预测',
+    description: '结合天气与明日航线预判风险',
+  },
+  {
+    key: 'user-lookup',
+    icon: <SearchOutlined />,
+    label: '查找特定用户',
+    description: '查看用户的角色与权限范围',
   },
 ];
 

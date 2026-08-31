@@ -39,6 +39,9 @@ describe('PlatformAppCatalog', () => {
       'href',
       '/apps/ai-assistant',
     );
+    expect(
+      screen.getByRole('link', { name: 'xOneAI' }).querySelector('img'),
+    ).toHaveAttribute('src', '/assets/icons/app-catalog/chatbot.png');
     expect(screen.getByRole('link', { name: '文件审查' })).toBeVisible();
     expect(screen.getByRole('link', { name: '知识检索' })).toBeVisible();
     expect(screen.getByRole('link', { name: '会议纪要' })).toBeVisible();

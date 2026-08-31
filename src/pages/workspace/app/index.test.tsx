@@ -2,11 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WorkspaceAppPage from '.';
 
-const { requestMock, useLocationMock, useModelMock } = vi.hoisted(() => ({
-  requestMock: vi.fn(),
-  useLocationMock: vi.fn(),
-  useModelMock: vi.fn(),
-}));
+const { requestMock, useLocationMock, useModelMock, useNavigateMock } =
+  vi.hoisted(() => ({
+    requestMock: vi.fn(),
+    useLocationMock: vi.fn(),
+    useModelMock: vi.fn(),
+    useNavigateMock: vi.fn(),
+  }));
 
 vi.mock('@umijs/max', async () => {
   const { generatePath, matchPath } =
@@ -19,6 +21,7 @@ vi.mock('@umijs/max', async () => {
     request: requestMock,
     useLocation: useLocationMock,
     useModel: useModelMock,
+    useNavigate: () => useNavigateMock,
   };
 });
 
@@ -28,6 +31,7 @@ describe('WorkspaceAppPage', () => {
     requestMock.mockReset();
     useLocationMock.mockReset();
     useModelMock.mockReset();
+    useNavigateMock.mockReset();
     useModelMock.mockReturnValue({
       initialState: {
         currentUser: { userId: 'user-1', name: '测试用户' },
@@ -88,6 +92,33 @@ describe('WorkspaceAppPage', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: '待审文件' }),
     ).toBeInTheDocument();
+  });
+
+  it('loads the drone operations mock overview', async () => {
+    useLocationMock.mockReturnValue({
+      pathname: '/workspace/platform/apps/drone-operations/overview',
+    });
+
+    render(<WorkspaceAppPage />);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: '政务低空' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('今日飞行架次')).toBeVisible();
+    expect(screen.getByText('近期飞行任务')).toBeVisible();
+  });
+
+  it('opens the integrated operations entry with the shared placeholder', () => {
+    useLocationMock.mockReturnValue({
+      pathname: '/workspace/platform/apps/integrated-operations/overview',
+    });
+
+    render(<WorkspaceAppPage />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: '运维总览' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('运维总览页面待开发')).toBeVisible();
   });
 
   it('uses the placeholder when a registered App has no page component', () => {

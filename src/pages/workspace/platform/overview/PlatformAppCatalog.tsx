@@ -2,9 +2,9 @@ import { Link } from '@umijs/max';
 import { useState, useSyncExternalStore } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
 
-/** Icons8 Fluency：https://icons8.com/icons/fluency */
-const fluencySrc = (name: string) =>
-  `https://img.icons8.com/fluency/96/${name}.png`;
+/** 从 public 静态目录读取全部应用图标，确保内网或离线环境也能正常显示。 */
+const appCatalogIconSrc = (name: string) =>
+  `/assets/icons/app-catalog/${name}.png`;
 
 type CatalogApp = {
   code: string;
@@ -17,6 +17,14 @@ const appCopy: Record<string, { icon: string; subtitle: string }> = {
   'ai-assistant': {
     icon: 'chatbot',
     subtitle: '处理日常管理与协作任务',
+  },
+  'integrated-operations': {
+    icon: 'server',
+    subtitle: '统一运维任务与资源状态',
+  },
+  'drone-operations': {
+    icon: 'drone',
+    subtitle: '低空飞行任务与运行态势',
   },
   'file-review': {
     icon: 'inspection',
@@ -186,7 +194,7 @@ const PlatformAppCatalog = ({
                 alt=""
                 className="size-12 shrink-0"
                 draggable={false}
-                src={fluencySrc(app.icon)}
+                src={appCatalogIconSrc(app.icon)}
               />
               <span className="grid min-w-0 gap-0.5">
                 <strong className="truncate text-sm font-semibold text-zinc-950">

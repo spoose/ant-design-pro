@@ -1,5 +1,6 @@
 import {
   AuditOutlined,
+  CloudServerOutlined,
   DatabaseOutlined,
   FileDoneOutlined,
   FileSearchOutlined,
@@ -7,6 +8,7 @@ import {
   FolderOutlined,
   HistoryOutlined,
   InboxOutlined,
+  RadarChartOutlined,
   RobotOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
@@ -74,6 +76,29 @@ export const appRegistry = {
         title: '记忆',
         icon: HistoryOutlined,
         placeholder: true,
+      },
+    ],
+  },
+  'integrated-operations': {
+    title: '集约运维',
+    icon: CloudServerOutlined,
+    navigation: [
+      {
+        pathSegment: 'overview',
+        title: '运维总览',
+        icon: CloudServerOutlined,
+      },
+    ],
+  },
+  'drone-operations': {
+    title: '政务低空',
+    icon: RadarChartOutlined,
+    pageComponent: lazy(() => import('@/pages/workspace/app/drone-operations')),
+    navigation: [
+      {
+        pathSegment: 'overview',
+        title: '运行总览',
+        icon: RadarChartOutlined,
       },
     ],
   },

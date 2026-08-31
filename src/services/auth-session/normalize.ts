@@ -22,6 +22,12 @@ const XONE_OFFLINE_PROJECT_ADMIN_IDENTITY = {
   userId: '1',
 } as const;
 
+/** 集约运维是所有用户的基础应用，不依赖后端应用授权。 */
+const UNIVERSAL_APP_CODE = 'integrated-operations';
+const withUniversalApp = (appCodes: string[]) => [
+  UNIVERSAL_APP_CODE,
+  ...appCodes.filter((appCode) => appCode !== UNIVERSAL_APP_CODE),
+];
 const toOptionalString = (value: unknown) => {
   if (value === undefined || value === null) return undefined;
   const normalized = String(value).trim();
@@ -60,6 +66,20 @@ const normalizeXoneOrganizations = (
       defaultDataScopeId: organizationId,
     };
   });
+
+/** Legacy API 已直接返回 app 字段；这里只追加所有用户共有的基础应用。 */
+const normalizeLegacyCurrentUser = (
+  currentUser: JushuAPI.AuthCurrentUser,
+): AuthCurrentUser => {
+  return {
+    ...currentUser,
+    projectAppCodes: withUniversalApp([...currentUser.projectAppCodes]),
+    organizations: currentUser.organizations.map((organization) => ({
+      ...organization,
+      appCodes: withUniversalApp([...organization.appCodes]),
+    })),
+  };
+};
 
 /**
  * XOne getCurrentUser 尚未开放，userId/projectId 延续登录 Token 已验证并持久化的身份。
@@ -100,8 +120,7 @@ export const normalizeAuthCurrentUser = (
   xoneSessionIdentity?: XoneSessionIdentity,
 ): AuthCurrentUser => {
   if (snapshot.source === 'legacy') {
-    // Legacy 已经返回页面标准模型；适配层不改写老 API 的身份或权限。
-    return snapshot.currentUser;
+    return normalizeLegacyCurrentUser(snapshot.currentUser);
   }
 
   const identity = normalizeXoneIdentity(

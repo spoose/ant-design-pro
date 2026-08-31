@@ -8,6 +8,7 @@ import { useModel } from '@umijs/max';
 import { Button, message, Upload } from 'antd';
 import type React from 'react';
 import { getAuthErrorDetails } from '@/services/auth';
+import { normalizeAuthCurrentUser } from '@/services/auth-session';
 import { updateCurrentUserProfile } from '@/services/jushu-api/currentUser';
 import { resolveUserAvatarUrl } from '@/utils/userAvatar';
 import useStyles from './index.style';
@@ -26,7 +27,11 @@ const BaseView: React.FC = () => {
       const response = await updateCurrentUserProfile({ name: values.name });
       await setInitialState((state) => ({
         ...state,
-        currentUser: response.data,
+        // Legacy 资料接口仍返回旧授权字段，写回全局状态前必须经过认证适配层。
+        currentUser: normalizeAuthCurrentUser({
+          source: 'legacy',
+          currentUser: response.data,
+        }),
       }));
       message.success('更新基本信息成功');
     } catch (error) {

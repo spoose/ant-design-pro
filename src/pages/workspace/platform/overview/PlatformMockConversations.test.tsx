@@ -97,11 +97,11 @@ describe('PlatformStartConversation', () => {
 
   it('launches xOne with a prompt chip label', () => {
     render(<PlatformStartConversation />);
-    fireEvent.click(screen.getByRole('button', { name: '平台权限该怎么配' }));
+    fireEvent.click(screen.getByRole('button', { name: '查找特定用户' }));
 
     expect(navigateMock).toHaveBeenCalledWith(
       '/workspace/platform/apps/ai-assistant/overview',
-      { state: { prompt: '平台权限该怎么配' } },
+      { state: { prompt: '查找特定用户' } },
     );
   });
 

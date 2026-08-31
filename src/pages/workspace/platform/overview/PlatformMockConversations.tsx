@@ -1,14 +1,15 @@
 import {
   BulbOutlined,
-  FileSearchOutlined,
-  SafetyCertificateOutlined,
-  ThunderboltOutlined,
+  CloudOutlined,
+  FileTextOutlined,
+  RadarChartOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { Prompts, type PromptsItemType, Sender } from '@ant-design/x';
 import { createAvatar } from '@bible-strong/avatar-react';
 import { useNavigate } from '@umijs/max';
 import { useState } from 'react';
-import { actionColors, statusColors } from '@/theme/statusColors';
+import { statusColors } from '@/theme/statusColors';
 import { getPlatformAppPagePath } from '@/utils/workspaceRoutes';
 import '@bible-strong/avatar-react/styles.css';
 import {
@@ -24,24 +25,28 @@ const composerHint = '问问权限、用量或成员…';
 
 const promptItems: PromptsItemType[] = [
   {
-    key: 'permissions',
-    icon: (
-      <SafetyCertificateOutlined style={{ color: statusColors.warning.ink }} />
-    ),
-    label: '平台权限该怎么配',
-    description: '了解角色与权限范围的配置方式',
+    key: 'ops-daily-report',
+    icon: <FileTextOutlined style={{ color: '#13c2c2' }} />,
+    label: '运维日报生成',
+    description: '自动汇总告警与故障，提炼风险点',
   },
   {
-    key: 'usage',
-    icon: <ThunderboltOutlined style={{ color: statusColors.success.ink }} />,
-    label: '本周用量为什么偏高',
-    description: '查看用量明细与计费构成',
+    key: 'lowalt-flight-analysis',
+    icon: <RadarChartOutlined style={{ color: statusColors.success.ink }} />,
+    label: '低空飞行数据分析',
+    description: '识别异常模式与设备损耗趋势',
   },
   {
-    key: 'import',
-    icon: <FileSearchOutlined style={{ color: actionColors.ink }} />,
-    label: '组织成员如何导入',
-    description: '批量导入并管理组织成员',
+    key: 'lowalt-route-risk',
+    icon: <CloudOutlined style={{ color: '#1677ff' }} />,
+    label: '低空航线风险预测',
+    description: '结合天气与明日航线预判风险',
+  },
+  {
+    key: 'user-lookup',
+    icon: <SearchOutlined style={{ color: statusColors.warning.ink }} />,
+    label: '查找特定用户',
+    description: '查看用户的角色与权限范围',
   },
 ];
 

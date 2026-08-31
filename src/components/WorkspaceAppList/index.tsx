@@ -10,6 +10,8 @@ const PRIMARY_APP_CODE = 'ai-assistant';
 /** 启动卡默认说明；可按 appCode 覆盖，不进入 App Registry。 */
 const defaultAppDescriptions: Record<string, string> = {
   'ai-assistant': '使用 pAI 处理日常管理与协作任务。',
+  'integrated-operations': '统一查看运维任务、资源状态和服务运行情况。',
+  'drone-operations': '查看低空飞行任务、运行态势与安全预警。',
   'file-review': '从空白开始，或让助手引导你完成审查。',
   'document-summary': '自动提炼文档要点，生成可读摘要。',
   'knowledge-search': '在知识库中检索资料与答案。',
