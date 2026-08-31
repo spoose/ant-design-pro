@@ -4,11 +4,26 @@ import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
 import { surfaceColors } from '../src/theme/colors';
 import defaultSettings from './defaultSettings';
-import proxy from './proxy';
+import proxy, { createXoneProxy } from './proxy';
 
 import routes from './routes';
 
 const { UMI_ENV = 'dev' } = process.env;
+
+/**
+ * 前端构建时选择认证后端。默认 legacy 保持现有行为；仅显式传 AUTH_BACKEND=xone 才切换。
+ * 这是编译期常量，不允许页面在运行中切换，避免混用两套后端签发的 Token。
+ */
+const authBackend = process.env.AUTH_BACKEND === 'xone' ? 'xone' : 'legacy';
+
+/**
+ * 离线 XOne 使用 dev 环境的 Umi mock；仅 UMI_ENV=xone 时创建真实 /web/** 代理。
+ * XONE_API_TARGET 只存在于本地开发配置，不会进入浏览器运行时代码。
+ */
+const selectedProxy =
+  UMI_ENV === 'xone'
+    ? createXoneProxy(process.env.XONE_API_TARGET)
+    : proxy[UMI_ENV as keyof typeof proxy];
 
 // Compute commit hash: env vars take precedence, fall back to git at build time
 const commitHash =
@@ -82,7 +97,7 @@ export default defineConfig({
    * @doc 代理介绍 https://umijs.org/docs/guides/proxy
    * @doc 代理配置 https://umijs.org/docs/api/config#proxy
    */
-  proxy: proxy[UMI_ENV as keyof typeof proxy],
+  proxy: selectedProxy,
   /**
    * @name 快速热更新配置
    * @description 一个不错的热更新组件，更新时可以保留 state
@@ -238,6 +253,7 @@ export default defineConfig({
   requestRecord: {},
   exportStatic: {},
   define: {
+    'process.env.AUTH_BACKEND': authBackend,
     'process.env.CI': process.env.CI,
     'process.env.COMMIT_HASH': commitHash,
     __APP_VERSION__: require('./../package.json').version,

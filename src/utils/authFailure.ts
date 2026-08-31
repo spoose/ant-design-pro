@@ -1,3 +1,4 @@
+import { clearAuthSessionMetadata } from './authSessionMetadata';
 import { clearAccessToken } from './authToken';
 
 export type AccessTokenErrorCode =
@@ -13,11 +14,15 @@ const ACCESS_TOKEN_ERROR_CODES = new Set<AccessTokenErrorCode>([
 const LOGIN_PATH = '/user/login';
 
 type RequestFailure = {
+  name?: string;
+  code?: number;
   info?: {
     errorCode?: string;
   };
   response?: {
+    status?: number;
     data?: {
+      code?: number;
       errorCode?: string;
     };
   };
@@ -40,11 +45,20 @@ const getErrorCode = (error: unknown) => {
 };
 
 export const isAccessTokenFailure = (error: unknown) => {
+  const requestFailure = error as RequestFailure;
   const errorCode = getErrorCode(error);
-  return (
+  const isLegacyTokenFailure =
     typeof errorCode === 'string' &&
-    ACCESS_TOKEN_ERROR_CODES.has(errorCode as AccessTokenErrorCode)
-  );
+    ACCESS_TOKEN_ERROR_CODES.has(errorCode as AccessTokenErrorCode);
+  // XOne 的 HTTP/业务 401 与本地 Token claim 错误都表示当前会话不可继续使用。
+  const isXoneTokenFailure =
+    (requestFailure?.name === 'XoneAuthBackendError' &&
+      requestFailure.code === 401) ||
+    requestFailure?.name === 'XoneTokenClaimsError' ||
+    requestFailure?.name === 'AuthBackendMismatchError' ||
+    (requestFailure?.response?.status === 401 &&
+      requestFailure.response.data?.code === 401);
+  return isLegacyTokenFailure || isXoneTokenFailure;
 };
 
 /** 保留完整页面地址，使用户重新登录后可以返回 Token 失效前的位置。 */
@@ -65,6 +79,7 @@ export const handleAccessTokenFailure = (
   if (!isAccessTokenFailure(error)) return false;
 
   clearAccessToken();
+  clearAuthSessionMetadata();
   if (typeof window === 'undefined' || redirectingToLogin) return true;
 
   const location = options.location ?? window.location;

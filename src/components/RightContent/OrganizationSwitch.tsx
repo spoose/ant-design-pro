@@ -1,7 +1,10 @@
 import { InteractionOutlined, SettingOutlined } from '@ant-design/icons';
 import { history, useLocation, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Button } from 'antd';
+import { App, Button } from 'antd';
+import { useState } from 'react';
+import { getAuthErrorDetails } from '@/services/auth';
+import { switchAuthSessionOrganization } from '@/services/auth-session';
 import {
   getOrganizationHomePath,
   getPlatformHomePath,
@@ -19,14 +22,19 @@ const getOrganizationScopeKey = (organizationId: string) =>
 
 /**
  * WorkspaceScope 切换器。
- * Organization 切换使用整页导航，确保旧组织组件和内存状态全部卸载。
+ * XOne 组织切换先原子替换 Token/Session，再整页导航卸载旧组织内存状态。
  */
 export const OrganizationSwitch: React.FC = () => {
   const { styles } = useHeaderActionStyles();
+  const { message, notification } = App.useApp();
+  /** 当前正在换取 Token 的目标组织；同时驱动按钮 loading 和菜单禁用。 */
+  const [switchingOrganizationId, setSwitchingOrganizationId] = useState<
+    string | undefined
+  >();
   // pathname 来源于 Umi Browser Router，是当前 Platform/Organization Scope 的唯一标识。
   const { pathname } = useLocation();
-  // currentUser 是当前登录用户及其可进入组织的授权快照。
-  const { initialState } = useModel('@@initialState');
+  // currentUser 来源于认证会话；XOne 当前由登录上下文 + listOrgs 构建。
+  const { initialState, setInitialState } = useModel('@@initialState');
   const currentUser = initialState?.currentUser;
   // 旧 isSuperAdmin 当前由认证适配层映射为 Project Admin；普通用户不显示管理入口。
   const canEnterProjectManagement = Boolean(currentUser?.isSuperAdmin);
@@ -52,10 +60,13 @@ export const OrganizationSwitch: React.FC = () => {
     : (currentOrganization?.organizationName ?? '未选择组织');
 
   /**
-   * 核心链路：下拉菜单 key -> Project 管理或目标 Organization 首页。
+   * 核心链路：目标组织 -> selectAndChangeOrg -> 校验并提交新 Token/Session
+   * -> initialState -> 目标首页整页导航。失败时会话服务恢复旧 Token，本组件保持原 URL。
    */
-  const handleSwitch: MenuProps['onClick'] = ({ key }) => {
+  const handleSwitch: MenuProps['onClick'] = async ({ key }) => {
+    if (switchingOrganizationId) return;
     if (key === PROJECT_MANAGEMENT_SCOPE_KEY && canEnterProjectManagement) {
+      // Project 管理沿用当前已验证会话；这里只导航，禁止调用 selectAndChangeOrg。
       history.push(getPlatformHomePath());
       return;
     }
@@ -66,13 +77,40 @@ export const OrganizationSwitch: React.FC = () => {
     );
     if (!target || target.organizationId === currentOrganizationId) return;
 
-    window.location.assign(getOrganizationHomePath(target.organizationId));
+    notification.destroy('organization-switch-error');
+    setSwitchingOrganizationId(target.organizationId);
+    try {
+      const session = await switchAuthSessionOrganization(
+        target.organizationId,
+        { skipErrorHandler: true },
+      );
+      setInitialState((state) => ({
+        ...state,
+        authSession: session,
+        currentUser: session.currentUser,
+      }));
+      message.success(`已切换至${target.organizationName}`);
+      // 整页刷新确保旧组织组件、请求和内存状态不会进入新组织 Scope。
+      window.location.assign(getOrganizationHomePath(target.organizationId));
+    } catch (error) {
+      const details = getAuthErrorDetails(error);
+      notification.error({
+        key: 'organization-switch-error',
+        title: '切换组织失败',
+        description: details.message,
+        placement: 'topRight',
+        role: 'alert',
+      });
+    } finally {
+      setSwitchingOrganizationId(undefined);
+    }
   };
 
   const items: MenuProps['items'] = [
     ...organizations.map((organization) => ({
       key: getOrganizationScopeKey(organization.organizationId),
       label: organization.organizationName,
+      disabled: Boolean(switchingOrganizationId),
     })),
     ...(canEnterProjectManagement
       ? [
@@ -83,6 +121,7 @@ export const OrganizationSwitch: React.FC = () => {
             key: PROJECT_MANAGEMENT_SCOPE_KEY,
             label: '项目控制台',
             icon: <SettingOutlined />,
+            disabled: Boolean(switchingOrganizationId),
           },
         ]
       : []),
@@ -104,7 +143,9 @@ export const OrganizationSwitch: React.FC = () => {
     >
       <Button
         aria-label={`切换工作区，当前为${currentScopeLabel}`}
+        aria-busy={Boolean(switchingOrganizationId)}
         className={styles.action}
+        loading={Boolean(switchingOrganizationId)}
         type="text"
       >
         <InteractionOutlined />

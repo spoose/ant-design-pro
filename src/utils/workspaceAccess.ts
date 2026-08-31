@@ -1,9 +1,10 @@
 import { getAppDefinition } from '@/config/appRegistry';
-import type { AuthCurrentUser } from '@/services/auth';
+import type { AuthCurrentUser, AuthSession } from '@/services/auth';
 import {
   getOrganizationAppPagePath,
   getOrganizationStatsPagePath,
   getPlatformAppPagePath,
+  getPlatformHomePath,
   getPlatformPagePath,
   getPlatformStatsPagePath,
   getWorkspaceAppKey,
@@ -54,15 +55,26 @@ const isOrganizationPageKey = (
 /**
  * Workspace URL 的纯规则层。
  *
- * 输入来源：当前用户授权快照 + Umi pathname。
+ * 输入来源：统一认证会话 + Umi pathname。
  * 输出消费：WorkspaceAccess wrapper 决定渲染、规范化跳转、403 或 404。
  * 后端仍必须对每个业务 API 进行真实授权，本函数只负责前端导航边界。
  */
 export const resolveWorkspaceRouteDecision = (
   user: AuthCurrentUser,
   pathname: string,
+  session?: Pick<AuthSession, 'activeOrganizationId' | 'backend'>,
 ): WorkspaceRouteDecision => {
   const appKey = getWorkspaceAppKey(pathname);
+
+  // XOne Organization URL 必须与 Token 中已恢复的活动组织一致，禁止手改 URL 绕过换 Token。
+  const organizationId = getWorkspaceOrganizationId(pathname);
+  if (
+    session?.backend === 'xone' &&
+    organizationId &&
+    organizationId !== session.activeOrganizationId
+  ) {
+    return { kind: 'redirect', to: getPlatformHomePath() };
+  }
 
   if (isPlatformWorkspacePath(pathname)) {
     const access = getPlatformAccess(user);
@@ -114,7 +126,6 @@ export const resolveWorkspaceRouteDecision = (
       : { kind: 'forbidden' };
   }
 
-  const organizationId = getWorkspaceOrganizationId(pathname);
   if (!organizationId) return { kind: 'not-found' };
 
   const access = getOrganizationAccess(user, organizationId);

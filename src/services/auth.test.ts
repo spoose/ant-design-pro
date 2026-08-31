@@ -9,6 +9,8 @@ import {
   resetPassword,
   setDefaultOrganization,
 } from './auth';
+import { XoneAuthBackendError } from './auth-backends/xone';
+import { XoneTokenClaimsError } from './auth-session/xoneTokenClaims';
 
 const requestMock = vi.hoisted(() => vi.fn());
 
@@ -82,6 +84,7 @@ describe('auth service', () => {
   it('exposes the backend message and trace id', () => {
     const error = Object.assign(new Error('generic request error'), {
       info: {
+        errorCode: 'USERNAME_EXISTS',
         errorMessage: '用户名已存在',
         traceId: 'trace-conflict',
       },
@@ -90,6 +93,7 @@ describe('auth service', () => {
     expect(getAuthErrorDetails(error)).toEqual({
       message: '用户名已存在',
       traceId: 'trace-conflict',
+      code: 'USERNAME_EXISTS',
     });
   });
 
@@ -110,6 +114,29 @@ describe('auth service', () => {
 
     expect(getAuthErrorDetails(error)).toEqual({
       message: '认证服务不可用（HTTP 503），请确认后端已经启动',
+    });
+  });
+
+  it('exposes the XOne business message and numeric code', () => {
+    const error = new XoneAuthBackendError('XOne 组织切换', {
+      code: 403,
+      msg: '当前用户无权进入该组织',
+    });
+
+    expect(getAuthErrorDetails(error)).toEqual({
+      message: '当前用户无权进入该组织',
+      traceId: undefined,
+      code: 403,
+    });
+  });
+
+  it('exposes XOne Token identity errors without a synthetic fallback', () => {
+    const error = new XoneTokenClaimsError('登录 Token 无法解析，请重新登录');
+
+    expect(getAuthErrorDetails(error)).toEqual({
+      message: '登录 Token 无法解析，请重新登录',
+      traceId: undefined,
+      code: undefined,
     });
   });
 

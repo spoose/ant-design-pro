@@ -19,12 +19,17 @@ import { createStyles } from 'antd-style';
 import React, { useEffect, useState } from 'react';
 import { Footer } from '@/components';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
-import { getAuthErrorDetails, loginWithPassword } from '@/services/auth';
-import { clearAccessToken, setAccessToken } from '@/utils/authToken';
+import { getAuthErrorDetails } from '@/services/auth';
+import { getConfiguredAuthBackendKind } from '@/services/auth-backends';
+import { loginAuthSession } from '@/services/auth-session';
 import { resolveLandingPath } from '@/utils/workspaceRoutes';
 import { showAuthErrorNotification } from '../authNotification';
 
 const SHOW_LANGUAGE_SWITCH = false;
+/** 构建期认证后端：Legacy 不提交 projectId，XOne 当前提交固定 Project。 */
+const AUTH_BACKEND_KIND = getConfiguredAuthBackendKind();
+/** XOne 当前部署固定属于 Project 1111；后续再替换为登录 URL 的项目配置。 */
+const XONE_PROJECT_ID = 1111;
 /** 为 Footer 预留的高度（与 Footer padding + 两行文案大致对齐） */
 const LOGIN_FOOTER_RESERVE = 60;
 
@@ -391,26 +396,11 @@ const Lang = () => {
 const Login: React.FC = () => {
   const [type, setType] = useState<string>('account');
   const [searchParams] = useSearchParams();
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { setInitialState } = useModel('@@initialState');
   const { styles } = useStyles();
   const { message, notification } = App.useApp();
   const intl = useIntl();
   const prefersReducedMotion = usePrefersReducedMotion();
-
-  /**
-   * accessToken 保存后重新请求 POST /api/currentUser/get，并把认证用户写入 Umi initialState。
-   * 返回 userInfo 给落点规则使用，避免依赖异步 State 更新是否已经提交。
-   */
-  const fetchUserInfo = async () => {
-    const userInfo = await initialState?.fetchUserInfo?.();
-    if (!userInfo) throw new Error('登录成功但未获取到用户信息');
-
-    setInitialState((state) => ({
-      ...state,
-      currentUser: userInfo,
-    }));
-    return userInfo;
-  };
 
   const handleSubmit = async (values: LoginFormValues) => {
     notification.destroy('login-request-error');
@@ -426,21 +416,32 @@ const Login: React.FC = () => {
     if (!values.username || !values.password) return;
 
     try {
-      const response = await loginWithPassword(
-        { account: values.username, password: values.password },
+      // Project 不由用户选择：XOne 暂时固定为 1111，Legacy Backend 继续不提交该字段。
+      const projectId =
+        AUTH_BACKEND_KIND === 'xone' ? XONE_PROJECT_ID : undefined;
+      const session = await loginAuthSession(
+        {
+          projectId,
+          authType: 'password',
+          username: values.username,
+          password: values.password,
+        },
         { skipErrorHandler: true },
       );
-      setAccessToken(response.data.accessToken);
+      // 登录事务已验证 Token、身份与组织；页面只提交完整 Session，避免半登录状态。
+      setInitialState((state) => ({
+        ...state,
+        authSession: session,
+        currentUser: session.currentUser,
+      }));
       const defaultLoginSuccessMessage = intl.formatMessage({
         id: 'pages.login.success',
         defaultMessage: '登录成功！',
       });
-      // 链路：登录响应 Token -> /api/currentUser -> 单一落点门面 -> Umi URL。
-      const userInfo = await fetchUserInfo();
+      // 链路：完整 AuthSession -> 标准 currentUser -> 默认组织落点 -> Umi URL。
       message.success(defaultLoginSuccessMessage);
-      history.replace(resolveLandingPath(userInfo));
+      history.replace(resolveLandingPath());
     } catch (error) {
-      clearAccessToken();
       showAuthErrorNotification(notification, {
         key: 'login-request-error',
         title: '登录失败',
@@ -589,7 +590,7 @@ const Login: React.FC = () => {
                     }}
                     placeholder={intl.formatMessage({
                       id: 'pages.login.username.placeholder',
-                      defaultMessage: 'admin',
+                      defaultMessage: '用户名',
                     })}
                     rules={[
                       {
@@ -611,7 +612,7 @@ const Login: React.FC = () => {
                     }}
                     placeholder={intl.formatMessage({
                       id: 'pages.login.password.placeholder',
-                      defaultMessage: '密码: ant.design',
+                      defaultMessage: '密码',
                     })}
                     rules={[
                       {

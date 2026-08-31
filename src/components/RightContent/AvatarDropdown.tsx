@@ -8,6 +8,7 @@ import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
 import React, { startTransition } from 'react';
 import { logout } from '@/services/auth';
+import { clearAuthSessionMetadata } from '@/utils/authSessionMetadata';
 import { clearAccessToken } from '@/utils/authToken';
 import HeaderDropdown from '../HeaderDropdown';
 
@@ -37,7 +38,7 @@ const menuItems: MenuProps['items'] = [
 ];
 
 /**
- * 退出链路：通知后端 -> 无论确认接口是否成功都清理浏览器 Token -> 跳转登录页。
+ * 退出链路：通知后端 -> 无论确认接口是否成功都清理 Token 与会话元数据 -> 跳转登录页。
  * 当前后端只确认请求；未来 Redis 撤销逻辑可以复用相同接口而不改前端调用方。
  */
 const loginOut = async () => {
@@ -47,6 +48,7 @@ const loginOut = async () => {
     // 后端不可达不应阻止当前设备清除本地登录态。
   } finally {
     clearAccessToken();
+    clearAuthSessionMetadata();
   }
   const { search, pathname } = window.location;
   const urlParams = new URL(window.location.href).searchParams;
@@ -73,6 +75,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
       startTransition(() => {
         setInitialState((s) => ({
           ...s,
+          authSession: undefined,
           currentUser: undefined,
         }));
       });

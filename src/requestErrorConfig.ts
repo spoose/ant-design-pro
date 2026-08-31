@@ -16,7 +16,7 @@ enum ErrorShowType {
 }
 // 与后端约定的响应数据格式
 interface ResponseStructure {
-  success: boolean;
+  success?: boolean;
   data?: unknown;
   errorCode?: string;
   errorMessage?: string;
@@ -36,7 +36,8 @@ export const errorConfig: RequestConfig = {
     errorThrower: (res) => {
       const { success, data, errorCode, errorMessage, traceId, showType } =
         res as unknown as ResponseStructure;
-      if (!success) {
+      // 只识别 Legacy 的显式失败信封；XOne code/msg 由 XOne Backend 校验。
+      if (success === false) {
         const error: any = new Error(errorMessage);
         error.name = 'BizError';
         error.info = { errorCode, errorMessage, traceId, showType, data };
@@ -118,6 +119,8 @@ export const errorConfig: RequestConfig = {
       const organizationId = getWorkspaceOrganizationId(pathname);
       // requestPath 来自当前 request(config)，去掉 query 后用于判断 API 授权域。
       const requestPath = config.url?.split('?')[0] ?? '';
+      // XOne 的当前组织由 Bearer Token 表达，禁止再叠加 Legacy Organization Header。
+      const isXoneApi = requestPath.startsWith('/web/');
       // Platform API 只使用 Platform 权限，禁止携带 Organization Header。
       const isPlatformApi = requestPath.startsWith('/api/platform/');
       // 认证、用户身份和默认组织接口不从当前 Organization URL 继承业务范围。
@@ -132,7 +135,12 @@ export const errorConfig: RequestConfig = {
         '/api/users/me/default-organization/set',
       ].includes(requestPath);
       // 链路：当前 Organization URL -> organizationId -> X-Organization-Id -> 后端再次鉴权。
-      if (organizationId && !isPlatformApi && !isScopeNeutralApi) {
+      if (
+        organizationId &&
+        !isXoneApi &&
+        !isPlatformApi &&
+        !isScopeNeutralApi
+      ) {
         config.headers = {
           ...config.headers,
           'X-Organization-Id': organizationId,

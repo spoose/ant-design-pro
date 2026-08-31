@@ -11,8 +11,9 @@ const mockHistory = {
   replace: mockReplace,
 };
 
-const mockQueryCurrentUser = vi.fn();
+const mockLoadAuthSession = vi.fn();
 const mockClearAccessToken = vi.fn();
+const mockClearAuthSessionMetadata = vi.fn();
 const mockGetAccessToken = vi.fn();
 const mockHandleAccessTokenFailure = vi.fn();
 
@@ -29,8 +30,8 @@ vi.mock('@umijs/max', async () => {
   };
 });
 
-vi.mock('@/services/auth', () => ({
-  getCurrentUser: mockQueryCurrentUser,
+vi.mock('@/services/auth-session', () => ({
+  loadAuthSession: mockLoadAuthSession,
 }));
 
 vi.mock('@/utils/authToken', () => ({
@@ -38,7 +39,21 @@ vi.mock('@/utils/authToken', () => ({
   getAccessToken: mockGetAccessToken,
 }));
 
+vi.mock('@/utils/authSessionMetadata', () => ({
+  clearAuthSessionMetadata: mockClearAuthSessionMetadata,
+}));
+
 vi.mock('@/utils/authFailure', () => ({
+  buildAccessTokenLoginPath: ({
+    pathname,
+    search,
+    hash,
+  }: {
+    pathname: string;
+    search: string;
+    hash: string;
+  }) =>
+    `/user/login?redirect=${encodeURIComponent(`${pathname}${search}${hash}`)}`,
   handleAccessTokenFailure: mockHandleAccessTokenFailure,
 }));
 
@@ -93,9 +108,15 @@ vi.mock('../config/defaultSettings', () => ({
   default: { navTheme: 'light' },
 }));
 
+const createSession = (currentUser: Record<string, unknown>) => ({
+  backend: 'legacy' as const,
+  currentUser,
+});
+
 describe('app getInitialState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAccessToken.mockReturnValue('existing-access-token');
     mockHandleAccessTokenFailure.mockReturnValue(false);
     mockHistory.location = {
       pathname: '/welcome',
@@ -106,16 +127,21 @@ describe('app getInitialState', () => {
 
   it('should fetch currentUser when not on login page', async () => {
     const { getInitialState } = await import('./app');
-    mockQueryCurrentUser.mockResolvedValue({
-      data: {
+    mockLoadAuthSession.mockResolvedValue(
+      createSession({
         name: 'Test User',
         access: 'admin',
-      },
-    });
+      }),
+    );
 
     const state = await getInitialState();
 
-    expect(mockQueryCurrentUser).toHaveBeenCalled();
+    expect(mockLoadAuthSession).toHaveBeenCalledWith({
+      skipErrorHandler: true,
+    });
+    expect(state.authSession).toEqual(
+      createSession({ name: 'Test User', access: 'admin' }),
+    );
     expect(state.currentUser).toEqual({
       name: 'Test User',
       access: 'admin',
@@ -132,7 +158,7 @@ describe('app getInitialState', () => {
         data: { errorCode: 'ACCESS_TOKEN_INVALID' },
       },
     };
-    mockQueryCurrentUser.mockRejectedValue(error);
+    mockLoadAuthSession.mockRejectedValue(error);
     mockHandleAccessTokenFailure.mockReturnValue(true);
 
     const state = await getInitialState();
@@ -141,10 +167,53 @@ describe('app getInitialState', () => {
     expect(state.currentUser).toBeUndefined();
   });
 
+  it('should redirect before loading a protected page without a Token', async () => {
+    const { getInitialState } = await import('./app');
+    mockGetAccessToken.mockReturnValue(undefined);
+    mockHistory.location = {
+      pathname: '/workspace/platform/overview',
+      search: '?tab=home',
+      hash: '#top',
+    };
+
+    const state = await getInitialState();
+
+    expect(mockLoadAuthSession).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/user/login?redirect=${encodeURIComponent(
+        '/workspace/platform/overview?tab=home#top',
+      )}`,
+    );
+    expect(state.currentUser).toBeUndefined();
+  });
+
+  it('should clear a stale XOne session when listOrgs returns 403', async () => {
+    const { getInitialState } = await import('./app');
+    mockHistory.location = {
+      pathname: '/workspace/platform/overview',
+      search: '',
+      hash: '',
+    };
+    mockLoadAuthSession.mockRejectedValue({
+      response: { status: 403 },
+    });
+
+    const state = await getInitialState();
+
+    expect(mockClearAccessToken).toHaveBeenCalledOnce();
+    expect(mockClearAuthSessionMetadata).toHaveBeenCalledOnce();
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/user/login?redirect=${encodeURIComponent(
+        '/workspace/platform/overview',
+      )}`,
+    );
+    expect(state.currentUser).toBeUndefined();
+  });
+
   it('should expose errors that are not Token failures', async () => {
     const { getInitialState } = await import('./app');
     const networkError = new Error('network unavailable');
-    mockQueryCurrentUser.mockRejectedValue(networkError);
+    mockLoadAuthSession.mockRejectedValue(networkError);
 
     await expect(getInitialState()).rejects.toBe(networkError);
 
@@ -162,7 +231,7 @@ describe('app getInitialState', () => {
 
     const state = await getInitialState();
 
-    expect(mockQueryCurrentUser).not.toHaveBeenCalled();
+    expect(mockLoadAuthSession).not.toHaveBeenCalled();
     expect(state.currentUser).toBeUndefined();
     expect(state.fetchUserInfo).toBeDefined();
   });
@@ -174,13 +243,16 @@ describe('app getInitialState', () => {
       search: '',
       hash: '',
     };
-    mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'User without default organization', organizations: [] },
-    });
+    mockLoadAuthSession.mockResolvedValue(
+      createSession({
+        name: 'User without default organization',
+        organizations: [],
+      }),
+    );
 
     const state = await getInitialState();
 
-    expect(mockQueryCurrentUser).toHaveBeenCalled();
+    expect(mockLoadAuthSession).toHaveBeenCalled();
     expect(state.currentUser).toEqual({
       name: 'User without default organization',
       organizations: [],
@@ -190,9 +262,9 @@ describe('app getInitialState', () => {
 
   it('should include default settings in initial state', async () => {
     const { getInitialState } = await import('./app');
-    mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'User', organizations: [] },
-    });
+    mockLoadAuthSession.mockResolvedValue(
+      createSession({ name: 'User', organizations: [] }),
+    );
 
     const state = await getInitialState();
 
@@ -201,9 +273,13 @@ describe('app getInitialState', () => {
 
   it('fetchUserInfo should return user data on success', async () => {
     const { getInitialState } = await import('./app');
-    mockQueryCurrentUser.mockResolvedValue({
-      data: { name: 'Fetched User', access: 'user', organizations: [] },
-    });
+    mockLoadAuthSession.mockResolvedValue(
+      createSession({
+        name: 'Fetched User',
+        access: 'user',
+        organizations: [],
+      }),
+    );
 
     const state = await getInitialState();
 
@@ -368,7 +444,7 @@ describe('app layout guard', () => {
       [
         '/workspace/platform/overview',
         '/workspace/platform/stats',
-        '/workspace/platform/organizations',
+        '/workspace/platform/system',
       ],
     );
   });
@@ -397,7 +473,7 @@ describe('app layout guard', () => {
       '/workspace/platform/overview',
       '/workspace/platform/apps/ai-assistant',
       '/workspace/platform/stats',
-      '/workspace/platform/organizations',
+      '/workspace/platform/system',
     ]);
     expect(
       menuItems

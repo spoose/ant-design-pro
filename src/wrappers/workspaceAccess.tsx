@@ -9,10 +9,14 @@ const WorkspaceAccess = () => {
   const { initialState } = useModel('@@initialState');
   const { pathname } = useLocation();
   const currentUser = initialState?.currentUser;
-
+  const authSession = initialState?.authSession;
   if (!currentUser) return null;
 
-  const decision = resolveWorkspaceRouteDecision(currentUser, pathname);
+  const decision = resolveWorkspaceRouteDecision(
+    currentUser,
+    pathname,
+    authSession,
+  );
   switch (decision.kind) {
     case 'allow':
       return <Outlet />;

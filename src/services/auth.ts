@@ -8,25 +8,12 @@ import {
   setDefaultOrganization as setDefaultOrganizationRequest,
 } from './jushu-api/currentUser';
 
-/**
- * POST /api/currentUser/get 返回的 organizations[].dataScopes 元素。
- * DataScope 只描述 Organization 内的数据过滤范围，不参与顶栏工作区切换。
- */
-export type DataScope = JushuAPI.DataScope;
-
-/**
- * POST /api/currentUser/get 返回的 organizations 元素。
- * permissions 与 skillCodes 都由后端按用户和 Organization 计算，前端不跨组织合并。
- */
-export type OrganizationAccess = JushuAPI.OrganizationAccess;
-
-/**
- * POST /api/currentUser/get 返回后存入 Umi initialState，并在当前登录期间共享。
- * 数据链路：OpenAPI -> npm run openapi:jushu -> JushuAPI.AuthCurrentUser
- * -> getInitialState.currentUser -> Workspace 规则、Sidebar、标签和业务页面。
- * Platform 和 Organization 是两个独立授权域，不能相互推导权限。
- */
-export type AuthCurrentUser = JushuAPI.AuthCurrentUser;
+export type {
+  AuthCurrentUser,
+  AuthSession,
+  DataScope,
+  OrganizationAccess,
+} from './auth-model';
 
 /**
  * 认证接口统一使用的成功响应信封。
@@ -59,14 +46,17 @@ export type LogoutResult = {
 };
 
 type RequestError = Error & {
+  code?: string | number;
   request?: unknown;
   info?: {
+    errorCode?: string;
     errorMessage?: string;
     traceId?: string;
   };
   response?: {
     status?: number;
     data?: {
+      errorCode?: string;
       errorMessage?: string;
       traceId?: string;
     };
@@ -76,6 +66,7 @@ type RequestError = Error & {
 export type AuthErrorDetails = {
   message: string;
   traceId?: string;
+  code?: string | number;
 };
 
 /** 将后端业务错误直接交给页面展示；仅在没有结构化错误时保留原始 Error.message。 */
@@ -88,8 +79,13 @@ export function getAuthErrorDetails(error: unknown): AuthErrorDetails {
     requestError.response?.data?.errorMessage;
   const traceId =
     requestError.info?.traceId ?? requestError.response?.data?.traceId;
+  // XOneAuthBackendError 直接携带数字业务码；Legacy 错误仍使用信封中的 errorCode。
+  const code =
+    requestError.code ??
+    requestError.info?.errorCode ??
+    requestError.response?.data?.errorCode;
 
-  if (backendMessage) return { message: backendMessage, traceId };
+  if (backendMessage) return { message: backendMessage, traceId, code };
 
   if (requestError.request && !requestError.response) {
     return {
@@ -107,6 +103,7 @@ export function getAuthErrorDetails(error: unknown): AuthErrorDetails {
   return {
     message: requestError.message,
     traceId,
+    code,
   };
 }
 

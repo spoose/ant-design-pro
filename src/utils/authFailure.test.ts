@@ -5,11 +5,17 @@ import {
   isAccessTokenFailure,
   resetAccessTokenFailureRedirect,
 } from './authFailure';
+import {
+  clearAuthSessionMetadata,
+  getAuthSessionMetadata,
+  saveAuthSessionMetadata,
+} from './authSessionMetadata';
 import { clearAccessToken, getAccessToken, setAccessToken } from './authToken';
 
 describe('authFailure', () => {
   beforeEach(() => {
     clearAccessToken();
+    clearAuthSessionMetadata();
     resetAccessTokenFailureRedirect();
   });
 
@@ -36,6 +42,21 @@ describe('authFailure', () => {
     expect(isAccessTokenFailure({ response: { status: 401 } })).toBe(false);
   });
 
+  it('recognizes typed XOne session failures without treating every error as auth failure', () => {
+    expect(
+      isAccessTokenFailure({ name: 'XoneAuthBackendError', code: 401 }),
+    ).toBe(true);
+    expect(isAccessTokenFailure({ name: 'XoneTokenClaimsError' })).toBe(true);
+    expect(
+      isAccessTokenFailure({
+        response: { status: 401, data: { code: 401 } },
+      }),
+    ).toBe(true);
+    expect(
+      isAccessTokenFailure({ name: 'XoneAuthBackendError', code: 403 }),
+    ).toBe(false);
+  });
+
   it('clears the Token, preserves the return URL, and redirects only once', () => {
     const navigate = vi.fn();
     const location = {
@@ -45,11 +66,16 @@ describe('authFailure', () => {
     };
     const error = { info: { errorCode: 'ACCESS_TOKEN_EXPIRED' } };
     setAccessToken('expired-access-token');
+    saveAuthSessionMetadata({
+      backend: 'legacy',
+      identifier: 'expired-user',
+    });
 
     expect(handleAccessTokenFailure(error, { location, navigate })).toBe(true);
     expect(handleAccessTokenFailure(error, { location, navigate })).toBe(true);
 
     expect(getAccessToken()).toBeUndefined();
+    expect(getAuthSessionMetadata()).toBeUndefined();
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith(
       `/user/login?redirect=${encodeURIComponent(

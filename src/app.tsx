@@ -18,13 +18,15 @@ import {
   OfflineBanner,
   WorkspaceTabsHeader,
 } from '@/components';
-import {
-  type AuthCurrentUser,
-  getCurrentUser as queryCurrentUser,
-} from '@/services/auth';
+import type { AuthCurrentUser, AuthSession } from '@/services/auth';
+import { loadAuthSession } from '@/services/auth-session';
 import { surfaceColors, workspaceIconColorVariables } from '@/theme/colors';
-import { handleAccessTokenFailure } from '@/utils/authFailure';
-import { getAccessToken } from '@/utils/authToken';
+import {
+  buildAccessTokenLoginPath,
+  handleAccessTokenFailure,
+} from '@/utils/authFailure';
+import { clearAuthSessionMetadata } from '@/utils/authSessionMetadata';
+import { clearAccessToken, getAccessToken } from '@/utils/authToken';
 import {
   groupTemplateExampleMenus,
   resolveWorkspaceMenuDescriptor,
@@ -50,30 +52,57 @@ const userFlowPaths = [...authFreePaths, selectEntryPath];
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
+  /** 当前认证后端、项目与活动组织的稳定会话；页面权限仍消费 currentUser。 */
+  authSession?: AuthSession;
   currentUser?: AuthCurrentUser;
   loading?: boolean;
   fetchUserInfo?: () => Promise<AuthCurrentUser | undefined>;
   settingDrawerOpen?: boolean;
 }> {
-  const fetchUserInfo = async (): Promise<AuthCurrentUser | undefined> => {
+  /** 应用初始化与运行期刷新共用同一 AuthSession 加载边界。 */
+  const fetchAuthSession = async (): Promise<AuthSession | undefined> => {
     try {
-      const msg = await queryCurrentUser({
+      return await loadAuthSession({
         skipErrorHandler: true,
       });
-      return msg.data;
     } catch (error) {
       // 初始化与运行期请求使用同一错误码规则，避免把 BAD_CREDENTIALS 误判为登录失效。
-      if (!handleAccessTokenFailure(error)) throw error;
+      if (handleAccessTokenFailure(error)) return undefined;
+      const failure = error as {
+        name?: string;
+        code?: number;
+        response?: { status?: number };
+      };
+      // XOne 未认证访问 listOrgs 可能返回 403；只在会话恢复边界将它视为登录失效。
+      const isSessionForbidden =
+        failure.response?.status === 403 ||
+        (failure.name === 'XoneAuthBackendError' && failure.code === 403);
+      if (!isSessionForbidden) throw error;
+      clearAccessToken();
+      clearAuthSessionMetadata();
+      history.replace(buildAccessTokenLoginPath(history.location));
     }
     return undefined;
   };
+  const fetchUserInfo = async (): Promise<AuthCurrentUser | undefined> =>
+    (await fetchAuthSession())?.currentUser;
 
   const { location } = history;
   if (!authFreePaths.includes(location.pathname)) {
-    const currentUser = await fetchUserInfo();
+    // 核心链路：受保护 URL + 无 Token -> 登录页；禁止先请求 XOne listOrgs。
+    if (!getAccessToken()) {
+      history.replace(buildAccessTokenLoginPath(location));
+      return {
+        fetchUserInfo,
+        settings: defaultSettings as Partial<LayoutSettings>,
+        settingDrawerOpen: false,
+      };
+    }
+    const authSession = await fetchAuthSession();
     return {
+      authSession,
       fetchUserInfo,
-      currentUser,
+      currentUser: authSession?.currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
       settingDrawerOpen: false,
     };

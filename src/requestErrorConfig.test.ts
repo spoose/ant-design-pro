@@ -74,6 +74,12 @@ describe('requestErrorConfig', () => {
       }).not.toThrow();
     });
 
+    it('leaves XOne code/msg responses to the XOne backend', () => {
+      expect(() => {
+        errorThrower({ code: 403, data: null, msg: '无权进入组织' });
+      }).not.toThrow();
+    });
+
     it('should throw BizError with correct info', () => {
       const response = {
         success: false,
@@ -351,6 +357,22 @@ describe('requestErrorConfig', () => {
         method: 'POST',
       });
       expect(result.headers).toBeUndefined();
+    });
+
+    it('uses only Bearer Token for XOne APIs inside an Organization URL', () => {
+      testLocation.pathname = '/workspace/org/organization-1/home';
+      setAccessToken('xone-token');
+
+      const result = interceptor({
+        url: '/web/system/organization/listOrgs?includeDisabled=false',
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+
+      expect(result.headers).toEqual({
+        Accept: 'application/json',
+        Authorization: 'Bearer xone-token',
+      });
     });
 
     it('should handle URL without config', () => {

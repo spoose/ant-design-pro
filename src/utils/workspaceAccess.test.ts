@@ -116,6 +116,36 @@ describe('resolveWorkspaceRouteDecision', () => {
     ).toEqual({ kind: 'forbidden' });
   });
 
+  it('requires an XOne Organization URL to match the active Token Organization', () => {
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-1/home',
+        { backend: 'xone', activeOrganizationId: 'organization-1' },
+      ),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-1/home',
+        { backend: 'xone', activeOrganizationId: 'organization-2' },
+      ),
+    ).toEqual({
+      kind: 'redirect',
+      to: '/workspace/platform/overview',
+    });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-1/home',
+        { backend: 'xone', activeOrganizationId: undefined },
+      ),
+    ).toEqual({
+      kind: 'redirect',
+      to: '/workspace/platform/overview',
+    });
+  });
+
   it('returns 404 decisions for unknown pages and App codes', () => {
     expect(
       resolveWorkspaceRouteDecision(user, '/workspace/platform/not-a-page'),

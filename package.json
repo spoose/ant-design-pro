@@ -23,6 +23,8 @@
     "record": "cross-env NODE_ENV=development UMI_ENV=test max record --scene=login",
     "simple": "node scripts/simple.js",
     "start": "cross-env UMI_ENV=dev MOCK=none max dev",
+    "start:xone-mock": "cross-env UMI_ENV=dev AUTH_BACKEND=xone max dev",
+    "start:xone": "cross-env UMI_ENV=xone AUTH_BACKEND=xone MOCK=none max dev",
     "start:no-mock": "cross-env MOCK=none max dev",
     "start:pre": "cross-env UMI_ENV=pre MOCK=none max dev",
     "start:test": "cross-env UMI_ENV=test MOCK=none max dev",
