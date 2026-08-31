@@ -1,8 +1,8 @@
 import type { OrganizationAccess } from '@/services/auth';
 import { getOrganizationAppPagePath } from '@/utils/workspaceRoutes';
-import WorkspaceSkillList from './WorkspaceSkillList';
+import WorkspaceAppList from './WorkspaceAppList';
 
-/** 展示当前 Organization 的权限和后端已过滤的可用 Skill。 */
+/** 展示当前 Organization 的权限和适配层已归一化的可用应用。 */
 export const CurrentAccessOverview: React.FC<{
   organization: OrganizationAccess;
 }> = ({ organization }) => (
@@ -48,16 +48,16 @@ export const CurrentAccessOverview: React.FC<{
     </section>
 
     <div className="mt-6">
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="当前组织暂无可用应用，请联系组织管理员授权。"
-        getSkillPath={(skillCode) =>
+        getAppPath={(appCode) =>
           getOrganizationAppPagePath(
             organization.organizationId,
-            skillCode,
+            appCode,
             'overview',
           )
         }
-        skillCodes={organization.skillCodes}
+        appCodes={organization.appCodes}
         title="组织应用"
       />
     </div>

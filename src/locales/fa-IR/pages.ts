@@ -6,10 +6,9 @@ export default {
   'pages.login.failure':
     'ورود به سیستم با شکست مواجه شد، لطفا دوباره سعی کنید!',
   'pages.login.success': 'ورود موفق!',
-  'pages.login.username.placeholder':
-    'نام کاربری: admin، user، operator یا users2',
+  'pages.login.username.placeholder': 'نام کاربری',
   'pages.login.username.required': 'لطفا نام کاربری خود را وارد کنید!',
-  'pages.login.password.placeholder': 'رمز عبور: ant.design',
+  'pages.login.password.placeholder': 'رمز عبور',
   'pages.login.password.required': 'لطفاً رمز ورود خود را وارد کنید!',
   'pages.login.phoneLogin.tab': 'ورود به سیستم تلفن',
   'pages.login.phoneLogin.errorMessage': 'خطای کد تأیید',

@@ -25,7 +25,7 @@ vi.mock('antd', () => ({
 }));
 
 vi.mock('@ant-design/icons', () => {
-  const Icon = () => <span data-testid="skill-icon" />;
+  const Icon = () => <span data-testid="app-icon" />;
   return {
     AuditOutlined: Icon,
     DatabaseOutlined: Icon,
@@ -46,7 +46,7 @@ const organizationOne: OrganizationAccess = {
   organizationCode: 'ORG1',
   organizationName: '组织一',
   permissions: ['page:dashboard-workplace'],
-  skillCodes: ['file-review', 'document-summary'],
+  appCodes: ['file-review', 'document-summary'],
   dataScopes: [],
   defaultDataScopeId: null,
 };
@@ -55,13 +55,13 @@ const organizationTwo: OrganizationAccess = {
   organizationCode: 'ORG2',
   organizationName: '组织二',
   permissions: ['page:dashboard-monitor'],
-  skillCodes: ['knowledge-search'],
+  appCodes: ['knowledge-search'],
   dataScopes: [],
   defaultDataScopeId: null,
 };
 
 describe('CurrentAccessOverview', () => {
-  it('updates permissions and Skills with the current Organization', () => {
+  it('updates permissions and Apps with the current Organization', () => {
     const { rerender } = render(
       <CurrentAccessOverview organization={organizationOne} />,
     );

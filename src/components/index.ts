@@ -18,8 +18,8 @@ export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as OfflineBanner } from './OfflineBanner';
 export { default as StandardFormRow } from './StandardFormRow';
 export { default as TagSelect } from './TagSelect';
+export { default as WorkspaceAppList } from './WorkspaceAppList';
 export { default as WorkspacePage } from './WorkspacePage';
-export { default as WorkspaceSkillList } from './WorkspaceSkillList';
 export { default as WorkspaceTabsBar } from './WorkspaceTabsBar';
 export { default as WorkspaceTabsHeader } from './WorkspaceTabsHeader';
 

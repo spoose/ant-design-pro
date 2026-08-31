@@ -2,7 +2,7 @@
 /* eslint-disable */
 import { request } from "@umijs/max";
 
-/** 创建组织 仅 Super Admin 可调用。创建组织及创建者的初始 Membership、权限和 Skill。 POST /api/admin/organizations/create */
+/** 创建组织 仅 Super Admin 可调用。创建组织及创建者的初始 Membership、权限和 App。 POST /api/admin/organizations/create */
 export async function createOrganization(
   body: JushuAPI.CreateOrganizationRequest,
   options?: { [key: string]: unknown }

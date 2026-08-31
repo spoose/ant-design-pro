@@ -29,8 +29,8 @@ describe('PlatformAppCatalog', () => {
   it('renders every authorized app as a titled card', () => {
     render(
       <PlatformAppCatalog
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={['file-review', 'knowledge-search', 'ai-assistant']}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={['file-review', 'knowledge-search', 'ai-assistant']}
       />,
     );
 
@@ -65,8 +65,8 @@ describe('PlatformAppCatalog', () => {
 
     render(
       <PlatformAppCatalog
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={['ai-assistant', 'file-review']}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={['ai-assistant', 'file-review']}
       />,
     );
 
@@ -88,12 +88,12 @@ describe('PlatformAppCatalog', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps the extra app entries when no skills are authorized', () => {
+  it('keeps the extra app entries when no apps are authorized', () => {
     render(
       <PlatformAppCatalog
         emptyDescription="暂无授权应用。"
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={[]}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={[]}
       />,
     );
 
@@ -105,8 +105,8 @@ describe('PlatformAppCatalog', () => {
   it('caps desktop preview at eight apps and expands in place', () => {
     render(
       <PlatformAppCatalog
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={[
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={[
           'ai-assistant',
           'file-review',
           'document-summary',

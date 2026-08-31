@@ -142,14 +142,14 @@ vi.mock('@umijs/max', async () => {
             'platform:organization:update',
             'platform:organization:delete',
           ],
-          platformSkillCodes: [],
+          projectAppCodes: [],
           organizations: [
             {
               organizationId: 'organization-1',
               organizationCode: 'ORG1',
               organizationName: '可进入组织',
               permissions: [],
-              skillCodes: [],
+              appCodes: [],
               dataScopes: [],
             },
           ],
@@ -187,7 +187,7 @@ describe('OrganizationManagement', () => {
     fetchUserInfoMock.mockResolvedValue({
       userId: 'super-admin-1',
       platformPermissions: ['platform:organization:create'],
-      platformSkillCodes: [
+      projectAppCodes: [
         'ai-assistant',
         'file-review',
         'document-summary',
@@ -199,7 +199,7 @@ describe('OrganizationManagement', () => {
           organizationCode: 'NEW_ORG',
           organizationName: '新组织',
           permissions: ['organization:*'],
-          skillCodes: ['file-review', 'document-summary', 'knowledge-search'],
+          appCodes: ['file-review', 'document-summary', 'knowledge-search'],
           dataScopes: [],
         },
       ],
@@ -301,7 +301,7 @@ describe('OrganizationManagement', () => {
     ).toMatchObject({
       organizationId: 'organization-3',
       permissions: ['organization:*'],
-      skillCodes: ['file-review', 'document-summary', 'knowledge-search'],
+      appCodes: ['file-review', 'document-summary', 'knowledge-search'],
     });
   });
 });

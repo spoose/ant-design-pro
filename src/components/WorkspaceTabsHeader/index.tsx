@@ -1,6 +1,6 @@
 import { useLocation, useModel } from '@umijs/max';
 import { useEffect, useMemo } from 'react';
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 import { useWorkspaceTabs } from '@/hooks/useWorkspaceTabs';
 import {
   getOrganizationHomePath,
@@ -65,7 +65,7 @@ const WorkspaceTabsController = ({
  * Sidebar 也直接解析同一 URL，因此两者无需维护额外联动 State。
  */
 const WorkspaceTabsHeader = () => {
-  // currentUser 来源于 POST /api/currentUser/get；它提供用户 ID、组织白名单和 App 授权。
+  // currentUser 来源于统一认证会话；它提供用户 ID、组织白名单和 App 授权。
   const { initialState } = useModel('@@initialState');
   // pathname/search/hash 来源于 Umi Browser Router，刷新后浏览器会天然保留当前活动 URL。
   const { pathname, search, hash } = useLocation();
@@ -82,10 +82,7 @@ const WorkspaceTabsHeader = () => {
     const appKey = getWorkspaceAppKey(pathname);
     if (isPlatformWorkspacePath(pathname)) {
       const platformAccess = getPlatformAccess(currentUser);
-      if (
-        !platformAccess.canEnterManagementCenter ||
-        (appKey && !platformAccess.canUseSkill(appKey))
-      ) {
+      if (appKey && !platformAccess.canUseApp(appKey)) {
         return undefined;
       }
       const homeTab = {
@@ -97,7 +94,7 @@ const WorkspaceTabsHeader = () => {
         ? {
             kind: 'app',
             appKey,
-            title: getSkillDefinition(appKey)?.title ?? appKey,
+            title: getAppDefinition(appKey)?.title ?? appKey,
             url: currentUrl,
           }
         : { ...homeTab, url: currentUrl };
@@ -117,7 +114,7 @@ const WorkspaceTabsHeader = () => {
       organizationId,
     );
     const organization = organizationAccess.organization;
-    if (!organization || (appKey && !organizationAccess.canUseSkill(appKey))) {
+    if (!organization || (appKey && !organizationAccess.canUseApp(appKey))) {
       return undefined;
     }
 
@@ -130,7 +127,7 @@ const WorkspaceTabsHeader = () => {
       ? {
           kind: 'app',
           appKey,
-          title: getSkillDefinition(appKey)?.title ?? appKey,
+          title: getAppDefinition(appKey)?.title ?? appKey,
           url: currentUrl,
         }
       : { ...homeTab, url: currentUrl };

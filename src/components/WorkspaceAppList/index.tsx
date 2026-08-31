@@ -1,47 +1,47 @@
 import { Link } from '@umijs/max';
 import { useState } from 'react';
-import { getSkillDefinition } from '@/config/skillRegistry';
-import { WorkspaceSkillArt } from './SkillArt';
+import { getAppDefinition } from '@/config/appRegistry';
+import { WorkspaceAppArt } from './AppArt';
 
 /** 折叠时最多展示的应用卡数量；超出后以三点按钮展开其余。 */
-const SKILL_PREVIEW_COUNT = 3;
-const PRIMARY_SKILL_CODE = 'ai-assistant';
+const APP_PREVIEW_COUNT = 3;
+const PRIMARY_APP_CODE = 'ai-assistant';
 
-/** 启动卡默认说明；可按 skillCode 覆盖，不进入 Skill Registry。 */
-const defaultSkillDescriptions: Record<string, string> = {
+/** 启动卡默认说明；可按 appCode 覆盖，不进入 App Registry。 */
+const defaultAppDescriptions: Record<string, string> = {
   'ai-assistant': '使用 pAI 处理日常管理与协作任务。',
   'file-review': '从空白开始，或让助手引导你完成审查。',
   'document-summary': '自动提炼文档要点，生成可读摘要。',
   'knowledge-search': '在知识库中检索资料与答案。',
 };
 
-const skillCardClassName =
+const appCardClassName =
   'group relative flex h-40 w-[min(22rem,calc(100%-2.5rem))] shrink-0 snap-start overflow-hidden rounded-lg border border-zinc-200/80 !bg-white text-inherit shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-[background-color,border-color] hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 active:bg-zinc-100 motion-reduce:transition-none dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800/90 dark:active:bg-zinc-800';
 
-export type WorkspaceSkillListProps = {
-  /** 当前 Scope 的有效 Skill Code；来源于 POST /api/currentUser/get 的后端过滤结果。 */
-  skillCodes: string[];
-  /** 把 Skill Code 转成当前 Platform/Organization Scope 下的 App URL。 */
-  getSkillPath: (skillCode: string) => string;
+export type WorkspaceAppListProps = {
+  /** 当前 Scope 的有效应用代码；由认证适配层统一为 projectAppCodes/appCodes。 */
+  appCodes: string[];
+  /** 把应用代码转成当前 Project/Organization Scope 下的 App URL。 */
+  getAppPath: (appCode: string) => string;
   /** 区分 Platform 与 Organization 场景的区块标题。 */
   title: string;
-  /** 当前 Scope 没有可用 Skill 时向用户解释原因的文字。 */
+  /** 当前 Scope 没有可用应用时向用户解释原因的文字。 */
   emptyDescription: string;
   /** 可选：覆盖默认启动卡说明文案。 */
   descriptions?: Record<string, string>;
 };
 
-/** 单个 Skill 启动卡。 */
-const WorkspaceSkillCard = ({
-  skillCode,
-  getSkillPath,
+/** 单个 App 启动卡。 */
+const WorkspaceAppCard = ({
+  appCode,
+  getAppPath,
   descriptions,
 }: {
-  skillCode: string;
-  getSkillPath: (skillCode: string) => string;
+  appCode: string;
+  getAppPath: (appCode: string) => string;
   descriptions: Record<string, string>;
 }) => {
-  const definition = getSkillDefinition(skillCode);
+  const definition = getAppDefinition(appCode);
 
   if (!definition) {
     return (
@@ -49,19 +49,19 @@ const WorkspaceSkillCard = ({
         className="h-40 w-[min(22rem,calc(100%-2.5rem))] shrink-0 snap-start rounded-lg bg-red-50 px-5 py-5 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
         role="alert"
       >
-        前端未定义应用：<code>{skillCode}</code>
+        前端未定义应用：<code>{appCode}</code>
       </div>
     );
   }
 
   const description =
-    descriptions[skillCode] ?? `打开 ${definition.title}，继续当前工作区工作。`;
+    descriptions[appCode] ?? `打开 ${definition.title}，继续当前工作区工作。`;
 
   return (
     <Link
       aria-label={`打开 ${definition.title}`}
-      className={skillCardClassName}
-      to={getSkillPath(skillCode)}
+      className={appCardClassName}
+      to={getAppPath(appCode)}
     >
       <span className="relative z-10 flex h-full w-[58%] min-w-0 flex-col justify-between p-5 pr-2">
         <strong className="text-lg font-semibold leading-snug text-balance text-zinc-950 dark:text-zinc-50">
@@ -75,50 +75,50 @@ const WorkspaceSkillCard = ({
         aria-hidden
         className="pointer-events-none absolute inset-y-0 right-0 w-[52%] translate-x-2 opacity-95 transition-transform duration-200 group-hover:translate-x-0 motion-reduce:transition-none dark:opacity-80"
       >
-        <WorkspaceSkillArt skillCode={skillCode} />
+        <WorkspaceAppArt appCode={appCode} />
       </span>
     </Link>
   );
 };
 
 /**
- * Platform 与 Organization 共用的 Skill 启动条。
+ * Project 与 Organization 共用的应用启动条。
  *
- * 数据链路：currentUser 中当前 Scope 的 skillCodes -> skillRegistry 展示信息
+ * 数据链路：currentUser 中当前 Scope 的 appCodes -> appRegistry 展示信息
  * -> workspaceRoutes 生成 URL -> Umi Link -> WorkspaceTabsHeader 创建或激活 App 标签。
  */
-const WorkspaceSkillList = ({
-  skillCodes,
-  getSkillPath,
+const WorkspaceAppList = ({
+  appCodes,
+  getAppPath,
   title,
   emptyDescription,
   descriptions,
-}: WorkspaceSkillListProps) => {
+}: WorkspaceAppListProps) => {
   const [expanded, setExpanded] = useState(false);
-  const resolvedDescriptions = { ...defaultSkillDescriptions, ...descriptions };
+  const resolvedDescriptions = { ...defaultAppDescriptions, ...descriptions };
   // pAI 是首页首要入口；其余应用保持后端授权列表的原有顺序。
-  const orderedSkillCodes = skillCodes.includes(PRIMARY_SKILL_CODE)
+  const orderedAppCodes = appCodes.includes(PRIMARY_APP_CODE)
     ? [
-        PRIMARY_SKILL_CODE,
-        ...skillCodes.filter((skillCode) => skillCode !== PRIMARY_SKILL_CODE),
+        PRIMARY_APP_CODE,
+        ...appCodes.filter((appCode) => appCode !== PRIMARY_APP_CODE),
       ]
-    : skillCodes;
-  const hasOverflow = orderedSkillCodes.length > SKILL_PREVIEW_COUNT;
-  const visibleSkillCodes =
+    : appCodes;
+  const hasOverflow = orderedAppCodes.length > APP_PREVIEW_COUNT;
+  const visibleAppCodes =
     hasOverflow && !expanded
-      ? orderedSkillCodes.slice(0, SKILL_PREVIEW_COUNT)
-      : orderedSkillCodes;
-  const hiddenCount = orderedSkillCodes.length - SKILL_PREVIEW_COUNT;
+      ? orderedAppCodes.slice(0, APP_PREVIEW_COUNT)
+      : orderedAppCodes;
+  const hiddenCount = orderedAppCodes.length - APP_PREVIEW_COUNT;
 
   return (
     <section
-      aria-labelledby="workspace-skills-title"
+      aria-labelledby="workspace-apps-title"
       className="grid min-w-0 gap-3"
     >
       <header className="flex items-center justify-between gap-3">
         <h2
           className="m-0 text-base font-semibold text-zinc-950 dark:text-zinc-50"
-          id="workspace-skills-title"
+          id="workspace-apps-title"
         >
           {title}
         </h2>
@@ -133,22 +133,22 @@ const WorkspaceSkillList = ({
             </button>
           ) : null}
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {orderedSkillCodes.length} 项
+            {orderedAppCodes.length} 项
           </span>
         </div>
       </header>
 
-      {orderedSkillCodes.length ? (
+      {orderedAppCodes.length ? (
         <section
           aria-label={`${title}卡片，可左右滑动`}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]"
         >
-          {visibleSkillCodes.map((skillCode) => (
-            <WorkspaceSkillCard
+          {visibleAppCodes.map((appCode) => (
+            <WorkspaceAppCard
               descriptions={resolvedDescriptions}
-              getSkillPath={getSkillPath}
-              key={skillCode}
-              skillCode={skillCode}
+              getAppPath={getAppPath}
+              key={appCode}
+              appCode={appCode}
             />
           ))}
 
@@ -175,4 +175,4 @@ const WorkspaceSkillList = ({
   );
 };
 
-export default WorkspaceSkillList;
+export default WorkspaceAppList;

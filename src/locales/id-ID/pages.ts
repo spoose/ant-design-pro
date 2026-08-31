@@ -5,10 +5,9 @@ export default {
   'pages.login.accountLogin.errorMessage': 'Nama pengguna dan kata sandi salah',
   'pages.login.failure': 'Log masuk gagal, silakan coba lagi!',
   'pages.login.success': 'Login berhasil!',
-  'pages.login.username.placeholder':
-    'nama pengguna: admin, user, operator, atau users2',
+  'pages.login.username.placeholder': 'nama pengguna',
   'pages.login.username.required': 'Nama pengguna harus diisi!',
-  'pages.login.password.placeholder': 'kata sandi: ant.design',
+  'pages.login.password.placeholder': 'kata sandi',
   'pages.login.password.required': 'Kata sandi harus diisi!',
   'pages.login.phoneLogin.tab': 'Login dengan ponsel',
   'pages.login.phoneLogin.errorMessage': 'Kesalahan kode verifikasi',

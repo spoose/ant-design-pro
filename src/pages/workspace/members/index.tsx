@@ -67,7 +67,7 @@ const memberColumns: TableProps<OrganizationMemberRecord>['columns'] = [
   },
 ];
 
-/** 当前 Organization 首页标签内的成员管理页面。 */
+/** 当前 Organization 首页标签内“组织设置-用户管理”页面。 */
 const OrganizationMembersPage = () => {
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
@@ -77,9 +77,9 @@ const OrganizationMembersPage = () => {
       breadcrumb={buildWorkspaceBreadcrumb(
         initialState?.currentUser,
         pathname,
-        ['成员管理'],
+        ['用户管理'],
       )}
-      title="成员管理"
+      title="用户管理"
       description="管理当前组织内的成员及其组织角色。"
       actions={<Tag color="blue">静态演示</Tag>}
     >

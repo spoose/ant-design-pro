@@ -20,7 +20,7 @@ describe('SuperAdminSeedService', () => {
           status: 'active',
           isSuperAdmin: true,
           platformPermissions: input.platformPermissions,
-          platformSkillCodes: input.platformSkillCodes,
+          projectAppCodes: input.projectAppCodes,
         };
       },
     };
@@ -45,7 +45,7 @@ describe('SuperAdminSeedService', () => {
     expect(capturedInput?.platformPermissions).toContain(
       'platform:user:manage',
     );
-    expect(capturedInput?.platformSkillCodes).toEqual([
+    expect(capturedInput?.projectAppCodes).toEqual([
       'ai-assistant',
       'file-review',
       'document-summary',

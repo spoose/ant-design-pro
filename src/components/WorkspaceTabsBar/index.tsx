@@ -1,7 +1,7 @@
 import { AppstoreOutlined, HomeOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import { Tabs } from 'antd';
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 import type { WorkspaceTab } from '@/utils/workspaceState';
 import useWorkspaceTabsBarStyles from './style';
 
@@ -34,7 +34,7 @@ const WorkspaceTabsBar = ({
     const TabIcon =
       tab.kind === 'home'
         ? HomeOutlined
-        : (getSkillDefinition(tab.appKey)?.icon ?? AppstoreOutlined);
+        : (getAppDefinition(tab.appKey)?.icon ?? AppstoreOutlined);
 
     return {
       key: tab.id,

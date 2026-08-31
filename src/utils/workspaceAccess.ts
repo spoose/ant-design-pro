@@ -1,4 +1,4 @@
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
   getOrganizationAppPagePath,
@@ -54,7 +54,7 @@ const isOrganizationPageKey = (
 /**
  * Workspace URL 的纯规则层。
  *
- * 输入来源：POST /api/currentUser/get + Umi pathname。
+ * 输入来源：当前用户授权快照 + Umi pathname。
  * 输出消费：WorkspaceAccess wrapper 决定渲染、规范化跳转、403 或 404。
  * 后端仍必须对每个业务 API 进行真实授权，本函数只负责前端导航边界。
  */
@@ -66,12 +66,11 @@ export const resolveWorkspaceRouteDecision = (
 
   if (isPlatformWorkspacePath(pathname)) {
     const access = getPlatformAccess(user);
-    if (!access.canEnterManagementCenter) return { kind: 'forbidden' };
 
     if (appKey) {
-      const definition = getSkillDefinition(appKey);
+      const definition = getAppDefinition(appKey);
       if (!definition) return { kind: 'not-found' };
-      if (!access.canUseSkill(appKey)) return { kind: 'forbidden' };
+      if (!access.canUseApp(appKey)) return { kind: 'forbidden' };
 
       const pageKey = getWorkspaceAppPageKey(pathname);
       if (!pageKey) {
@@ -123,9 +122,9 @@ export const resolveWorkspaceRouteDecision = (
   if (!access.organization) return { kind: 'forbidden' };
 
   if (appKey) {
-    const definition = getSkillDefinition(appKey);
+    const definition = getAppDefinition(appKey);
     if (!definition) return { kind: 'not-found' };
-    if (!access.canUseSkill(appKey)) return { kind: 'forbidden' };
+    if (!access.canUseApp(appKey)) return { kind: 'forbidden' };
 
     const pageKey = getWorkspaceAppPageKey(pathname);
     if (!pageKey) {

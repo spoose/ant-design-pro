@@ -162,7 +162,19 @@ describe('getPlatformWelcomeHeading', () => {
       }),
     ).toEqual({
       title: '你好，张三',
-      description: '8月18日 · 星期二 · 平台管理员',
+      description: '8月18日 · 星期二 · 项目管理员',
+    });
+  });
+
+  it('labels a non-admin visitor as a regular user', () => {
+    expect(
+      getPlatformWelcomeHeading({
+        userName: '李四',
+        date: new Date(2026, 7, 18),
+      }),
+    ).toEqual({
+      title: '你好，李四',
+      description: '8月18日 · 星期二 · 普通用户',
     });
   });
 });
@@ -205,13 +217,7 @@ describe('PlatformOverview', () => {
     window.sessionStorage.clear();
   });
   it('renders the mock chart and calendar widgets on the workbench', () => {
-    render(
-      <PlatformOverview
-        organizationRows={[]}
-        permissions={[]}
-        skillCodes={[]}
-      />,
-    );
+    render(<PlatformOverview appCodes={[]} />);
 
     expect(screen.getByRole('heading', { name: 'AI 数据洞悉' })).toBeVisible();
     expect(screen.getByRole('heading', { name: '问问小One' })).toBeVisible();
@@ -219,7 +225,7 @@ describe('PlatformOverview', () => {
     expect(
       screen.queryByRole('link', { name: '新对话' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('平台权限该怎么配')).toBeVisible();
+    expect(screen.getByText('查找特定用户')).toBeVisible();
     expect(
       screen.getByRole('heading', { name: '你可以这样提问' }),
     ).toBeVisible();
@@ -267,28 +273,9 @@ describe('PlatformOverview', () => {
     expect(screen.queryByText('用量周报')).not.toBeInTheDocument();
   });
 
-  it('prioritizes the organization workspace and links real platform apps', () => {
-    render(
-      <PlatformOverview
-        organizationRows={[
-          {
-            key: 'organization-1',
-            code: 'ORG_ONE',
-            name: '组织一',
-            organizationId: 'organization-1',
-          },
-        ]}
-        permissions={['platform:*']}
-        skillCodes={['file-review']}
-      />,
-    );
+  it('links Project apps without adding management cards to the home', () => {
+    render(<PlatformOverview appCodes={['file-review']} />);
 
-    expect(screen.getByRole('heading', { name: '组织工作区' })).toBeVisible();
-    expect(screen.getByText('组织一')).toBeVisible();
-    expect(screen.getByRole('link', { name: '进入 组织一' })).toHaveAttribute(
-      'href',
-      '/workspace/org/organization-1/home',
-    );
     expect(screen.getByRole('link', { name: '打开 文件审查' })).toHaveAttribute(
       'href',
       '/workspace/platform/apps/file-review/overview',
@@ -296,33 +283,27 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByText('从空白开始，或让助手引导你完成审查。'),
     ).toBeVisible();
-    expect(screen.getByText('platform:*')).toBeVisible();
-    expect(screen.queryByText('角色模板')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '组织工作区' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '项目权限' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('keeps empty states inside their corresponding widgets', () => {
-    render(
-      <PlatformOverview
-        organizationRows={[]}
-        permissions={[]}
-        skillCodes={[]}
-      />,
-    );
+  it('keeps the shared application empty state', () => {
+    render(<PlatformOverview appCodes={[]} />);
 
-    expect(screen.getByText('当前账号暂无可进入组织')).toBeVisible();
     expect(screen.getByRole('link', { name: '个人设置' })).toBeVisible();
     expect(
-      screen.getByText('当前账号暂无平台应用，请联系平台管理员授权。'),
+      screen.getByText('当前账号暂无项目应用，请联系项目管理员授权。'),
     ).toBeVisible();
-    expect(screen.getByText('当前账号暂无平台权限。')).toBeVisible();
   });
 
-  it('passes platform skills into the shared launch strip', () => {
+  it('passes platform apps into the shared launch strip', () => {
     render(
       <PlatformOverview
-        organizationRows={[]}
-        permissions={[]}
-        skillCodes={[
+        appCodes={[
           'ai-assistant',
           'file-review',
           'document-summary',
@@ -331,18 +312,18 @@ describe('PlatformOverview', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: '平台应用' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '项目应用' })).toBeVisible();
     expect(screen.getByRole('heading', { name: '全部应用' })).toBeVisible();
     expect(screen.getByRole('link', { name: '知识检索' })).toHaveAttribute(
       'href',
       '/workspace/platform/apps/knowledge-search/overview',
     );
-    const skillList = screen
-      .getByRole('heading', { name: '平台应用' })
+    const appList = screen
+      .getByRole('heading', { name: '项目应用' })
       .closest('section');
-    expect(skillList).not.toBeNull();
+    expect(appList).not.toBeNull();
     fireEvent.click(
-      within(skillList as HTMLElement).getByRole('button', {
+      within(appList as HTMLElement).getByRole('button', {
         name: '更多，还有 1 个应用',
       }),
     );

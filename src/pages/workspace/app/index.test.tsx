@@ -78,7 +78,7 @@ describe('WorkspaceAppPage', () => {
     );
   });
 
-  it('loads an implemented page from the Skill Registry', async () => {
+  it('loads an implemented page from the App Registry', async () => {
     useLocationMock.mockReturnValue({
       pathname: '/workspace/platform/apps/file-review/queue',
     });
@@ -90,7 +90,7 @@ describe('WorkspaceAppPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('uses the placeholder when a registered Skill has no page component', () => {
+  it('uses the placeholder when a registered App has no page component', () => {
     useLocationMock.mockReturnValue({
       pathname: '/workspace/platform/apps/document-summary/tasks',
     });
@@ -103,7 +103,7 @@ describe('WorkspaceAppPage', () => {
     expect(screen.getByText('文档任务页面待开发')).toBeInTheDocument();
   });
 
-  it('loads the standalone pAI workbench from the Skill Registry', async () => {
+  it('loads the standalone pAI workbench from the App Registry', async () => {
     useLocationMock.mockReturnValue({
       pathname: '/workspace/platform/apps/ai-assistant/overview',
     });

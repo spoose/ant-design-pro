@@ -357,7 +357,7 @@ describe('app layout guard', () => {
         currentUser: {
           userId: 'super-admin',
           platformPermissions: ['platform:organization:update'],
-          platformSkillCodes: [],
+          projectAppCodes: [],
           organizations: [],
         },
       },
@@ -365,7 +365,11 @@ describe('app layout guard', () => {
     } as any);
 
     expect(runtimeLayout.menuDataRender?.([]).map((item) => item.path)).toEqual(
-      ['/workspace/platform/overview', '/workspace/platform/stats'],
+      [
+        '/workspace/platform/overview',
+        '/workspace/platform/stats',
+        '/workspace/platform/organizations',
+      ],
     );
   });
 
@@ -381,7 +385,7 @@ describe('app layout guard', () => {
         currentUser: {
           userId: 'super-admin',
           platformPermissions: ['platform:organization:update'],
-          platformSkillCodes: ['ai-assistant'],
+          projectAppCodes: ['ai-assistant'],
           organizations: [],
         },
       },
@@ -393,6 +397,7 @@ describe('app layout guard', () => {
       '/workspace/platform/overview',
       '/workspace/platform/apps/ai-assistant',
       '/workspace/platform/stats',
+      '/workspace/platform/organizations',
     ]);
     expect(
       menuItems

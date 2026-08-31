@@ -93,16 +93,14 @@ describe('PlatformQuickEntry', () => {
     ).toEqual(['用户规模', '请求用量', '个人设置']);
   });
 
-  it('keeps account settings when the workbench has no platform grants', () => {
+  it('keeps the original shortcuts when the shared home passes no grants', () => {
     render(<PlatformQuickEntry permissions={[]} />);
 
-    expect(screen.getByText('1 项')).toBeVisible();
-    expect(screen.getByRole('link', { name: '个人设置' })).toHaveAttribute(
-      'href',
-      '/account/settings',
-    );
+    expect(screen.getByText('5 项')).toBeVisible();
     expect(
-      screen.queryByRole('link', { name: '用户规模' }),
-    ).not.toBeInTheDocument();
+      screen
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('aria-label')),
+    ).toEqual(['用户管理', '日志', '用户规模', '请求用量', '个人设置']);
   });
 });

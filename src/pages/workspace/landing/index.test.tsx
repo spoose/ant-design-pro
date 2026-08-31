@@ -38,7 +38,7 @@ const createLandingUser = (
     status: 'active',
     isSuperAdmin: false,
     platformPermissions: [],
-    platformSkillCodes: [],
+    projectAppCodes: [],
     defaultOrganizationId: null,
     organizations: [],
     ...overrides,
@@ -49,7 +49,7 @@ describe('WorkspaceLandingPage', () => {
     landingTestState.currentUser = undefined;
   });
 
-  it('sends a Platform admin directly to management center', () => {
+  it('sends a Platform admin to the shared Project home', () => {
     landingTestState.currentUser = createLandingUser({
       platformPermissions: ['platform:user:manage'],
     });
@@ -60,7 +60,7 @@ describe('WorkspaceLandingPage', () => {
     );
   });
 
-  it('sends a regular user to the backend default Organization home', () => {
+  it('sends a regular Organization user to the same Project home', () => {
     landingTestState.currentUser = createLandingUser({
       defaultOrganizationId: 'organization-1',
       organizations: [
@@ -69,7 +69,7 @@ describe('WorkspaceLandingPage', () => {
           organizationCode: 'ORG1',
           organizationName: '组织一',
           permissions: [],
-          skillCodes: [],
+          appCodes: [],
           dataScopes: [],
           defaultDataScopeId: null,
         },
@@ -78,11 +78,11 @@ describe('WorkspaceLandingPage', () => {
 
     render(<WorkspaceLandingPage />);
     expect(screen.getByTestId('landing-target')).toHaveTextContent(
-      '/workspace/org/organization-1/home',
+      '/workspace/platform/overview',
     );
   });
 
-  it('uses the first accessible Organization when no default is configured', () => {
+  it('keeps the Project home independent from the default Organization', () => {
     landingTestState.currentUser = createLandingUser({
       defaultOrganizationId: null,
       organizations: [
@@ -91,7 +91,7 @@ describe('WorkspaceLandingPage', () => {
           organizationCode: 'ORG1',
           organizationName: '组织一',
           permissions: [],
-          skillCodes: [],
+          appCodes: [],
           dataScopes: [],
           defaultDataScopeId: null,
         },
@@ -100,7 +100,7 @@ describe('WorkspaceLandingPage', () => {
           organizationCode: 'ORG2',
           organizationName: '组织二',
           permissions: [],
-          skillCodes: [],
+          appCodes: [],
           dataScopes: [],
           defaultDataScopeId: null,
         },
@@ -109,16 +109,16 @@ describe('WorkspaceLandingPage', () => {
 
     render(<WorkspaceLandingPage />);
     expect(screen.getByTestId('landing-target')).toHaveTextContent(
-      '/workspace/org/organization-1/home',
+      '/workspace/platform/overview',
     );
   });
 
-  it('sends an authenticated user without access to the pending page', () => {
+  it('keeps the Project home available without Organizations or admin grants', () => {
     landingTestState.currentUser = createLandingUser({});
 
     render(<WorkspaceLandingPage />);
     expect(screen.getByTestId('landing-target')).toHaveTextContent(
-      '/workspace/access-pending',
+      '/workspace/platform/overview',
     );
   });
 });

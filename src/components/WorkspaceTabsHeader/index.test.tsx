@@ -61,8 +61,8 @@ describe('WorkspaceTabsHeader', () => {
       email: 'super-admin@example.test',
       status: 'active',
       isSuperAdmin: true,
-      platformPermissions: ['platform:user:manage'],
-      platformSkillCodes: [],
+      platformPermissions: [],
+      projectAppCodes: [],
       defaultOrganizationId: null,
       organizations: [],
     } as AuthCurrentUser;

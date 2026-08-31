@@ -7,12 +7,12 @@ import {
   getOrganizationHomePath,
   getPlatformHomePath,
 } from '@/utils/workspaceRoutes';
-import { getPlatformAccess } from '@/utils/workspaceRules';
 import useAuthStyles from '../register/styles';
 import { setDefaultOrganization } from './service';
 import useStyles from './styles';
 
-const PLATFORM_SCOPE_KEY = 'platform';
+/** Project 管理入口沿用旧 Platform 路由，但只向 Project Admin 展示。 */
+const PROJECT_MANAGEMENT_SCOPE_KEY = 'project-management';
 
 const SelectEntry = () => {
   const { styles: authStyles } = useAuthStyles();
@@ -21,14 +21,9 @@ const SelectEntry = () => {
   // organizations 由 POST /api/currentUser/get 提供，选择页不再发起第二次列表请求。
   const currentUser = initialState?.currentUser;
   const organizations = currentUser?.organizations ?? [];
-  const canEnterPlatform = currentUser
-    ? getPlatformAccess(currentUser).canEnterManagementCenter
-    : false;
   const [selectedKey, setSelectedKey] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const hasAnyEntry = canEnterPlatform || organizations.length > 0;
 
   const handleSubmit = async () => {
     if (!selectedKey) return;
@@ -36,7 +31,8 @@ const SelectEntry = () => {
     setSubmitting(true);
     setErrorMessage('');
     try {
-      if (selectedKey === PLATFORM_SCOPE_KEY) {
+      if (selectedKey === PROJECT_MANAGEMENT_SCOPE_KEY) {
+        // 管理入口只改变路由，不选择 Organization，也不请求新的组织 Token。
         history.replace(getPlatformHomePath());
         return;
       }
@@ -104,7 +100,7 @@ const SelectEntry = () => {
               type="error"
             />
           )}
-          {hasAnyEntry ? (
+          {currentUser ? (
             <>
               <Radio.Group
                 className={styles.list}
@@ -113,22 +109,20 @@ const SelectEntry = () => {
                 }}
                 value={selectedKey}
               >
-                {canEnterPlatform && (
+                {currentUser.isSuperAdmin && (
                   <Radio
                     className={styles.option}
-                    value={PLATFORM_SCOPE_KEY}
-                    data-od-id="entry-platform-console"
+                    value={PROJECT_MANAGEMENT_SCOPE_KEY}
+                    data-od-id="entry-project-management"
                   >
                     <div className={styles.optionBody}>
                       <span className={styles.iconChip}>
                         <ApartmentOutlined />
                       </span>
                       <span className={styles.optionText}>
-                        <span className={styles.optionName}>
-                          超管理员操控台
-                        </span>
+                        <span className={styles.optionName}>项目控制台</span>
                         <span className={styles.optionMeta}>
-                          平台级管理与组织管理
+                          Project 首页与管理功能
                         </span>
                       </span>
                     </div>

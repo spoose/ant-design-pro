@@ -39,7 +39,7 @@ export interface OrganizationAccess {
   organizationCode: string;
   organizationName: string;
   permissions: string[];
-  skillCodes: string[];
+  appCodes: string[];
   dataScopes: [];
   defaultDataScopeId: null;
 }
@@ -53,7 +53,7 @@ export interface AuthCurrentUser {
   status: UserStatus;
   isSuperAdmin: boolean;
   platformPermissions: string[];
-  platformSkillCodes: string[];
+  projectAppCodes: string[];
   defaultOrganizationId: string | null;
   organizations: OrganizationAccess[];
 }
@@ -98,7 +98,7 @@ interface AuthenticationUserRow extends RowDataPacket {
 }
 
 interface GrantRow extends RowDataPacket {
-  grantType: 'permission' | 'skill';
+  grantType: 'permission' | 'app';
   grantCode: string;
 }
 
@@ -106,7 +106,7 @@ interface OrganizationGrantRow extends RowDataPacket {
   organizationId: string;
   organizationCode: string;
   organizationName: string;
-  grantType: 'permission' | 'skill' | null;
+  grantType: 'permission' | 'app' | null;
   grantCode: string | null;
 }
 
@@ -270,7 +270,7 @@ export class UserRepository implements UserRepositoryPort {
           organizationCode: row.organizationCode,
           organizationName: row.organizationName,
           permissions: [],
-          skillCodes: [],
+          appCodes: [],
           dataScopes: [],
           defaultDataScopeId: null,
         };
@@ -279,8 +279,8 @@ export class UserRepository implements UserRepositoryPort {
       if (row.grantType === 'permission' && row.grantCode) {
         organization.permissions.push(row.grantCode);
       }
-      if (row.grantType === 'skill' && row.grantCode) {
-        organization.skillCodes.push(row.grantCode);
+      if (row.grantType === 'app' && row.grantCode) {
+        organization.appCodes.push(row.grantCode);
       }
     }
 
@@ -303,8 +303,8 @@ export class UserRepository implements UserRepositoryPort {
       platformPermissions: platformGrants
         .filter((grant) => grant.grantType === 'permission')
         .map((grant) => grant.grantCode),
-      platformSkillCodes: platformGrants
-        .filter((grant) => grant.grantType === 'skill')
+      projectAppCodes: platformGrants
+        .filter((grant) => grant.grantType === 'app')
         .map((grant) => grant.grantCode),
       defaultOrganizationId,
       organizations,

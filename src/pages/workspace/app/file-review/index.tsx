@@ -203,7 +203,7 @@ const ReviewOverview = () => (
   </div>
 );
 
-/** 文件审查 Skill 的静态页面；pageKey 只控制当前 App 标签内部视图。 */
+/** 文件审查 App 的静态页面；pageKey 只控制当前 App 标签内部视图。 */
 const FileReviewPage = ({ pageKey }: { pageKey?: string }) => {
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');

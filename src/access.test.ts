@@ -23,7 +23,7 @@ const currentUser = {
   status: 'active',
   isSuperAdmin: false,
   platformPermissions: ['platform:user:manage'],
-  platformSkillCodes: [],
+  projectAppCodes: [],
   defaultOrganizationId: null,
   organizations: [
     {
@@ -31,7 +31,7 @@ const currentUser = {
       organizationCode: 'ORG1',
       organizationName: '组织一',
       permissions: ['page:home', 'page:dashboard-analysis'],
-      skillCodes: [],
+      appCodes: [],
       dataScopes: [],
       defaultDataScopeId: null,
     },
@@ -40,7 +40,7 @@ const currentUser = {
       organizationCode: 'ORG2',
       organizationName: '组织二',
       permissions: ['page:dashboard-monitor'],
-      skillCodes: [],
+      appCodes: [],
       dataScopes: [],
       defaultDataScopeId: null,
     },

@@ -1,6 +1,6 @@
 import { Link } from '@umijs/max';
 import { useState, useSyncExternalStore } from 'react';
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 
 /** Icons8 Fluency：https://icons8.com/icons/fluency */
 const fluencySrc = (name: string) =>
@@ -13,7 +13,7 @@ type CatalogApp = {
   subtitle: string;
 };
 
-const skillCopy: Record<string, { icon: string; subtitle: string }> = {
+const appCopy: Record<string, { icon: string; subtitle: string }> = {
   'ai-assistant': {
     icon: 'chatbot',
     subtitle: '处理日常管理与协作任务',
@@ -85,31 +85,31 @@ const cardClassName =
   'flex h-22 min-w-0 items-center gap-3 rounded-lg border border-zinc-200 !bg-white px-4 text-inherit no-underline transition-colors hover:border-zinc-300 hover:!bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 dark:border-zinc-200 dark:!bg-white dark:hover:!bg-white';
 
 type PlatformAppCatalogProps = {
-  skillCodes: string[];
-  getSkillPath: (skillCode: string) => string;
+  appCodes: string[];
+  getAppPath: (appCode: string) => string;
   emptyDescription?: string;
 };
 
 /** 工作台全部应用：白底横卡，左图标右标题/副标题。 */
 const PlatformAppCatalog = ({
-  skillCodes,
-  getSkillPath,
+  appCodes,
+  getAppPath,
   emptyDescription = '暂无授权应用。',
 }: PlatformAppCatalogProps) => {
-  const orderedSkillCodes = skillCodes.includes('ai-assistant')
+  const orderedAppCodes = appCodes.includes('ai-assistant')
     ? [
         'ai-assistant',
-        ...skillCodes.filter((skillCode) => skillCode !== 'ai-assistant'),
+        ...appCodes.filter((appCode) => appCode !== 'ai-assistant'),
       ]
-    : skillCodes;
+    : appCodes;
 
-  const grantedApps: CatalogApp[] = orderedSkillCodes.flatMap((skillCode) => {
-    const definition = getSkillDefinition(skillCode);
+  const grantedApps: CatalogApp[] = orderedAppCodes.flatMap((appCode) => {
+    const definition = getAppDefinition(appCode);
     if (!definition) return [];
-    const copy = skillCopy[skillCode] ?? fallbackCopy;
+    const copy = appCopy[appCode] ?? fallbackCopy;
     return [
       {
-        code: skillCode,
+        code: appCode,
         title: definition.title,
         icon: copy.icon,
         subtitle: copy.subtitle,
@@ -120,8 +120,8 @@ const PlatformAppCatalog = ({
     (app) => !grantedApps.some((item) => item.code === app.code),
   );
   const catalogApps = [...grantedApps, ...extraVisible];
-  const unknownCodes = orderedSkillCodes.filter(
-    (skillCode) => !getSkillDefinition(skillCode),
+  const unknownCodes = orderedAppCodes.filter(
+    (appCode) => !getAppDefinition(appCode),
   );
   const isNarrow = useSyncExternalStore(
     subscribeNarrow,
@@ -166,13 +166,13 @@ const PlatformAppCatalog = ({
 
       {catalogApps.length || unknownCodes.length ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {unknownCodes.map((skillCode) => (
+          {unknownCodes.map((appCode) => (
             <div
               className="flex h-20 items-center rounded-lg bg-red-50 px-4 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
-              key={skillCode}
+              key={appCode}
               role="alert"
             >
-              前端未定义应用：<code>{skillCode}</code>
+              前端未定义应用：<code>{appCode}</code>
             </div>
           ))}
           {visibleApps.map((app) => (
@@ -180,7 +180,7 @@ const PlatformAppCatalog = ({
               aria-label={app.title}
               className={cardClassName}
               key={app.code}
-              to={getSkillPath(app.code)}
+              to={getAppPath(app.code)}
             >
               <img
                 alt=""

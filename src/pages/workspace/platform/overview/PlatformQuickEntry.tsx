@@ -25,7 +25,8 @@ type PlatformQuickEntryProps = {
 /** 工作台快速入口：系统管理 / 统计叶子页 + 个人设置。不开应用标签。 */
 const PlatformQuickEntry = ({ permissions }: PlatformQuickEntryProps) => {
   const access = getPlatformAccess({
-    platformPermissions: permissions,
+    // 当前首页传空数组时按演示全开；实际页面访问仍由路由权限控制。
+    platformPermissions: permissions.length ? permissions : ['*'],
   } as AuthCurrentUser);
   const entries: QuickEntryItem[] = [];
 

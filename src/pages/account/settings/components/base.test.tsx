@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     status: 'active' as const,
     isSuperAdmin: false,
     platformPermissions: [] as string[],
-    platformSkillCodes: [] as string[],
+    projectAppCodes: [] as string[],
     defaultOrganizationId: null,
     organizations: [],
   },
@@ -144,7 +144,11 @@ describe('BaseView account settings', () => {
     vi.clearAllMocks();
     vi.mocked(updateCurrentUserProfile).mockResolvedValue({
       success: true,
-      data: { ...mocks.currentUser, name: 'Updated Name' },
+      data: {
+        ...mocks.currentUser,
+        name: 'Updated Name',
+        projectAppCodes: [...mocks.currentUser.projectAppCodes],
+      },
       traceId: 'trace-1',
     });
   });

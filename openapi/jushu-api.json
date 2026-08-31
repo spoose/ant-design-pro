@@ -435,7 +435,7 @@
         "tags": ["Platform Organizations"],
         "operationId": "createOrganization",
         "summary": "创建组织",
-        "description": "仅 Super Admin 可调用。创建组织及创建者的初始 Membership、权限和 Skill。",
+        "description": "仅 Super Admin 可调用。创建组织及创建者的初始 Membership、权限和 App。",
         "security": [
           {
             "BearerAuth": []
@@ -856,7 +856,7 @@
           "organizationCode",
           "organizationName",
           "permissions",
-          "skillCodes",
+          "appCodes",
           "dataScopes",
           "defaultDataScopeId"
         ],
@@ -879,7 +879,7 @@
               "type": "string"
             }
           },
-          "skillCodes": {
+          "appCodes": {
             "type": "array",
             "items": {
               "type": "string"
@@ -909,7 +909,7 @@
           "status",
           "isSuperAdmin",
           "platformPermissions",
-          "platformSkillCodes",
+          "projectAppCodes",
           "defaultOrganizationId",
           "organizations"
         ],
@@ -947,7 +947,7 @@
               "type": "string"
             }
           },
-          "platformSkillCodes": {
+          "projectAppCodes": {
             "type": "array",
             "items": {
               "type": "string"

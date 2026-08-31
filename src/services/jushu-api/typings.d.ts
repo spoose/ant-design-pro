@@ -59,7 +59,7 @@ declare namespace JushuAPI {
     status: UserStatus;
     isSuperAdmin: boolean;
     platformPermissions: string[];
-    platformSkillCodes: string[];
+    projectAppCodes: string[];
     defaultOrganizationId: string | null;
     organizations: OrganizationAccess[];
   };
@@ -127,7 +127,7 @@ declare namespace JushuAPI {
     organizationCode: string;
     organizationName: string;
     permissions: string[];
-    skillCodes: string[];
+    appCodes: string[];
     dataScopes: DataScope[];
     defaultDataScopeId: string | null;
   };

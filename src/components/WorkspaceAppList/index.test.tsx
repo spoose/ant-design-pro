@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import WorkspaceSkillList from '.';
+import WorkspaceAppList from '.';
 
 vi.mock('@umijs/max', () => ({
   Link: ({
@@ -17,13 +17,13 @@ vi.mock('@umijs/max', () => ({
   ),
 }));
 
-describe('WorkspaceSkillList', () => {
-  it('uses the current Scope path builder for Skill links', () => {
+describe('WorkspaceAppList', () => {
+  it('uses the current Scope path builder for App links', () => {
     render(
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="暂无平台应用"
-        getSkillPath={(skillCode) => `/workspace/platform/apps/${skillCode}`}
-        skillCodes={['knowledge-search']}
+        getAppPath={(appCode) => `/workspace/platform/apps/${appCode}`}
+        appCodes={['knowledge-search']}
         title="平台应用"
       />,
     );
@@ -36,12 +36,12 @@ describe('WorkspaceSkillList', () => {
     expect(screen.getByText('在知识库中检索资料与答案。')).toBeVisible();
   });
 
-  it('explains when the current Scope has no available Skills', () => {
+  it('explains when the current Scope has no available Apps', () => {
     render(
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="当前工作区暂无可用应用"
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={[]}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={[]}
         title="可用应用"
       />,
     );
@@ -50,27 +50,27 @@ describe('WorkspaceSkillList', () => {
     expect(screen.getByText('当前工作区暂无可用应用')).toBeVisible();
   });
 
-  it('identifies a backend-authorized Skill missing from the frontend registry', () => {
+  it('identifies a backend-authorized App missing from the frontend registry', () => {
     render(
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="暂无应用"
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={['backend-only-skill']}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={['backend-only-app']}
         title="可用应用"
       />,
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      '前端未定义应用：backend-only-skill',
+      '前端未定义应用：backend-only-app',
     );
   });
 
-  it('places pAI first while preserving the remaining app order', () => {
+  it('places xOneAI first while preserving the remaining app order', () => {
     render(
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="暂无应用"
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={['file-review', 'knowledge-search', 'ai-assistant']}
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={['file-review', 'knowledge-search', 'ai-assistant']}
         title="平台应用"
       />,
     );
@@ -79,15 +79,15 @@ describe('WorkspaceSkillList', () => {
       screen
         .getAllByRole('link')
         .map((link) => link.getAttribute('aria-label')),
-    ).toEqual(['打开 pAI', '打开 文件审查', '打开 知识检索']);
+    ).toEqual(['打开 xOneAI', '打开 文件审查', '打开 知识检索']);
   });
 
   it('collapses overflow apps behind a more control that can expand', () => {
     render(
-      <WorkspaceSkillList
+      <WorkspaceAppList
         emptyDescription="暂无应用"
-        getSkillPath={(skillCode) => `/apps/${skillCode}`}
-        skillCodes={[
+        getAppPath={(appCode) => `/apps/${appCode}`}
+        appCodes={[
           'ai-assistant',
           'file-review',
           'document-summary',
@@ -97,7 +97,7 @@ describe('WorkspaceSkillList', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: '打开 pAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '打开 xOneAI' })).toBeVisible();
     expect(screen.getByRole('link', { name: '打开 文件审查' })).toBeVisible();
     expect(screen.getByRole('link', { name: '打开 文档总结' })).toBeVisible();
     expect(

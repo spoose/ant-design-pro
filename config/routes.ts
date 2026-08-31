@@ -67,7 +67,7 @@ export default [
     layout: false,
   },
   {
-    // 已登录但无组织、无 Platform 权限时使用；不经过 Workspace 权限守卫。
+    // 历史兼容页；统一 Project 首页开放后正常认证链路不会再落到这里。
     path: '/workspace/access-pending',
     component: './workspace/access-pending',
     hideInMenu: true,

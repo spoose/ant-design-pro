@@ -4,31 +4,32 @@ import {
   getAccessibleOrganizations,
   getOrganizationAccess,
   getPlatformAccess,
-  resolveLandingWorkspace,
 } from './workspaceRules';
 
 const createOrganization = (
   organizationId: string,
   permissions: string[] = [],
-  skillCodes: string[] = [],
+  appCodes: string[] = [],
 ): OrganizationAccess => ({
   organizationId,
   organizationCode: organizationId.toUpperCase(),
   organizationName: `Organization ${organizationId}`,
   permissions,
-  skillCodes,
+  appCodes,
   dataScopes: [],
   defaultDataScopeId: null,
 });
 
 const createUser = ({
+  isSuperAdmin = false,
   platformPermissions = [],
-  platformSkillCodes = [],
+  projectAppCodes = [],
   organizations = [],
   defaultOrganizationId,
 }: {
+  isSuperAdmin?: boolean;
   platformPermissions?: string[];
-  platformSkillCodes?: string[];
+  projectAppCodes?: string[];
   organizations?: OrganizationAccess[];
   defaultOrganizationId?: string | null;
 } = {}): AuthCurrentUser =>
@@ -39,21 +40,21 @@ const createUser = ({
     avatar: null,
     email: 'workspace-user@example.test',
     status: 'active',
-    isSuperAdmin: false,
+    isSuperAdmin,
     platformPermissions,
-    platformSkillCodes,
+    projectAppCodes,
     organizations,
     defaultOrganizationId: defaultOrganizationId ?? null,
   }) as AuthCurrentUser;
 
 describe('workspace access rules', () => {
-  it('keeps Platform permissions and Skills separate from Organizations', () => {
+  it('keeps Platform permissions and Apps separate from Organizations', () => {
     const user = createUser({
       platformPermissions: [
         'platform:organization:create',
         'platform:audit:view',
       ],
-      platformSkillCodes: ['ai-assistant'],
+      projectAppCodes: ['ai-assistant'],
       organizations: [
         createOrganization(
           'org-1',
@@ -69,11 +70,36 @@ describe('workspace access rules', () => {
     expect(access.canManagePlatformUsers).toBe(false);
     expect(access.canViewPlatformAudit).toBe(true);
     expect(access.canViewStats).toBe(true);
-    expect(access.canUseSkill('ai-assistant')).toBe(true);
-    expect(access.canUseSkill('file-review')).toBe(false);
+    expect(access.canUseApp('ai-assistant')).toBe(true);
+    expect(access.canUseApp('file-review')).toBe(false);
     expect(access.visibleMenuKeys).toEqual([
       'overview',
       'organizations',
+      'logs',
+    ]);
+  });
+
+  it('keeps the Project home public without granting management routes', () => {
+    const access = getPlatformAccess(createUser());
+
+    expect(access.canEnterManagementCenter).toBe(false);
+    expect(access.canViewStats).toBe(false);
+    expect(access.visibleMenuKeys).toEqual(['overview']);
+  });
+
+  it('reuses every Project management menu for Project Admin', () => {
+    const access = getPlatformAccess(createUser({ isSuperAdmin: true }));
+
+    expect(access.canEnterManagementCenter).toBe(true);
+    expect(access.canManageOrganizations).toBe(true);
+    expect(access.canManagePlatformUsers).toBe(true);
+    expect(access.canGrantPlatformPermissions).toBe(true);
+    expect(access.canViewPlatformAudit).toBe(true);
+    expect(access.visibleMenuKeys).toEqual([
+      'overview',
+      'organizations',
+      'users',
+      'permissions',
       'logs',
     ]);
   });
@@ -89,7 +115,7 @@ describe('workspace access rules', () => {
     expect(organizations[0].permissions).toEqual(['permission:a']);
   });
 
-  it('resolves menus and Skills only from the requested Organization', () => {
+  it('resolves menus and Apps only from the requested Organization', () => {
     const user = createUser({
       organizations: [
         createOrganization(
@@ -113,63 +139,12 @@ describe('workspace access rules', () => {
     ]);
     expect(getOrganizationAccess(user, 'org-1').canViewStats).toBe(true);
     expect(getOrganizationAccess(user, 'org-2').canViewStats).toBe(false);
-    expect(
-      getOrganizationAccess(user, 'org-1').canUseSkill('file-review'),
-    ).toBe(true);
-    expect(
-      getOrganizationAccess(user, 'org-2').canUseSkill('file-review'),
-    ).toBe(false);
+    expect(getOrganizationAccess(user, 'org-1').canUseApp('file-review')).toBe(
+      true,
+    );
+    expect(getOrganizationAccess(user, 'org-2').canUseApp('file-review')).toBe(
+      false,
+    );
     expect(getOrganizationAccess(user, 'missing').accessible).toBe(false);
-  });
-});
-
-describe('workspace landing rules', () => {
-  it('prioritizes Platform access', () => {
-    expect(
-      resolveLandingWorkspace(
-        createUser({
-          platformPermissions: ['platform:user:manage'],
-          organizations: [createOrganization('org-1')],
-        }),
-      ),
-    ).toEqual({ kind: 'platform' });
-  });
-
-  it('uses a valid default Organization before other Organizations', () => {
-    expect(
-      resolveLandingWorkspace(
-        createUser({
-          defaultOrganizationId: 'org-2',
-          organizations: [
-            createOrganization('org-1'),
-            createOrganization('org-2'),
-          ],
-        }),
-      ),
-    ).toEqual({ kind: 'organization', organizationId: 'org-2' });
-  });
-
-  it('enters the first accessible Organization when no valid default exists', () => {
-    expect(
-      resolveLandingWorkspace(
-        createUser({ organizations: [createOrganization('org-1')] }),
-      ),
-    ).toEqual({ kind: 'organization', organizationId: 'org-1' });
-    expect(
-      resolveLandingWorkspace(
-        createUser({
-          organizations: [
-            createOrganization('org-1'),
-            createOrganization('org-2'),
-          ],
-        }),
-      ),
-    ).toEqual({ kind: 'organization', organizationId: 'org-1' });
-  });
-
-  it('returns the authenticated pending state without any access', () => {
-    expect(resolveLandingWorkspace(createUser())).toEqual({
-      kind: 'access-pending',
-    });
   });
 });

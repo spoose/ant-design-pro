@@ -9,6 +9,7 @@ const testState = vi.hoisted(() => ({
   initialState: {
     currentUser: {
       name: 'Test User',
+      isSuperAdmin: false,
       organizations: [] as OrganizationAccess[],
       defaultOrganizationId: null as string | null,
     },
@@ -47,7 +48,7 @@ const organization: OrganizationAccess = {
   organizationCode: 'ORG2',
   organizationName: '组织二',
   permissions: [],
-  skillCodes: ['file-review'],
+  appCodes: ['file-review'],
   dataScopes: [],
   defaultDataScopeId: null,
 };
@@ -57,6 +58,7 @@ describe('SelectEntry', () => {
     vi.clearAllMocks();
     testState.initialState.currentUser.organizations = [organization];
     testState.initialState.currentUser.defaultOrganizationId = null;
+    testState.initialState.currentUser.isSuperAdmin = false;
   });
 
   it('sets the selected Organization as default and enters its home', async () => {
@@ -94,10 +96,23 @@ describe('SelectEntry', () => {
     expect(await screen.findByText('设置默认组织失败')).toBeInTheDocument();
   });
 
-  it('keeps submit disabled without Organizations', () => {
+  it('shows Project management only to Project Admin', () => {
     testState.initialState.currentUser.organizations = [];
+    testState.initialState.currentUser.isSuperAdmin = true;
     render(<SelectEntry />);
-    expect(screen.getByText('暂无可选登录入口')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '进入首页' })).toBeDisabled();
+    expect(screen.getByText('项目控制台')).toBeVisible();
+
+    fireEvent.click(screen.getByLabelText(/项目控制台/));
+    fireEvent.click(screen.getByRole('button', { name: '进入首页' }));
+
+    expect(testState.replace).toHaveBeenCalledWith(
+      '/workspace/platform/overview',
+    );
+  });
+
+  it('hides Project management from regular users', () => {
+    render(<SelectEntry />);
+    expect(screen.queryByText('项目控制台')).not.toBeInTheDocument();
+    expect(screen.getByText('组织二')).toBeVisible();
   });
 });

@@ -295,7 +295,7 @@ const KnowledgeSearchOverview = () => (
   </div>
 );
 
-/** 知识检索 Skill 静态页面；不保存搜索条件，也不发起业务请求。 */
+/** 知识检索 App 静态页面；不保存搜索条件，也不发起业务请求。 */
 const KnowledgeSearchPage = ({ pageKey }: { pageKey?: string }) => {
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');

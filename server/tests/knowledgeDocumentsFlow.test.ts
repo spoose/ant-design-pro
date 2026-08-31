@@ -19,7 +19,7 @@ const createCurrentUser = (permissions: string[] = []) => ({
   status: 'active' as const,
   isSuperAdmin: false,
   platformPermissions: [],
-  platformSkillCodes: [],
+  projectAppCodes: [],
   defaultOrganizationId: organizationId,
   organizations: [
     {
@@ -27,7 +27,7 @@ const createCurrentUser = (permissions: string[] = []) => ({
       organizationCode: 'ORG',
       organizationName: '组织',
       permissions,
-      skillCodes: [],
+      appCodes: [],
       dataScopes: [] as [],
       defaultDataScopeId: null,
     },

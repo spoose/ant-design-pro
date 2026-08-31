@@ -1,29 +1,57 @@
 import { useLocation, useModel, useParams } from '@umijs/max';
-import { CurrentAccessOverview } from '@/components/CurrentAccessOverview';
 import WorkspacePage from '@/components/WorkspacePage';
+import { WorkspaceHomeModules } from '@/pages/workspace/overview/WorkspaceHomeModules';
+import { PlatformWelcomeAvatar } from '@/pages/workspace/platform/overview/PlatformWelcomeAvatar';
+import { getPlatformWelcomeHeading } from '@/pages/workspace/platform/overview/welcome';
 import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
+import { getOrganizationAppPagePath } from '@/utils/workspaceRoutes';
+import { getOrganizationAccess } from '@/utils/workspaceRules';
 
 const Home: React.FC = () => {
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
-  // organizationId 来自 URL；用户、权限和 Skill 均来自 POST /api/currentUser/get。
+  const currentUser = initialState?.currentUser;
+  // organizationId 来自 URL；用户、权限和 appCodes 均来自认证适配后的会话。
   const { organizationId } = useParams<{ organizationId?: string }>();
-  const organization = initialState?.currentUser?.organizations.find(
-    (candidate) => candidate.organizationId === organizationId,
-  );
+  const organizationAccess =
+    currentUser && organizationId
+      ? getOrganizationAccess(currentUser, organizationId)
+      : undefined;
+  const organization = organizationAccess?.organization;
+  const pageHeading = getPlatformWelcomeHeading({
+    isSuperAdmin: currentUser?.isSuperAdmin,
+    userName: currentUser?.name,
+  });
 
   return (
     <WorkspacePage
-      breadcrumb={buildWorkspaceBreadcrumb(
-        initialState?.currentUser,
-        pathname,
-        ['组织首页'],
-      )}
-      title="组织首页"
-      description="从当前组织首页进入应用；应用会在独立工作标签中打开。"
+      breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, ['首页'])}
+      description={pageHeading.description}
+      leading={
+        currentUser ? (
+          <PlatformWelcomeAvatar
+            avatar={currentUser.avatar}
+            userName={currentUser.name}
+          />
+        ) : undefined
+      }
+      title={pageHeading.title}
     >
       {organization ? (
-        <CurrentAccessOverview organization={organization} />
+        <div className="grid gap-5">
+          <WorkspaceHomeModules
+            appTitle="组织应用"
+            emptyDescription="当前组织暂无可用应用，请联系组织管理员授权。"
+            getAppPath={(appCode) =>
+              getOrganizationAppPagePath(
+                organization.organizationId,
+                appCode,
+                'overview',
+              )
+            }
+            appCodes={organizationAccess.availableAppCodes}
+          />
+        </div>
       ) : (
         <div role="alert" className="text-sm text-red-700 dark:text-red-300">
           未找到当前组织

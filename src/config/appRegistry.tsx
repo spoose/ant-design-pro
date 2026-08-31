@@ -12,18 +12,19 @@ import {
 } from '@ant-design/icons';
 import type React from 'react';
 import { lazy } from 'react';
+import type { AppCode } from './appCodes';
 
-export type SkillPageProps = {
-  /** Skill 内部页面 Key，来源于 Workspace App URL。 */
+export type AppPageProps = {
+  /** App 内部页面 Key，来源于 Workspace App URL。 */
   pageKey?: string;
 };
 
-export type SkillNavigationItem = {
+export type AppNavigationItem = {
   /**
-   * Skill 内稳定的子页面标识；所有菜单都使用并列路径，避免 App 根路径同时命中子页面。
+   * App 内稳定的子页面标识；所有菜单都使用并列路径，避免 App 根路径同时命中子页面。
    */
   pathSegment: string;
-  /** 左侧菜单展示名称，不重复 Skill 名称。 */
+  /** 左侧菜单展示名称，不重复 App 名称。 */
   title: string;
   /** 左侧菜单使用的 Ant Design 图标组件。 */
   icon: React.ComponentType<{ className?: string }>;
@@ -31,30 +32,28 @@ export type SkillNavigationItem = {
   placeholder?: boolean;
 };
 
-export type SkillDefinition = {
-  /** Skill 在卡片和标签页中显示的前端名称。 */
+export type AppDefinition = {
+  /** App 在卡片和标签页中显示的前端名称。 */
   title: string;
-  /** Skill 卡片使用的 Ant Design 图标组件。 */
+  /** App 卡片使用的 Ant Design 图标组件。 */
   icon: React.ComponentType<{ className?: string }>;
   /**
-   * 已实现的 Skill 页面按需加载组件；未配置时统一进入明确的待开发占位页。
+   * 已实现的 App 页面按需加载组件；未配置时统一进入明确的待开发占位页。
    */
-  pageComponent?: React.LazyExoticComponent<
-    React.ComponentType<SkillPageProps>
-  >;
+  pageComponent?: React.LazyExoticComponent<React.ComponentType<AppPageProps>>;
   /**
-   * Skill 内部页面定义。pAI 并入首页侧栏二级菜单，其它 Skill 仍使用独立 App Sidebar。
-   * 数据链路：skillCode -> SkillDefinition.navigation -> menuData -> ProLayout Sidebar。
+   * App 内部页面定义。pAI 并入首页侧栏二级菜单，其它 App 仍使用独立 App Sidebar。
+   * 数据链路：appCode -> AppDefinition.navigation -> menuData -> ProLayout Sidebar。
    */
-  navigation: readonly SkillNavigationItem[];
+  navigation: readonly AppNavigationItem[];
 };
 
 /**
- * 前端静态 Skill Registry：后端只返回稳定的 skillCode，这里维护名称、图标、导航和页面实现。
+ * 前端静态 App Registry：领域模型只返回稳定的 appCode，这里维护名称、图标、导航和页面实现。
  * Organization App 路由必须包含 organizationId，由 workspaceRoutes 根据当前 Scope 生成。
- * 后续增加 Skill 时需同步更新该表；OpenAPI 只生成授权数据，不生成 React 组件配置。
+ * 后续增加 App 时需同步更新该表；OpenAPI 只生成授权数据，不生成 React 组件配置。
  */
-export const skillRegistry = {
+export const appRegistry = {
   'ai-assistant': {
     title: 'xOneAI',
     icon: RobotOutlined,
@@ -119,11 +118,10 @@ export const skillRegistry = {
       { pathSegment: 'history', title: '搜索记录', icon: HistoryOutlined },
     ],
   },
-} as const satisfies Record<string, SkillDefinition>;
+} as const satisfies Record<AppCode, AppDefinition>;
 
-export type SkillCode = keyof typeof skillRegistry;
+export type { AppCode } from './appCodes';
 
-/** 将后端 skillCode 解析为前端可渲染定义；未知代码显式返回 undefined。 */
-export const getSkillDefinition = (
-  skillCode: string,
-): SkillDefinition | undefined => skillRegistry[skillCode as SkillCode];
+/** 将后端 appCode 解析为前端可渲染定义；未知代码显式返回 undefined。 */
+export const getAppDefinition = (appCode: string): AppDefinition | undefined =>
+  appRegistry[appCode as AppCode];

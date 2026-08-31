@@ -19,7 +19,7 @@ const user = {
   status: 'active',
   isSuperAdmin: false,
   platformPermissions: ['platform:user:manage'],
-  platformSkillCodes: ['knowledge-search'],
+  projectAppCodes: ['knowledge-search'],
   defaultOrganizationId: null,
   organizations: [
     {
@@ -27,7 +27,7 @@ const user = {
       organizationCode: 'ORG1',
       organizationName: '组织一',
       permissions: ['organization:user:manage'],
-      skillCodes: ['file-review'],
+      appCodes: ['file-review'],
       dataScopes: [],
       defaultDataScopeId: null,
     },
@@ -35,6 +35,30 @@ const user = {
 } as AuthCurrentUser;
 
 describe('resolveWorkspaceRouteDecision', () => {
+  it('opens the shared Project home without exposing management pages', () => {
+    const regularUser = {
+      ...user,
+      platformPermissions: [],
+      projectAppCodes: [],
+    } as AuthCurrentUser;
+
+    expect(
+      resolveWorkspaceRouteDecision(
+        regularUser,
+        '/workspace/platform/overview',
+      ),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(regularUser, '/workspace/platform/users'),
+    ).toEqual({ kind: 'forbidden' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        regularUser,
+        '/workspace/platform/apps/knowledge-search/overview',
+      ),
+    ).toEqual({ kind: 'forbidden' });
+  });
+
   it('allows authorized Platform and Organization routes', () => {
     expect(
       resolveWorkspaceRouteDecision(user, '/workspace/platform/users'),
@@ -92,14 +116,14 @@ describe('resolveWorkspaceRouteDecision', () => {
     ).toEqual({ kind: 'forbidden' });
   });
 
-  it('returns 404 decisions for unknown pages and Skill codes', () => {
+  it('returns 404 decisions for unknown pages and App codes', () => {
     expect(
       resolveWorkspaceRouteDecision(user, '/workspace/platform/not-a-page'),
     ).toEqual({ kind: 'not-found' });
     expect(
       resolveWorkspaceRouteDecision(
         user,
-        '/workspace/org/organization-1/apps/missing-skill/overview',
+        '/workspace/org/organization-1/apps/missing-app/overview',
       ),
     ).toEqual({ kind: 'not-found' });
     expect(
@@ -145,7 +169,7 @@ describe('resolveWorkspaceRouteDecision', () => {
     ).toEqual({ kind: 'forbidden' });
   });
 
-  it('redirects 系统管理 to the first granted child and gates 日志', () => {
+  it('redirects 系统设置 to the first granted child and gates 日志', () => {
     expect(
       resolveWorkspaceRouteDecision(user, '/workspace/platform/system'),
     ).toEqual({

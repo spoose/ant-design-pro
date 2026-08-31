@@ -4,8 +4,8 @@ import { databaseOperation } from '../db/databaseOperation.js';
 import { withTransaction } from '../db/transaction.js';
 import { AppError } from '../errors/appError.js';
 import {
+  SUPER_ADMIN_ORGANIZATION_APP_CODES,
   SUPER_ADMIN_ORGANIZATION_PERMISSIONS,
-  SUPER_ADMIN_ORGANIZATION_SKILL_CODES,
 } from '../permissions/catalog.js';
 
 export type OrganizationStatus = 'active' | 'disabled';
@@ -33,7 +33,7 @@ export interface UpdateOrganizationInput {
 export interface OrganizationBootstrapAccess {
   creatorUserId: string;
   permissions: readonly string[];
-  skillCodes: readonly string[];
+  appCodes: readonly string[];
 }
 
 export type DeleteOrganizationResult = 'deleted' | 'not_found' | 'in_use';
@@ -65,7 +65,7 @@ interface OrganizationMemberRow extends RowDataPacket {
 interface OrganizationGrantRow extends RowDataPacket {
   userId: string;
   createdBy: string;
-  grantType: 'permission' | 'skill';
+  grantType: 'permission' | 'app';
   grantCode: string;
 }
 
@@ -139,8 +139,8 @@ export class OrganizationRepository implements OrganizationRepositoryPort {
               grantType: 'permission' as const,
               grantCode,
             })),
-            ...bootstrapAccess.skillCodes.map((grantCode) => ({
-              grantType: 'skill' as const,
+            ...bootstrapAccess.appCodes.map((grantCode) => ({
+              grantType: 'app' as const,
               grantCode,
             })),
           ];
@@ -321,9 +321,7 @@ export class OrganizationRepository implements OrganizationRepositoryPort {
       ...SUPER_ADMIN_ORGANIZATION_PERMISSIONS.map(
         (permission) => `permission:${permission}`,
       ),
-      ...SUPER_ADMIN_ORGANIZATION_SKILL_CODES.map(
-        (skillCode) => `skill:${skillCode}`,
-      ),
+      ...SUPER_ADMIN_ORGANIZATION_APP_CODES.map((appCode) => `app:${appCode}`),
     ]);
     if (grants.length !== expectedGrantKeys.size) return false;
 

@@ -70,7 +70,7 @@ describe('workspaceRecents', () => {
         'platform',
         {
           title: `应用 ${index}`,
-          url: `/workspace/platform/apps/skill-${index}/overview`,
+          url: `/workspace/platform/apps/app-${index}/overview`,
         },
         homeUrl,
       );
@@ -78,7 +78,7 @@ describe('workspaceRecents', () => {
 
     const recents = readWorkspaceRecents('user-1', 'platform');
     expect(recents).toHaveLength(WORKSPACE_RECENT_LIMIT);
-    expect(recents[0]?.url).toContain(`skill-${WORKSPACE_RECENT_LIMIT + 1}`);
+    expect(recents[0]?.url).toContain(`app-${WORKSPACE_RECENT_LIMIT + 1}`);
     expect(titleForWorkspaceRecent('/workspace/platform/users', 'x')).toBe(
       '用户管理',
     );

@@ -1,6 +1,6 @@
 import {
   SUPER_ADMIN_PLATFORM_PERMISSIONS,
-  SUPER_ADMIN_PLATFORM_SKILL_CODES,
+  SUPER_ADMIN_PROJECT_APP_CODES,
 } from '../permissions/catalog.js';
 import type {
   SeededSuperAdmin,
@@ -23,7 +23,7 @@ export class SuperAdminSeedService {
       name: input.name,
       passwordHash,
       platformPermissions: SUPER_ADMIN_PLATFORM_PERMISSIONS,
-      platformSkillCodes: SUPER_ADMIN_PLATFORM_SKILL_CODES,
+      projectAppCodes: SUPER_ADMIN_PROJECT_APP_CODES,
     });
   }
 }

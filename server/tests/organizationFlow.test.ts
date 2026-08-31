@@ -155,7 +155,7 @@ describe('organization management flow', () => {
     expect(context.repository.lastBootstrapAccess).toEqual({
       creatorUserId: superAdminUserId,
       permissions: ['organization:*'],
-      skillCodes: [
+      appCodes: [
         'ai-assistant',
         'file-review',
         'document-summary',

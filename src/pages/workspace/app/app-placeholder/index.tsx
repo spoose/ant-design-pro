@@ -1,10 +1,10 @@
 import { useLocation, useModel } from '@umijs/max';
 import { Tag } from 'antd';
 import WorkspacePage from '@/components/WorkspacePage';
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 import { buildWorkspaceBreadcrumb } from '@/utils/menuData';
 
-type SkillPlaceholderPageProps = {
+type AppPlaceholderPageProps = {
   /** 来源于 Workspace App URL 的 :appKey。 */
   appKey: string;
   /** 来源于 Workspace App URL 的第一个通配路径片段；根路径时为 undefined。 */
@@ -12,25 +12,22 @@ type SkillPlaceholderPageProps = {
 };
 
 /**
- * 尚未实现业务页面的 Skill 占位视图。
- * 它保留真实的标签、URL 和 Sidebar 行为，但不会把所有 Skill 误导为同一个 AI 助手。
+ * 尚未实现业务页面的 App 占位视图。
+ * 它保留真实的标签、URL 和 Sidebar 行为，但不会把所有 App 误导为同一个 AI 助手。
  */
-const SkillPlaceholderPage = ({
-  appKey,
-  pageKey,
-}: SkillPlaceholderPageProps) => {
+const AppPlaceholderPage = ({ appKey, pageKey }: AppPlaceholderPageProps) => {
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
-  const definition = getSkillDefinition(appKey);
+  const definition = getAppDefinition(appKey);
   // Registry 中所有菜单使用并列 pathSegment，当前页面按 URL pageKey 精确命中。
   const navigationItem =
     definition?.navigation.find((item) => item.pathSegment === pageKey) ??
     definition?.navigation[0];
-  const skillTitle = definition?.title ?? appKey;
+  const appTitle = definition?.title ?? appKey;
   const pageTitle = navigationItem?.title ?? '应用首页';
-  const SkillIcon = definition?.icon;
+  const AppIcon = definition?.icon;
 
-  const trail = [skillTitle, pageTitle];
+  const trail = [appTitle, pageTitle];
 
   return (
     <WorkspacePage
@@ -40,14 +37,14 @@ const SkillPlaceholderPage = ({
           : buildWorkspaceBreadcrumb(initialState?.currentUser, pathname, trail)
       }
       title={pageTitle}
-      description={`${skillTitle}的标签、路由和侧栏结构已经接入，业务内容将在后续步骤实现。`}
+      description={`${appTitle}的标签、路由和侧栏结构已经接入，业务内容将在后续步骤实现。`}
       actions={<Tag color="default">待开发</Tag>}
     >
       <section className="grid min-h-64 place-items-center border border-zinc-200 bg-white px-6 py-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
         <div className="grid max-w-md justify-items-center gap-3">
-          {SkillIcon ? (
+          {AppIcon ? (
             <div className="flex size-12 items-center justify-center rounded-lg bg-orange-50 text-xl text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-              <SkillIcon aria-hidden />
+              <AppIcon aria-hidden />
             </div>
           ) : null}
           <h2 className="m-0 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
@@ -67,4 +64,4 @@ const SkillPlaceholderPage = ({
   );
 };
 
-export default SkillPlaceholderPage;
+export default AppPlaceholderPage;

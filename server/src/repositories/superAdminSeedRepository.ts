@@ -8,7 +8,7 @@ export interface CreateInitialSuperAdminInput {
   name: string;
   passwordHash: string;
   platformPermissions: readonly string[];
-  platformSkillCodes: readonly string[];
+  projectAppCodes: readonly string[];
 }
 
 export interface SeededSuperAdmin {
@@ -19,7 +19,7 @@ export interface SeededSuperAdmin {
   status: 'active';
   isSuperAdmin: true;
   platformPermissions: readonly string[];
-  platformSkillCodes: readonly string[];
+  projectAppCodes: readonly string[];
 }
 
 export interface SuperAdminSeedRepositoryPort {
@@ -132,8 +132,8 @@ export class SuperAdminSeedRepository implements SuperAdminSeedRepositoryPort {
           grantType: 'permission',
           grantCode,
         })),
-        ...input.platformSkillCodes.map((grantCode) => ({
-          grantType: 'skill',
+        ...input.projectAppCodes.map((grantCode) => ({
+          grantType: 'app',
           grantCode,
         })),
       ];
@@ -171,7 +171,7 @@ export class SuperAdminSeedRepository implements SuperAdminSeedRepositoryPort {
         status: 'active',
         isSuperAdmin: true,
         platformPermissions: input.platformPermissions,
-        platformSkillCodes: input.platformSkillCodes,
+        projectAppCodes: input.projectAppCodes,
       };
     } catch (error) {
       if (transactionStarted) {

@@ -20,7 +20,7 @@ const bootstrapGrants = [
   ].map((grantCode) => ({
     userId: creatorUserId,
     createdBy: creatorUserId,
-    grantType: 'skill',
+    grantType: 'app',
     grantCode,
   })),
 ];
@@ -101,7 +101,7 @@ describe('OrganizationRepository bootstrap access cleanup', () => {
         {
           creatorUserId,
           permissions: ['organization:*'],
-          skillCodes: [
+          appCodes: [
             'ai-assistant',
             'file-review',
             'document-summary',

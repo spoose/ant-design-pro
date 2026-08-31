@@ -1,4 +1,4 @@
-import { getSkillDefinition } from '@/config/skillRegistry';
+import { getAppDefinition } from '@/config/appRegistry';
 import {
   getWorkspaceAppKey,
   getWorkspaceOrganizationPageKey,
@@ -49,7 +49,7 @@ export const titleForWorkspaceRecent = (url: string, fallback: string) => {
   const pathname = pathOf(url);
   const appKey = getWorkspaceAppKey(pathname);
   if (appKey) {
-    return getSkillDefinition(appKey)?.title ?? fallback;
+    return getAppDefinition(appKey)?.title ?? fallback;
   }
 
   const statsPageKey = getWorkspaceStatsPageKey(pathname);

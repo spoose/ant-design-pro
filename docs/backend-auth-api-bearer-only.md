@@ -95,7 +95,7 @@ interface OrganizationAccess {
   organizationCode: string;
   organizationName: string;
   permissions: string[];
-  skillCodes: string[];
+  appCodes: string[];
   dataScopes: [];
   defaultDataScopeId: null;
 }
@@ -109,7 +109,7 @@ interface AuthCurrentUser {
   status: UserStatus;
   isSuperAdmin: boolean;
   platformPermissions: string[];
-  platformSkillCodes: string[];
+  projectAppCodes: string[];
   defaultOrganizationId: string | null;
   organizations: OrganizationAccess[];
 }
@@ -233,7 +233,7 @@ interface IssuedAccessToken {
       "platform:permission:grant",
       "platform:user:manage"
   ],
-    "platformSkillCodes": [
+    "projectAppCodes": [
       "ai-assistant",
       "document-summary",
       "file-review",
@@ -248,7 +248,7 @@ interface IssuedAccessToken {
       "permissions": [
         "organization:*"
       ],
-      "skillCodes": [
+      "appCodes": [
         "document-summary",
         "file-review",
         "knowledge-search"
@@ -263,7 +263,7 @@ interface IssuedAccessToken {
       "permissions": [
         "organization:*"
       ],
-      "skillCodes": [
+      "appCodes": [
         "ai-assistant",
         "document-summary",
         "file-review",

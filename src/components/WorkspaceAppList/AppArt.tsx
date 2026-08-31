@@ -1,4 +1,4 @@
-/** Skill 启动卡右侧插画：纸张叠层 + 轻暖色点缀，替代图标。 */
+/** App 启动卡右侧插画：纸张叠层 + 轻暖色点缀，替代图标。 */
 
 const SoftShadowFilter = ({ id }: { id: string }) => (
   <filter
@@ -247,9 +247,9 @@ const FallbackArt = () => (
   </svg>
 );
 
-/** 按 skillCode 返回总览启动卡右侧插画；未知 code 回退为通用纸张叠层。 */
-export const WorkspaceSkillArt = ({ skillCode }: { skillCode: string }) => {
-  switch (skillCode) {
+/** 按 appCode 返回总览启动卡右侧插画；未知 code 回退为通用纸张叠层。 */
+export const WorkspaceAppArt = ({ appCode }: { appCode: string }) => {
+  switch (appCode) {
     case 'ai-assistant':
       return <AiAssistantArt />;
     case 'file-review':

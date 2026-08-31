@@ -45,7 +45,7 @@ type MockUsername = 'admin' | 'operator' | 'user' | 'users2';
 
 type MockGrant = {
   permissions: readonly string[];
-  skillCodes: readonly string[];
+  appCodes: readonly string[];
 };
 
 type MockAccount = {
@@ -54,7 +54,7 @@ type MockAccount = {
   accessToken: string;
   // Platform 授权与下面逐 Organization grants 独立。
   platformPermissions: readonly string[];
-  platformSkillCodes: readonly string[];
+  projectAppCodes: readonly string[];
   defaultOrganizationId?: OrganizationId;
   profile: {
     userId: string;
@@ -80,7 +80,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
       'platform:permission:grant',
       'platform:audit:view',
     ],
-    platformSkillCodes: ['knowledge-search'],
+    projectAppCodes: ['knowledge-search'],
     defaultOrganizationId: 'organization-1',
     profile: {
       userId: '00000001',
@@ -101,7 +101,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:ai-assistant',
           'page:admin',
         ],
-        skillCodes: [
+        appCodes: [
           'file-review',
           'document-summary',
           'knowledge-search',
@@ -116,7 +116,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:ai-assistant',
           'page:admin',
         ],
-        skillCodes: ['file-review', 'knowledge-search'],
+        appCodes: ['file-review', 'knowledge-search'],
       },
     },
   },
@@ -125,7 +125,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     currentAuthority: 'user',
     accessToken: 'mock-user-access-token',
     platformPermissions: [],
-    platformSkillCodes: [],
+    projectAppCodes: [],
     // 普通用户登录后直接进入后端指定的默认 Organization 首页。
     defaultOrganizationId: 'organization-1',
     profile: {
@@ -142,14 +142,14 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:dashboard-workplace',
           'page:ai-assistant',
         ],
-        skillCodes: ['file-review', 'document-summary'],
+        appCodes: ['file-review', 'document-summary'],
       },
       'organization-2': {
         permissions: [
           'page:dashboard-analysis',
           'page:ai-assistant',
         ],
-        skillCodes: ['knowledge-search'],
+        appCodes: ['knowledge-search'],
       },
     },
   },
@@ -158,7 +158,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     currentAuthority: 'user',
     accessToken: 'mock-users2-access-token',
     platformPermissions: [],
-    platformSkillCodes: [],
+    projectAppCodes: [],
     defaultOrganizationId: 'organization-2',
     profile: {
       userId: '00000004',
@@ -171,7 +171,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     grants: {
       'organization-2': {
         permissions: ['page:dashboard-analysis', 'page:ai-assistant'],
-        skillCodes: ['knowledge-search'],
+        appCodes: ['knowledge-search'],
       },
     },
   },
@@ -180,7 +180,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
     currentAuthority: 'user',
     accessToken: 'mock-operator-access-token',
     platformPermissions: [],
-    platformSkillCodes: [],
+    projectAppCodes: [],
     defaultOrganizationId: 'organization-1',
     profile: {
       userId: '00000003',
@@ -199,7 +199,7 @@ const mockAccounts: Record<MockUsername, MockAccount> = {
           'page:operations-config',
           'page:ai-assistant',
         ],
-        skillCodes: ['document-summary', 'knowledge-search'],
+        appCodes: ['document-summary', 'knowledge-search'],
       },
     },
   },
@@ -236,7 +236,7 @@ const getOrganizations = (username: MockUsername) => {
     ([organizationId, grant]) => ({
       ...organizationCatalog[organizationId],
       permissions: [...grant.permissions],
-      skillCodes: [...grant.skillCodes],
+      appCodes: [...grant.appCodes],
       dataScopes: organizationCatalog[organizationId].dataScopes.map(
         (dataScope) => ({ ...dataScope }),
       ),
@@ -254,7 +254,7 @@ export const buildMockCurrentUser = (username: MockUsername) => {
     isSuperAdmin: username === 'admin',
     access: account.currentAuthority,
     platformPermissions: [...account.platformPermissions],
-    platformSkillCodes: [...account.platformSkillCodes],
+    projectAppCodes: [...account.projectAppCodes],
     organizations: getOrganizations(username),
     defaultOrganizationId:
       defaultOrganizationIds[username] ??

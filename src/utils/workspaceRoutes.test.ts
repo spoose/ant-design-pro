@@ -1,7 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AuthCurrentUser } from '@/services/auth';
 import {
-  ACCESS_PENDING_PATH,
   getOrganizationAppPagePath,
   getOrganizationAppWorkspacePath,
   getOrganizationHomePath,
@@ -138,58 +136,7 @@ describe('workspaceRoutes', () => {
     );
   });
 
-  it('resolves currentUser to one canonical landing URL', () => {
-    const organization = {
-      organizationId: 'organization-1',
-      organizationCode: 'ORG1',
-      organizationName: '组织一',
-      permissions: [],
-      skillCodes: [],
-      dataScopes: [],
-      defaultDataScopeId: null,
-    };
-    const regularUser = {
-      userId: 'regular-user',
-      username: 'regular-user',
-      name: 'Regular User',
-      avatar: null,
-      email: 'regular-user@example.test',
-      status: 'active',
-      isSuperAdmin: false,
-      platformPermissions: [],
-      platformSkillCodes: [],
-      defaultOrganizationId: 'organization-1',
-      organizations: [organization],
-    } as AuthCurrentUser;
-
-    expect(
-      resolveLandingPath({
-        ...regularUser,
-        platformPermissions: ['platform:user:manage'],
-      }),
-    ).toBe('/workspace/platform/overview');
-    expect(resolveLandingPath(regularUser)).toBe(
-      '/workspace/org/organization-1/home',
-    );
-    expect(
-      resolveLandingPath({
-        ...regularUser,
-        defaultOrganizationId: null,
-        organizations: [
-          organization,
-          {
-            ...organization,
-            organizationId: 'organization-2',
-          },
-        ],
-      }),
-    ).toBe('/workspace/org/organization-1/home');
-    expect(
-      resolveLandingPath({
-        ...regularUser,
-        defaultOrganizationId: null,
-        organizations: [],
-      }),
-    ).toBe(ACCESS_PENDING_PATH);
+  it('exposes one canonical authenticated landing URL', () => {
+    expect(resolveLandingPath()).toBe('/workspace/platform/overview');
   });
 });

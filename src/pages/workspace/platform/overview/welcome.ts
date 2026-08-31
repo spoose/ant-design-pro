@@ -17,7 +17,7 @@ export const getPlatformWelcomeHeading = ({
   date?: Date;
 }) => {
   const displayName = userName?.trim() || '用户';
-  const roleLabel = isSuperAdmin ? '平台管理员' : '管理中心';
+  const roleLabel = isSuperAdmin ? '项目管理员' : '普通用户';
 
   return {
     title: `你好，${displayName}`,

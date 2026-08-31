@@ -99,7 +99,7 @@ class MemoryUserRepository implements UserRepositoryPort {
       organizationCode: organizationId,
       organizationName: organizationId,
       permissions: [],
-      skillCodes: [],
+      appCodes: [],
       dataScopes: [] as [],
       defaultDataScopeId: null,
     }));
@@ -112,7 +112,7 @@ class MemoryUserRepository implements UserRepositoryPort {
       status: user.status,
       isSuperAdmin: user.isSuperAdmin,
       platformPermissions: [],
-      platformSkillCodes: [],
+      projectAppCodes: [],
       defaultOrganizationId: organizationIds.includes(
         user.defaultOrganizationId ?? '',
       )
@@ -257,7 +257,7 @@ describe('authentication flow', () => {
       username: 'alice.user',
       isSuperAdmin: false,
       platformPermissions: [],
-      platformSkillCodes: [],
+      projectAppCodes: [],
       defaultOrganizationId: null,
       organizations: [],
     });

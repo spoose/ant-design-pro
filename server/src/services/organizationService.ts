@@ -1,7 +1,7 @@
 import { AppError } from '../errors/appError.js';
 import {
   SUPER_ADMIN_ORGANIZATION_PERMISSIONS,
-  SUPER_ADMIN_ORGANIZATION_SKILL_CODES,
+  SUPER_ADMIN_ORGANIZATION_APP_CODES,
 } from '../permissions/catalog.js';
 import type {
   CreateOrganizationInput,
@@ -37,7 +37,7 @@ export class OrganizationService implements OrganizationServicePort {
     return this.organizations.create(input, {
       creatorUserId,
       permissions: SUPER_ADMIN_ORGANIZATION_PERMISSIONS,
-      skillCodes: SUPER_ADMIN_ORGANIZATION_SKILL_CODES,
+      appCodes: SUPER_ADMIN_ORGANIZATION_APP_CODES,
     });
   }
 

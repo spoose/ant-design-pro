@@ -3,7 +3,6 @@ import {
   buildMockCurrentUser,
   getMockUsernameByAccessToken,
 } from '../mock/user';
-import { resolveLandingPath } from './utils/workspaceRoutes';
 
 vi.mock('@umijs/max', async () => {
   const { generatePath, matchPath } =
@@ -34,7 +33,7 @@ describe('mock auth users', () => {
     expect(user.name).toBe('Admin User');
     expect(user.platformPermissions).toContain('platform:organization:create');
     expect(user.platformPermissions).toContain('platform:permission:grant');
-    expect(user.platformSkillCodes).toEqual(['knowledge-search']);
+    expect(user.projectAppCodes).toEqual(['knowledge-search']);
     expect(user.defaultOrganizationId).toBe('organization-1');
     expect(
       user.organizations.map((organization) => organization.organizationId),
@@ -63,21 +62,6 @@ describe('mock auth users', () => {
         (organization) => organization.organizationId === 'organization-2',
       )?.permissions,
     ).not.toContain('page:dashboard-monitor');
-  });
-
-  it('sends admin to Platform and other mock users to their default Organization', () => {
-    expect(resolveLandingPath(buildMockCurrentUser('admin'))).toBe(
-      '/workspace/platform/overview',
-    );
-    expect(resolveLandingPath(buildMockCurrentUser('user'))).toBe(
-      '/workspace/org/organization-1/home',
-    );
-    expect(resolveLandingPath(buildMockCurrentUser('operator'))).toBe(
-      '/workspace/org/organization-1/home',
-    );
-    expect(resolveLandingPath(buildMockCurrentUser('users2'))).toBe(
-      '/workspace/org/organization-2/home',
-    );
   });
 
   it('keeps users2 isolated to Organization 2', () => {
@@ -112,10 +96,10 @@ describe('mock auth users', () => {
     expect(user.organizations[0].dataScopes).toHaveLength(2);
   });
 
-  it('keeps the AI assistant page available for every displayed skill', () => {
+  it('keeps the AI assistant page available for every displayed app', () => {
     for (const username of ['admin', 'user', 'operator', 'users2'] as const) {
       for (const organization of buildMockCurrentUser(username).organizations) {
-        if (organization.skillCodes.length > 0) {
+        if (organization.appCodes.length > 0) {
           expect(organization.permissions).toContain('page:ai-assistant');
         }
       }

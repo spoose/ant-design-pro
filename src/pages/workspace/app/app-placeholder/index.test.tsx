@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import SkillPlaceholderPage from '.';
+import AppPlaceholderPage from '.';
 
 vi.mock('@umijs/max', async () => {
   const { generatePath, matchPath } =
@@ -17,11 +17,9 @@ vi.mock('@umijs/max', async () => {
   };
 });
 
-describe('SkillPlaceholderPage', () => {
-  it('uses the registered Skill and child-page titles', () => {
-    render(
-      <SkillPlaceholderPage appKey="knowledge-search" pageKey="history" />,
-    );
+describe('AppPlaceholderPage', () => {
+  it('uses the registered App and child-page titles', () => {
+    render(<AppPlaceholderPage appKey="knowledge-search" pageKey="history" />);
 
     expect(
       screen.getByRole('heading', { level: 1, name: '搜索记录' }),

@@ -27,7 +27,7 @@ const superAdmin = {
   status: 'active',
   isSuperAdmin: true,
   platformPermissions: ['platform:organization:update', 'platform:user:manage'],
-  platformSkillCodes: ['knowledge-search'],
+  projectAppCodes: ['knowledge-search'],
   defaultOrganizationId: null,
   organizations: [
     {
@@ -35,7 +35,7 @@ const superAdmin = {
       organizationCode: 'ORG1',
       organizationName: '组织一',
       permissions: ['organization:user:manage'],
-      skillCodes: ['file-review'],
+      appCodes: ['file-review'],
       dataScopes: [],
       defaultDataScopeId: null,
     },
@@ -87,8 +87,8 @@ describe('Workspace menus', () => {
         path: '/workspace/org/organization%2Fa/home',
       },
       {
-        name: '成员管理',
-        path: '/workspace/org/organization%2Fa/members',
+        name: '组织设置',
+        path: '/workspace/org/organization%2Fa/settings',
       },
     ]);
     expect(
@@ -109,22 +109,25 @@ describe('Workspace menus', () => {
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
       {
-        name: '系统管理',
+        name: '系统设置',
         path: '/workspace/platform/system',
-        children: [{ name: '用户管理', path: '/workspace/platform/users' }],
+        children: [
+          { name: '组织管理', path: '/workspace/platform/organizations' },
+          { name: '用户管理', path: '/workspace/platform/users' },
+        ],
       },
     ]);
   });
 
-  it('nests 日志 before 用户管理 under 系统管理', () => {
+  it('orders 用户管理 before 日志 under 系统设置', () => {
     expect(
       createPlatformWorkspaceMenus(['overview', 'users', 'logs']).flatMap(
         (item) =>
-          item.name === '系统管理'
+          item.name === '系统设置'
             ? (item.children?.map((child) => child.name) ?? [])
             : [],
       ),
-    ).toEqual(['日志', '用户管理']);
+    ).toEqual(['用户管理', '日志']);
   });
 
   it('nests xOneAI under Organization and Platform home menus when authorized', () => {
@@ -174,8 +177,14 @@ describe('Workspace menus', () => {
         ],
       },
       {
-        name: '成员管理',
-        path: '/workspace/org/organization-1/members',
+        name: '组织设置',
+        path: '/workspace/org/organization-1/settings',
+        children: [
+          {
+            name: '用户管理',
+            path: '/workspace/org/organization-1/members',
+          },
+        ],
       },
     ]);
 
@@ -204,6 +213,13 @@ describe('Workspace menus', () => {
             name: '记忆',
             path: '/workspace/platform/apps/ai-assistant/memory',
           },
+        ],
+      },
+      {
+        name: '系统设置',
+        path: '/workspace/platform/system',
+        children: [
+          { name: '组织管理', path: '/workspace/platform/organizations' },
         ],
       },
     ]);
@@ -256,6 +272,13 @@ describe('Workspace menus', () => {
           { name: '操作痕迹', path: '/workspace/platform/stats/traces' },
         ],
       },
+      {
+        name: '系统设置',
+        path: '/workspace/platform/system',
+        children: [
+          { name: '组织管理', path: '/workspace/platform/organizations' },
+        ],
+      },
     ]);
 
     expect(
@@ -265,7 +288,7 @@ describe('Workspace menus', () => {
         [],
         false,
       ).map(({ name }) => name),
-    ).toEqual(['组织首页', '成员管理']);
+    ).toEqual(['组织首页', '组织设置']);
   });
 
   it('derives Platform, Organization and App sidebars from the URL', () => {
@@ -274,7 +297,7 @@ describe('Workspace menus', () => {
         superAdmin,
         '/workspace/platform/organizations',
       ),
-    ).toMatchObject({ kind: 'platform', title: '管理中心' });
+    ).toMatchObject({ kind: 'platform', badge: 'PM', title: '项目控制台' });
     expect(
       resolveWorkspaceMenuDescriptor(
         superAdmin,
@@ -297,13 +320,35 @@ describe('Workspace menus', () => {
     });
   });
 
+  it('keeps the Project home menu for users without management grants', () => {
+    const regularUser = {
+      ...superAdmin,
+      isSuperAdmin: false,
+      platformPermissions: [],
+      projectAppCodes: [],
+    } as AuthCurrentUser;
+
+    const descriptor = resolveWorkspaceMenuDescriptor(
+      regularUser,
+      '/workspace/platform/overview',
+    );
+    expect(descriptor).toMatchObject({
+      kind: 'platform',
+      badge: 'PJ',
+      title: '工作台',
+    });
+    expect(descriptor?.items.map(({ name, path }) => ({ name, path }))).toEqual(
+      [{ name: '工作台', path: '/workspace/platform/overview' }],
+    );
+  });
+
   it('keeps the home sidebar on xOneAI URLs instead of swapping to an App sidebar', () => {
     const userWithPai = {
       ...superAdmin,
-      platformSkillCodes: ['ai-assistant', 'knowledge-search'],
+      projectAppCodes: ['ai-assistant', 'knowledge-search'],
       organizations: superAdmin.organizations.map((organization) => ({
         ...organization,
-        skillCodes: ['ai-assistant', 'file-review'],
+        appCodes: ['ai-assistant', 'file-review'],
       })),
     } as AuthCurrentUser;
 
@@ -313,7 +358,7 @@ describe('Workspace menus', () => {
     );
     expect(platformMenu).toMatchObject({
       kind: 'platform',
-      title: '管理中心',
+      title: '项目控制台',
     });
     expect(
       platformMenu?.items.map(({ name, path }) => ({ name, path })),
@@ -328,7 +373,7 @@ describe('Workspace menus', () => {
         path: '/workspace/platform/stats',
       },
       {
-        name: '系统管理',
+        name: '系统设置',
         path: '/workspace/platform/system',
       },
     ]);
@@ -339,9 +384,13 @@ describe('Workspace menus', () => {
     ).toEqual(['AI助手', '资源', '记忆']);
     expect(
       platformMenu?.items
-        .find((item) => item.name === '系统管理')
+        .find((item) => item.name === '系统设置')
         ?.children?.map(({ name, path }) => ({ name, path })),
-    ).toEqual([{ name: '用户管理', path: '/workspace/platform/users' }]);
+    ).toEqual([
+      { name: '组织管理', path: '/workspace/platform/organizations' },
+      { name: '用户管理', path: '/workspace/platform/users' },
+      { name: '日志', path: '/workspace/platform/logs' },
+    ]);
 
     const organizationMenu = resolveWorkspaceMenuDescriptor(
       userWithPai,
@@ -355,11 +404,11 @@ describe('Workspace menus', () => {
       '组织首页',
       'xOneAI',
       '统计',
-      '成员管理',
+      '组织设置',
     ]);
   });
 
-  it('builds Skill menus inside one App route namespace', () => {
+  it('builds App menus inside one App route namespace', () => {
     expect(
       createAppWorkspaceMenus(
         '/workspace/org/organization-1/apps/file-review/history',
@@ -423,12 +472,12 @@ describe('Workspace menus', () => {
 });
 
 describe('buildWorkspaceBreadcrumb', () => {
-  it('uses 管理中心 on Platform paths and the organization name on Organization paths', () => {
+  it('uses 项目控制台 on Project Admin paths and the organization name on Organization paths', () => {
     expect(
       buildWorkspaceBreadcrumb(superAdmin, '/workspace/platform/overview', [
         '工作台',
       ]),
-    ).toEqual(['管理中心', '工作台']);
+    ).toEqual(['项目控制台', '工作台']);
     expect(
       buildWorkspaceBreadcrumb(
         superAdmin,
@@ -442,6 +491,6 @@ describe('buildWorkspaceBreadcrumb', () => {
         '/workspace/platform/apps/file-review/overview',
         ['文件审查', '审查工作台'],
       ),
-    ).toEqual(['管理中心', '文件审查', '审查工作台']);
+    ).toEqual(['项目控制台', '文件审查', '审查工作台']);
   });
 });

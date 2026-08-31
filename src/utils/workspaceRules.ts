@@ -2,7 +2,7 @@ import type { AuthCurrentUser, OrganizationAccess } from '@/services/auth';
 
 /** Platform 固定首页侧栏的稳定菜单标识。 */
 export type PlatformMenuKey =
-  /** 管理中心首页。 */
+  /** 所有已认证用户都能访问的 Project 工作台。 */
   | 'overview'
   /** 全部 Organization 的平台级管理页。 */
   | 'organizations'
@@ -24,13 +24,13 @@ export type OrganizationMenuKey =
   /** 当前 Organization 设置。 */
   | 'settings';
 
-/** 由 currentUser.platformPermissions 派生的 Platform 授权画像。 */
+/** 由当前认证用户派生的 Project 首页与 Platform 管理授权画像。 */
 export type PlatformAccess = {
   /** POST /api/currentUser/get 返回的 platformPermissions 防御性副本。 */
   permissions: string[];
-  /** POST /api/currentUser/get 返回的 platformSkillCodes 防御性副本。 */
-  availableSkillCodes: string[];
-  /** 是否至少拥有一个 Platform 权限，决定能否进入管理中心。 */
+  /** 当前 Project 可用应用代码的防御性副本。 */
+  availableAppCodes: string[];
+  /** 是否至少拥有一个 Platform 管理权限；不再控制公共工作台。 */
   canEnterManagementCenter: boolean;
   /** 是否显示并允许进入组织管理。 */
   canManageOrganizations: boolean;
@@ -40,14 +40,14 @@ export type PlatformAccess = {
   canGrantPlatformPermissions: boolean;
   /** 是否具备平台审计查看能力。 */
   canViewPlatformAudit: boolean;
-  /** 是否可查看平台统计；与进入管理中心同一道门。 */
+  /** 是否可进入独立统计路由；首页公共图表不读取该权限。 */
   canViewStats: boolean;
   /** 由上述布尔能力按固定顺序生成的 Platform Sidebar Key。 */
   visibleMenuKeys: PlatformMenuKey[];
   /** 供页面按钮和操作入口复用的 Platform 权限判断函数。 */
   hasPermission: (permission: string) => boolean;
-  /** 判断 Platform Scope 内是否可打开指定 App/Skill 标签。 */
-  canUseSkill: (skillCode: string) => boolean;
+  /** 判断 Project 公共区域内是否可打开指定应用标签。 */
+  canUseApp: (appCode: string) => boolean;
 };
 
 /** 指定 Organization 的前端授权画像；不会读取其他 Organization 或 Platform 权限。 */
@@ -58,8 +58,8 @@ export type ResolvedOrganizationAccess = {
   organization?: OrganizationAccess;
   /** 当前 Organization permissions 的防御性副本。 */
   permissions: string[];
-  /** 当前 Organization skillCodes 的防御性副本。 */
-  availableSkillCodes: string[];
+  /** 当前 Organization appCodes 的防御性副本。 */
+  availableAppCodes: string[];
   /** 是否允许管理当前 Organization 成员。 */
   canManageMembers: boolean;
   /** 是否允许管理当前 Organization 角色或授权。 */
@@ -72,15 +72,9 @@ export type ResolvedOrganizationAccess = {
   visibleMenuKeys: OrganizationMenuKey[];
   /** 仅在当前 Organization 内判断权限。 */
   hasPermission: (permission: string) => boolean;
-  /** 仅在当前 Organization 内判断 App/Skill 可用性。 */
-  canUseSkill: (skillCode: string) => boolean;
+  /** 仅在当前 Organization 内判断应用可用性。 */
+  canUseApp: (appCode: string) => boolean;
 };
-
-/** 登录完成后声明式描述第一个页面；执行跳转由调用方负责。 */
-export type LandingWorkspace =
-  | { kind: 'platform' }
-  | { kind: 'organization'; organizationId: string }
-  | { kind: 'access-pending' };
 
 const hasGrantedPermission = (
   permissions: readonly string[],
@@ -94,17 +88,21 @@ const hasGrantedPermission = (
 /** Platform Access 独立计算，禁止把多个 Organization 权限组合成 Platform 权限。 */
 export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
   const permissions = [...(user.platformPermissions ?? [])];
-  const availableSkillCodes = [...(user.platformSkillCodes ?? [])];
+  const availableAppCodes = [...(user.projectAppCodes ?? [])];
+  // 旧 isSuperAdmin 当前等价于 Project Admin；复用原管理菜单时拥有 Project 全部管理能力。
+  const isProjectAdmin = user.isSuperAdmin;
   const hasPermission = (permission: string) =>
+    isProjectAdmin ||
     hasGrantedPermission(permissions, permission, 'platform:*');
-  const canUseSkill = (skillCode: string) =>
-    availableSkillCodes.includes(skillCode);
-  const canEnterManagementCenter = permissions.some(
-    (permission) =>
-      permission === '*' ||
-      permission === 'platform:*' ||
-      permission.startsWith('platform:'),
-  );
+  const canUseApp = (appCode: string) => availableAppCodes.includes(appCode);
+  const canEnterManagementCenter =
+    isProjectAdmin ||
+    permissions.some(
+      (permission) =>
+        permission === '*' ||
+        permission === 'platform:*' ||
+        permission.startsWith('platform:'),
+    );
   const canManageOrganizations = [
     'platform:organization:create',
     'platform:organization:update',
@@ -116,9 +114,9 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
   );
   const canViewPlatformAudit = hasPermission('platform:audit:view');
   const canViewStats = canEnterManagementCenter;
-  const visibleMenuKeys: PlatformMenuKey[] = [];
+  // overview 是所有登录用户共享的固定首页，其余菜单仍由管理权限逐项加入。
+  const visibleMenuKeys: PlatformMenuKey[] = ['overview'];
 
-  if (canEnterManagementCenter) visibleMenuKeys.push('overview');
   if (canManageOrganizations) visibleMenuKeys.push('organizations');
   if (canManagePlatformUsers) visibleMenuKeys.push('users');
   if (canGrantPlatformPermissions) visibleMenuKeys.push('permissions');
@@ -126,7 +124,7 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
 
   return {
     permissions,
-    availableSkillCodes,
+    availableAppCodes,
     canEnterManagementCenter,
     canManageOrganizations,
     canManagePlatformUsers,
@@ -135,7 +133,7 @@ export const getPlatformAccess = (user: AuthCurrentUser): PlatformAccess => {
     canViewStats,
     visibleMenuKeys,
     hasPermission,
-    canUseSkill,
+    canUseApp,
   };
 };
 
@@ -163,12 +161,12 @@ export const getOrganizationAccess = (
     (candidate) => candidate.organizationId === organizationId,
   );
   const permissions = [...(organization?.permissions ?? [])];
-  const availableSkillCodes = [...(organization?.skillCodes ?? [])];
+  const availableAppCodes = [...(organization?.appCodes ?? [])];
   const hasPermission = (permission: string) =>
     Boolean(organization) &&
     hasGrantedPermission(permissions, permission, 'organization:*');
-  const canUseSkill = (skillCode: string) =>
-    Boolean(organization) && availableSkillCodes.includes(skillCode);
+  const canUseApp = (appCode: string) =>
+    Boolean(organization) && availableAppCodes.includes(appCode);
   const canManageMembers = hasPermission('organization:user:manage');
   const canManageRoles =
     hasPermission('organization:role:manage') ||
@@ -186,47 +184,13 @@ export const getOrganizationAccess = (
     accessible: Boolean(organization),
     organization,
     permissions,
-    availableSkillCodes,
+    availableAppCodes,
     canManageMembers,
     canManageRoles,
     canUpdateSettings,
     canViewStats,
     visibleMenuKeys,
     hasPermission,
-    canUseSkill,
+    canUseApp,
   };
-};
-
-/**
- * 登录落点优先级：Platform -> 有效默认组织 -> 第一个可访问组织 -> 等待授权。
- * organizations 已由后端按 code、id 稳定排序；这里不写回 defaultOrganizationId，
- * 仅把第一个组织作为当前登录的有效默认入口。
- * 标签快照不参与授权和 Scope 选择，只在进入目标 Scope 后恢复 App 标签。
- */
-export const resolveLandingWorkspace = (
-  user: AuthCurrentUser,
-): LandingWorkspace => {
-  if (getPlatformAccess(user).canEnterManagementCenter) {
-    return { kind: 'platform' };
-  }
-
-  const organizations = getAccessibleOrganizations(user);
-  const defaultOrganization = organizations.find(
-    (organization) =>
-      organization.organizationId === user.defaultOrganizationId,
-  );
-  if (defaultOrganization) {
-    return {
-      kind: 'organization',
-      organizationId: defaultOrganization.organizationId,
-    };
-  }
-  const firstAccessibleOrganization = organizations[0];
-  if (firstAccessibleOrganization) {
-    return {
-      kind: 'organization',
-      organizationId: firstAccessibleOrganization.organizationId,
-    };
-  }
-  return { kind: 'access-pending' };
 };
