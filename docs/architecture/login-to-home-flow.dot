@@ -1,0 +1,92 @@
+// 登录 -> 首页渲染 调用链路（服务调用流，flow-visualizer + graphviz）
+// 生成日期: 2026-08-24 | 置信度: 全部节点有代码证据 (high)
+// 触发: 用户在登录页提交账号密码 | 结果: Workspace 首页组件渲染完成
+digraph login_to_home_flow {
+  rankdir=TB;
+  graph [fontname="sans-serif", label="登录 -> 首页渲染 链路（JUSHU / Ant Design Pro）", labelloc=t, fontsize=16];
+  node [fontname="sans-serif", fontsize=11, shape=box, style="rounded"];
+  edge [fontname="sans-serif", fontsize=9];
+
+  // ---------- 边界: 用户界面 ----------
+  subgraph cluster_ui {
+    label="UI 层（浏览器）"; style=dashed; color=gray;
+    ui_login_form [label="UI: LoginForm 表单提交", shape=ellipse];
+    ui_home_platform [label="Route: /workspace/platform/overview\n平台工作台（workspace/platform/index.tsx）"];
+    ui_home_org [label="Route: /workspace/org/:organizationId/home\n组织首页（pages/Home/index.tsx，无额外请求）"];
+    ui_pending [label="Route: /workspace/access-pending\n无可进入 Scope 的中立落点"];
+    ui_login_error [label="UI: notification 展示登录失败\nclearAccessToken()", style="rounded,dashed"];
+    ui_exception [label="Route: /exception/403 | /exception/404", style="rounded,dashed"];
+  }
+
+  // ---------- 边界: 前端函数链 ----------
+  subgraph cluster_fe {
+    label="前端函数链（src/）"; style=dashed; color=gray;
+    f_handleSubmit [label="handleSubmit()\npages/user/login/index.tsx"];
+    f_loginWithPassword [label="loginWithPassword()\nservices/auth.ts"];
+    f_loginRequest [label="login()\nservices/jushu-api/authentication.ts\n(OpenAPI 生成)"];
+    f_interceptor [label="requestInterceptors\n附加 Authorization: Bearer <token>\nrequestErrorConfig.ts"];
+    f_setToken [label="setAccessToken()\nutils/authToken.ts"];
+    f_fetchUserInfo [label="fetchUserInfo()\nlogin/index.tsx -> app.tsx getInitialState.fetchUserInfo"];
+    f_getCurrentUser [label="getCurrentUser()\nservices/auth.ts -> jushu-api/currentUser.ts"];
+    f_setState [label="setInitialState({ currentUser })\nUmi @@initialState"];
+    f_landing [label="resolveLandingPath(userInfo)\nutils/workspaceRoutes.ts\n-> resolveLandingWorkspace()"];
+    f_nav [label="history.replace(landingPath)"];
+    f_guard [label="wrapper workspaceAccess\nresolveWorkspaceRouteDecision()"];
+    f_layout [label="layout() 渲染 ProLayout 壳\nmenuDataRender / onPageChange 兜底\napp.tsx"];
+  }
+
+  // ---------- 边界: HTTP ----------
+  subgraph cluster_http {
+    label="HTTP 请求"; style=dashed; color=gray;
+    node [shape=note];
+    http_login [label="POST /api/login/account\n{account, password} -> {accessToken}"];
+    http_current_user [label="POST /api/currentUser/get\nBearer Token -> AuthCurrentUser 授权快照"];
+  }
+
+  // ---------- 边界: 后端 (server/) ----------
+  subgraph cluster_be {
+    label="后端 Fastify（server/src）"; style=dashed; color=gray;
+    b_auth_router [label="createAuthRouter\nroutes/auth.ts (挂载于 /api)"];
+    b_auth_service [label="authService.login()\n校验凭证 -> accessTokenService 签发 JWT"];
+    b_authenticate [label="authenticate 中间件\nmiddleware/auth.ts 校验 Bearer JWT"];
+    b_current_user [label="getCurrentUser 处理器\nroutes/currentUser.ts\n身份 + Platform 权限 + 可进入 Organization"];
+  }
+
+  // ---------- 边界: 存储 ----------
+  subgraph cluster_store {
+    label="存储"; style=dashed; color=gray;
+    store_token [label="localStorage\n'ant-design-pro.access-token'", shape=cylinder];
+  }
+
+  // ---------- 主路径 ----------
+  ui_login_form -> f_handleSubmit [label="onFinish(values)"];
+  f_handleSubmit -> f_loginWithPassword [label="skipErrorHandler: true"];
+  f_loginWithPassword -> f_loginRequest;
+  f_loginRequest -> f_interceptor [label="登录时本地无 token，不附加 Header"];
+  f_interceptor -> http_login [label="axios"];
+  http_login -> b_auth_router [label="HTTP POST"];
+  b_auth_router -> b_auth_service;
+  b_auth_service -> http_login [label="ApiSuccess<accessToken>", style=dashed];
+  http_login -> f_setToken [label="2xx 响应", style=dashed];
+  f_setToken -> store_token;
+  f_setToken -> f_fetchUserInfo [label="token 落盘后"];
+  f_fetchUserInfo -> f_getCurrentUser;
+  f_getCurrentUser -> f_interceptor;
+  f_interceptor -> http_current_user [label="携带刚保存的 Bearer Token"];
+  http_current_user -> b_authenticate [label="HTTP POST"];
+  b_authenticate -> b_current_user;
+  b_current_user -> f_setState [label="AuthCurrentUser", style=dashed];
+  f_setState -> f_landing;
+  f_landing -> f_nav [label="platform | organization | access-pending"];
+  f_nav -> f_guard [label="Umi Router 匹配\nconfig/routes.ts"];
+  f_guard -> f_layout [label="allow -> <Outlet/>"];
+  f_layout -> ui_home_platform [label="landing.kind === 'platform'"];
+  f_layout -> ui_home_org [label="landing.kind === 'organization'"];
+  f_layout -> ui_pending [label="landing.kind === 'access-pending'"];
+
+  // ---------- 失败分支 ----------
+  http_login -> ui_login_error [label="非 2xx / 业务失败\ncatch -> getAuthErrorDetails()", style=dashed, color=red];
+  http_current_user -> f_fetchUserInfo [label="401 -> handleAccessTokenFailure()\n清 token + 回登录页", style=dashed, color=red];
+  f_guard -> ui_exception [label="forbidden/not-found", style=dashed, color=red];
+  ui_login_error -> ui_login_form [label="用户重试", style=dotted, color=gray];
+}

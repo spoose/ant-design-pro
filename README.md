@@ -10,14 +10,14 @@ Agent 链路，可用于继续开发多组织企业工作台。
 
 | 能力 | 仓库中的实现 | 带来的边界 |
 | --- | --- | --- |
-| WorkspaceScope | Platform / Organization 路由、切换器、应用标签与访问守卫 | 不同组织不共享菜单、标签或 Skill 上下文 |
+| WorkspaceScope | Platform / Organization 路由、切换器、应用标签与访问守卫 | 不同组织不共享菜单、标签或应用上下文 |
 | 认证与授权 | JWT Bearer、`POST /api/currentUser/get`、MySQL 用户/组织/成员/授权数据 | 用户身份与 Scope 均由服务端结果决定 |
 | pAI | Ant Design X、Express、Mastra、DeepSeek、可选 Firecrawl、项目自有 SSE | Agent 不替代 HTTP 鉴权，也不能自行扩大租户范围 |
 
 主要请求路径：
 
 ```text
-URL /workspace/... → WorkspaceScope → route guard → authorized Skill
+URL /workspace/... → WorkspaceScope → route guard → authorized App
   → Bearer API → Express validation / permission → MySQL or pAI service
   → reasoning-delta / text-delta / sources / done → Ant Design X
 ```
@@ -27,7 +27,7 @@ URL /workspace/... → WorkspaceScope → route guard → authorized Skill
 ### Workspace 与管理
 
 - Platform 与 Organization 两级入口、默认落点和整页 Scope 切换。
-- 当前 Scope 内的应用标签、权限摘要与后端过滤后的 Skill 启动卡。
+- 当前 Scope 内的应用标签、权限摘要与按当前应用授权模型过滤的应用启动卡。
 - 注册、登录、退出、密码重置与登录态恢复。
 - Super Admin 的组织查询/创建/编辑/受约束删除，以及全人员分页查询。
 

@@ -88,7 +88,7 @@ components:
     padding: "4px 15px"
     height: "32px"
   button-text:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "transparent"
     textColor: "{colors.ink}"
     typography: "{typography.body}"
     rounded: "{rounded.md}"
@@ -131,7 +131,7 @@ components:
     typography: "{typography.label}"
     rounded: "999px"
     padding: "2px 10px"
-  skill-card:
+  app-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.work-ink}"
     typography: "{typography.body}"
@@ -155,11 +155,13 @@ components:
 
 # Design System: JU SHU
 
+术语遵循 [PRODUCT.md](./PRODUCT.md)：普通业务入口称为 App / 应用，Skill 专指 Agent Skill；本文的应用卡片配置使用 `app-card`。
+
 ## 1. Overview
 
 **Creative North Star: "有序工作台"**
 
-JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良好的工作台：当前 Platform 或 Organization 始终明确，已授权的权限与 Skill 位于直接可达的位置，不相关的信息退到背景中。视觉层级服务于工作区范围、权限状态和操作路径，而不是展示设计本身。
+JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良好的工作台：当前 Platform 或 Organization 始终明确，已授权的权限与应用位于直接可达的位置，不相关的信息退到背景中。视觉层级服务于工作区范围、权限状态和操作路径，而不是展示设计本身。
 
 系统采用桌面优先的响应式结构，保持固定、紧凑的界面字号和基于 4px 的间距节奏。Ant Design 提供熟悉的交互语法，Tailwind 只补充业务页面布局和工作灰；两者必须共享同一套颜色、圆角和密度判断。
 
@@ -169,7 +171,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 - 中性品牌灰建立识别表面，近黑主交互与工作灰承担信息层级。
 - 紧凑而不拥挤，常用操作在一至两步内可达。
-- WorkspaceScope、Sidebar、权限、Skill 与业务请求保持一致。
+- WorkspaceScope、Sidebar、权限、应用与业务请求保持一致。
 - 常驻表面平坦，浮层和瞬时状态才获得抬升。
 - 使用成熟、标准的企业软件交互模式。
 
@@ -197,7 +199,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 - **ink**：用于状态文字、列表圆点、描边和图标着色。
 - **soft**：只用于状态胶囊 / Badge 底色；不要单独铺满大面积表面。
 - 组织「已启用」映射 success（Running）；「已停用 / 待机」映射 warning（Idle）；失败与阻断映射 error。
-- antd 的 `Tag color="success|warning|error"` 仍走组件库默认色；业务状态胶囊请使用本色对，避免两套绿红并存。
+- 业务状态胶囊使用本色对。错误状态统一使用自定义 `error` / `error-soft`，包括 antd Tag、表单校验和输入控件；通过主题 Token 或组件样式落实，不保留组件库默认错误红作为例外。
 
 ### Action（行内操作色）
 
@@ -215,7 +217,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 - **画布灰** (`#f5f5f5`) 与 **表面白** (`#ffffff`)：区分应用背景和内容表面，不依靠常驻阴影制造层级。
 - **主墨色** (`#000000e0`)：正文、标题和关键数据；次级与三级信息分别使用 `#000000a6` 和 `#00000073`。
-- **工作黑** (`#09090b`) 与 **工作灰** (`#52525c`)：用于权限与 Skill 概览中的高对比信息层级。
+- **工作黑** (`#09090b`) 与 **工作灰** (`#52525c`)：用于权限与应用概览中的高对比信息层级。
 - **分隔线** (`#d9d9d9`) 与 **轻分隔线** (`#f0f0f0`)：前者标记控件边界，后者划分大面积内容。
 - **品牌 / 选中 / hover 浅底** (`#f5f5f5`)：代码常量见 `src/theme/colors.ts` → `surfaceColors.selectedSoft` 与 `hoverSoft`，同时作为 `colorPrimaryBg` 和交互 hover token 的显式覆盖。
 
@@ -231,7 +233,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 **Body Font:** AlibabaSans，回退到系统无衬线字体。
 
-**Label/Mono Font:** 权限码、Skill Code 和技术标识使用 SFMono-Regular、Consolas 或等宽系统字体。
+**Label/Mono Font:** 权限码、App Code 和技术标识使用 SFMono-Regular、Consolas 或等宽系统字体。
 
 **Character:** 单一无衬线家族保持专业与效率，依靠字重、字号和间距建立层级。所有界面文字的 letter-spacing 固定为 `0`，不使用大写追踪字制造装饰感。
 
@@ -241,7 +243,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 - **Title** (600, 20px, 1.4)：用于当前 Organization、App 名称和页面级重点，不在紧凑面板内放大。
 - **Body** (400, 14px, 1.5714)：默认正文、表单和按钮文字；连续说明文本限制在 65–75ch。
 - **Label** (500, 12px, 1.5)：用于计数、辅助元数据和紧凑标签，不承担主要操作名称。
-- **Code** (400, 12px, 1.5)：只用于权限码、Skill Code 和系统标识，长值必须允许换行。
+- **Code** (400, 12px, 1.5)：只用于权限码、App Code 和系统标识，长值必须允许换行。
 
 ### Named Rules
 
@@ -267,8 +269,8 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 - **Shape:** 轻微圆角 (`6px`)，默认高度 `32px`，大号流程按钮高度 `40px`。
 - **Primary:** 近黑背景（`#000000e3`）、白色文字，默认水平内边距 `15px`；一个操作区只保留一个主按钮。
-- **Hover / Focus:** hover 使用 `#0d0d0d`，active 使用 `#000000`；focus-visible 必须保留清晰的近黑焦点环。
-- **Text:** 顶栏操作使用透明背景、`36px` 高度和 `8px` 水平内边距，只在 hover 时出现轻灰底色。
+- **Hover / Focus:** 近黑主按钮的 hover 使用 `#0d0d0d`，active 使用 `#000000`；按钮的 focus-visible 必须保留清晰的近黑焦点环。
+- **Text:** 顶栏文字及图标按钮默认透明，透出顶栏背景；高度 `36px`、水平内边距 `8px`。hover 使用 `colors.hover-soft`（`#f5f5f5`）浅灰底色；键盘聚焦时显示清晰的近黑焦点环，不以白底代替焦点反馈。
 - **Disabled / Loading:** 使用 Ant Design 的标准禁用和加载状态，不通过降低文字对比度到不可读来表达禁用。
 
 ### Chips
@@ -288,7 +290,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 - **Style:** 全局使用 Ant Design `filled` 变体，浅灰填充、`6px` 圆角、默认高度 `32px`。
 - **Focus:** 聚焦后边界与焦点环使用近黑主交互色，文字和输入值保持主墨色。
-- **Error / Disabled:** 错误使用标准错误红并附带文字说明；禁用态保持可辨识标签，不只依赖颜色。
+- **Error / Disabled:** 错误文字、图标和输入框错误边框统一使用自定义 `error`（`#9a2827`）；需要错误浅底时使用 `error-soft`（`#ecdbd9`）。校验错误附带文字说明；禁用态保持可辨识标签，不只依赖颜色。
 
 ### Navigation
 
@@ -305,7 +307,7 @@ JU SHU 是一个冷静、清晰、可信的企业工作界面。它像整理良�
 
 ### Do:
 
-- **Do** 让当前 WorkspaceScope 可核对，并让 URL、Sidebar、权限、Skill 与请求 Header 同步变化。
+- **Do** 让当前 WorkspaceScope 可核对，并让 URL、Sidebar、权限、应用与请求 Header 同步变化。
 - **Do** 使用 `4/8/12/16/24/32px` 间距和 `4/6/8px` 圆角层级维持紧凑、可预测的节奏。
 - **Do** 将品牌灰 (`#f5f5f5`) 用于画布、选中和 hover 浅层；主要操作使用近黑色，并由工作灰承担普通信息层级。
 - **Do** 为按钮、输入、菜单和可点击卡片提供 default、hover、focus、active、disabled 与 loading 状态。

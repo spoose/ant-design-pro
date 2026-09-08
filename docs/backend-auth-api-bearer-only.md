@@ -57,7 +57,7 @@
 
 - `GET /api/admin/users/:userId`
 - 用户 Platform/Organization 授权快照与更新接口
-- 权限、Skill、DataScope 目录接口
+- 权限、应用、DataScope 目录接口
 
 ## 3. 通用响应
 
@@ -440,7 +440,7 @@ interface OrganizationSummary {
 - `POST /api/admin/organizations/update`：请求包含 `organizationId`，只允许更新 `organizationName` 和 `status`，且至少包含一个更新字段。
 - `POST /api/admin/organizations/delete`：请求为 `{ organizationId }`，成功返回 `{ organizationId }`。
 
-创建组织时，在同一事务中创建组织、创建者 Membership，并写入创建者的初始组织权限与 Skill。删除只允许以下两种情况：
+创建组织时，在同一事务中创建组织、创建者 Membership，并写入创建者的初始组织权限与应用授权。删除只允许以下两种情况：
 
 1. 组织没有成员或授权；
 2. 组织仅保留创建时生成的创建者 Membership 和初始授权，后端会在同一事务中先删 Grant、再删 Membership 和组织。
@@ -476,11 +476,11 @@ platform:audit:view
 | `organization:role:manage`	| 显示“角色管理” |
 | `organization:permission:grant`	| 显示“角色管理” |
 | `organization:settings:update`	| 显示“组织设置” |
-- Platform Scope 管理跨组织的全局能力，Organization Scope 隔离并管理单个组织内的成员、权限、Skill 和业务数据。
+- Platform Scope 管理跨组织的全局能力，Organization Scope 隔离并管理单个组织内的成员、权限、应用和业务数据。
 
-Platform 与 Organization Skill：`ai-assistant`、`file-review`、`document-summary`、`knowledge-search`。
+Platform 与 Organization 应用：`ai-assistant`、`file-review`、`document-summary`、`knowledge-search`。
 
-Organization 初始权限为 `organization:*`；Organization Skill 为 `file-review`、`document-summary`、`knowledge-search`。
+Organization 初始权限为 `organization:*`；Organization 应用为 `file-review`、`document-summary`、`knowledge-search`。
 
 这些常量目前由后端代码控制；面向管理端的授权目录 API 尚未实现。
 

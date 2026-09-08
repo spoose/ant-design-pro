@@ -9,7 +9,8 @@
 - `currentUser.projectAppCodes`：Project Scope 可使用的应用。
 - `currentUser.organizations[].appCodes`：对应 Organization Scope 可使用的应用。
 
-`skill` 不再表示普通应用。Legacy 数据库的应用授权使用
+普通业务入口统一称为 **App / 应用**，代码标识称为 **App Code**；首页卡片、快捷入口、
+侧栏和标签均使用这一称呼。`skill` 不表示普通应用。Legacy 数据库的应用授权使用
 `user_access_grants.grant_type = 'app'`；`skill` 保留给未来的 Agent Skill。
 
 ## 当前两套后端

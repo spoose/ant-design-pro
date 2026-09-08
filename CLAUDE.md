@@ -6,13 +6,13 @@ Ant Design Pro — React enterprise boilerplate on Umi Max v4, antd v6, ProCompo
 
 ## Commands
 
-`npm start` (dev+mock), `npm run dev` (no mock), `npm run build` (utoopack), `npm run lint` (Biome+tsc), `npm run test` (Jest), `npx antd lint ./src` (antd-specific checks).
+`npm start` (no mock), `npm run dev` (no mock), `npm run build` (utoopack), `npm run lint` (Biome+tsc), `npm run test` (Vitest), `npx antd lint ./src` (antd-specific checks).
 
-Other: `npm run openapi` (regenerate `src/services/`), `npm run simple` (**irreversible** — commit first), `npm run biome` (auto-fix), `npm run tsc` (type-check only).
+Other: `npm run openapi` (regenerate `src/services/jushu-api/` from `openapi/jushu-api.json`), `npm run openapi:legacy` (regenerate upstream template APIs from `config/oneapi.json`), `npm run simple` (**irreversible** — commit first), `npm run biome` (auto-fix), `npm run tsc` (type-check only).
 
 ## Critical Rules
 
-- **Never edit `src/services/ant-design-pro/`** — auto-generated, regenerate with `npm run openapi`
+- **Never hand-edit generated API code** — `src/services/jushu-api/` uses `npm run openapi`; `src/services/ant-design-pro/` uses `npm run openapi:legacy`
 - **Biome only** — no ESLint, no Prettier. Both `npm run lint` and `npx antd lint ./src` must pass before commit
 - **Always `npx antd info <Component>` before writing antd code** — don't guess APIs from memory
 - **`npm run simple` is irreversible** — always commit/branch first
@@ -26,9 +26,15 @@ Other: `npm run openapi` (regenerate `src/services/`), `npm run simple` (**irrev
 
 **Convention files** (`src/`): `app.tsx` (runtime config + `getInitialState`), `access.ts` (permissions), `global.tsx` (side effects), `loading.tsx`, `typings.d.ts`.
 
-**Auth**: `getInitialState()` → `GET /api/currentUser`; 401 → redirect login. `access.ts`: `canAdmin = currentUser.access === 'admin'`. Mock creds: `admin`/`ant.design` or `user`/`ant.design`.
+**Auth**: Login uses `loginAuthSession()`; initialization/refresh uses `loadAuthSession()` in `src/services/auth-session/`. The selected backend is `legacy` by default; `AUTH_BACKEND=xone` selects XOne. Legacy uses `POST /api/login/account` and `POST /api/currentUser/get`. XOne uses its `/web/**` login/organization APIs and normalized session metadata; it does not call the Legacy current-user endpoint. Token failures clear the session and return to login.
 
-**State**: `useModel('filename')` for global hooks (`src/models/`). `useModel('@@initialState')` for currentUser/settings. ProTable `request` prop for most data loading. `@tanstack/react-query` for complex server state.
+**Permissions**: `src/access.ts` reads the current Organization's permissions and checks `page:*` codes (or `*`); `canAdmin` checks `page:admin`. Workspace route rules and `appCodes` control Scope/application access. Frontend visibility does not replace backend authorization. See `docs/workspace-app-access.md` for current Legacy/XOne authorization boundaries.
+
+**Development modes**: `npm start` / `npm run dev` disable Mock and proxy `/api` to the local Express server. `npm run start:xone-mock` enables XOne mock development; `npm run start:xone` requires `XONE_API_TARGET` for the real `/web` proxy. Do not assume upstream demo credentials work against the real backend.
+
+**Server / AI**: `server/` is a separate Express/MySQL/Mastra package. Run `npm --prefix server run dev`, `npm --prefix server test`, and `npm --prefix server run typecheck`. Legacy pAI stores conversations, runs, messages and sources in MySQL; see `docs/architecture/ai/README.md`.
+
+**State**: `useModel('@@initialState')` for authSession/currentUser/settings. Umi also supports convention-based global models; this checkout currently has no models directory. ProTable `request` prop for most data loading. `@tanstack/react-query` for complex server state.
 
 **Styling priority**: Tailwind CSS v4 (layout) → antd-style v4 / `createStyles` (theme tokens) → CSS Modules → Less (legacy only).
 
@@ -61,11 +67,15 @@ Run `/antd` in Claude Code for any antd-related work. It provides access to `@an
 
 Each page dir: `index.tsx`, optional `service.ts`, `_mock.ts`, `data.d.ts`, style files. Keep page-specific code with the page.
 
-# CLAUDE.md
+## Collaboration Guidelines
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 0. 仅在明确要求时才修改代码
+
+**除非用户明确要求修改代码，否则不得改动任何代码文件。** 分析、解释、排查问题时只输出结论与建议；只有在用户下达明确的修改指令后（如"改成/加入/删除/实现"），才动手编辑代码。
 
 ## 1. Think Before Coding
 
