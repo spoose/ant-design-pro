@@ -38,3 +38,30 @@ export type XoneSelectOrganizationRequest = {
 export type XoneSelectOrganizationData = {
   token: string;
 };
+
+export type XoneRole = {
+  id?: string | number;
+  name?: string;
+  roleKey?: string;
+  remark?: string;
+  createTime?: string;
+  updateTime?: string;
+};
+
+/**
+ * XOne 当前用户原始数据。credential 只为忠实描述上游契约；
+ * 后续适配层必须丢弃它，禁止进入 initialState 或持久化缓存。
+ */
+export type XoneCurrentUser = {
+  id?: string | number;
+  projectId?: string | number;
+  userId?: string | number;
+  authType?: string;
+  identifier?: string;
+  credential?: string;
+  createTime?: string;
+  updateTime?: string;
+  roles?: XoneRole[];
+};
+
+export type XoneCurrentUserData = XoneCurrentUser | null;

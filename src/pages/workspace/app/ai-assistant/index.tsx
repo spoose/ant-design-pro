@@ -61,6 +61,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { getConfiguredAuthBackendKind } from '@/services/auth-backends';
 import { tagColors } from '@/theme/statusColors';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
 import { getOrganizationAccess } from '@/utils/workspaceRules';
@@ -89,6 +90,8 @@ import type { PaiChatMessage, PaiConversation, PaiRunRequest } from './types';
 const STREAMING_ACTIVE = { hasNextChunk: true, enableAnimation: true };
 const STREAMING_IDLE = { hasNextChunk: false, enableAnimation: false };
 const CONVERSATION_SIDEBAR_WIDTH = 234;
+// ponytail: XOne 的 AI API 开放后删除此开关，恢复现有请求链路。
+const PAI_API_ENABLED = getConfiguredAuthBackendKind() !== 'xone';
 const { Sider } = Layout;
 
 export const isResponseUpdating = (
@@ -319,6 +322,11 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
    * 不迁移、不作为接口失败时的历史兜底。
    */
   useEffect(() => {
+    if (!PAI_API_ENABLED) {
+      setIsWorkspaceLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const loadWorkspace = async () => {
@@ -361,6 +369,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
   const sendMessage = async (rawQuestion: string) => {
     const question = rawQuestion.trim();
     if (!question || isBusy) return;
+    if (!PAI_API_ENABLED) return;
 
     setIsConversationMutation(true);
     try {
@@ -659,7 +668,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
       }}
       styles={{ creation: { border: 'none' } }}
       creation={{
-        disabled: isBusy,
+        disabled: isBusy || !PAI_API_ENABLED,
         label: '新建对话',
         onClick: handleCreateConversation,
       }}
@@ -790,6 +799,7 @@ const PaiWorkbench = ({ scope, userName }: PaiWorkbenchProps) => {
             <div className={styles.senderInner}>
               <Sender
                 autoSize={{ minRows: 1, maxRows: 6 }}
+                disabled={!PAI_API_ENABLED}
                 loading={isBusy}
                 placeholder="随心输入"
                 styles={{ input: { outline: 'none' } }}

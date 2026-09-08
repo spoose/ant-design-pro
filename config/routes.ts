@@ -390,6 +390,11 @@ export default [
     layout: false,
   },
   {
+    path: '/dev/xone-chat-stream',
+    component: './xone-chat-stream',
+    hideInMenu: true,
+  },
+  {
     path: '/',
     component: './workspace/landing',
     layout: false,
