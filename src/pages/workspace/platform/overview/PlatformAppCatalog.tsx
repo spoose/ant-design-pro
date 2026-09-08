@@ -148,7 +148,7 @@ const PlatformAppCatalog = ({
     'border-0 bg-transparent p-0 text-xs text-orange-600 no-underline transition-colors hover:text-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 motion-reduce:transition-none dark:text-orange-400 dark:hover:text-orange-300';
 
   return (
-    <section aria-labelledby="platform-all-apps-title" className="grid gap-3">
+    <section aria-labelledby="platform-all-apps-title" className="grid gap-1">
       <header className="flex items-center justify-between gap-3">
         <h2
           className="m-0 text-base font-semibold text-zinc-950 dark:text-zinc-50"

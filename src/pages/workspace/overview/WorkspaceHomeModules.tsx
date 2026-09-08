@@ -3,7 +3,9 @@ import PlatformAppCatalog from '../platform/overview/PlatformAppCatalog';
 import PlatformMockCalendar from '../platform/overview/PlatformMockCalendar';
 import PlatformMockChart from '../platform/overview/PlatformMockChart';
 import { PlatformStartConversation } from '../platform/overview/PlatformMockConversations';
+import PlatformNotificationCenter from '../platform/overview/PlatformNotificationCenter';
 import PlatformQuickEntry from '../platform/overview/PlatformQuickEntry';
+import PlatformWeeklyGoals from '../platform/overview/PlatformWeeklyGoals';
 
 export type WorkspaceHomeModulesProps = {
   /** 当前 Scope 实际可用的应用代码；Project 与 Organization 禁止互相合并。 */
@@ -28,9 +30,17 @@ export const WorkspaceHomeModules = ({
 }: WorkspaceHomeModulesProps) => (
   <>
     {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
-    <div className="grid min-h-0 items-stretch gap-5 max-lg:h-auto lg:h-[min(22rem,_calc(100dvh-56px-21rem))] lg:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]">
+    <div className="grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)] lg:justify-start xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto">
       <PlatformStartConversation />
-      <PlatformMockCalendar />
+      <PlatformNotificationCenter />
+      {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
+      <div aria-hidden="true" className="hidden" hidden>
+        <PlatformWeeklyGoals />
+      </div>
+      {/* 日历保留供后续恢复；当前由通知中心占用原卡槽。 */}
+      <div aria-hidden="true" className="hidden" hidden>
+        <PlatformMockCalendar />
+      </div>
     </div>
 
     {/* 首页只保留普通快捷入口；管理能力统一从 Project Admin 侧栏进入。 */}

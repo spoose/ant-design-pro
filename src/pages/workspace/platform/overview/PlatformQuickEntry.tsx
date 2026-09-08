@@ -98,7 +98,7 @@ const PlatformQuickEntry = ({
   return (
     <section
       aria-labelledby="platform-quick-entry-title"
-      className="grid gap-3"
+      className="grid gap-1"
     >
       <header className="flex items-center justify-between gap-3">
         <h2

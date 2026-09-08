@@ -161,7 +161,7 @@ export const layout: RunTimeLayoutConfig = ({
           className={`flex h-11 items-center border-b border-zinc-200 px-3 dark:border-zinc-800 ${
             collapsed ? 'justify-center' : 'gap-2'
           }`}
-          // 暂时隐藏侧栏身份栏；保留管理中心/组织/App 的完整渲染代码。
+          // 暂时隐藏侧栏身份栏；保留平台工作台/组织/App 的完整渲染代码。
           style={{ display: 'none' }}
         >
           {/* Badge 始终保留；展开时只补充 Organization/App 名称，不显示范围副标题。 */}

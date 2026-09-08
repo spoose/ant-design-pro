@@ -10,6 +10,8 @@ import {
 import { getMockScheduleForDate } from './overview/mockSchedule';
 import { PlatformWelcomeAvatar } from './overview/PlatformWelcomeAvatar';
 
+const navigateMock = vi.hoisted(() => vi.fn());
+
 vi.mock('@bible-strong/avatar-react', () => ({
   createAvatar: () => {
     const MockStrobiAvatar = () => <div data-testid="strobi-avatar" />;
@@ -30,7 +32,7 @@ vi.mock('@umijs/max', () => ({
   ),
   matchPath: () => undefined,
   useModel: () => ({ initialState: undefined }),
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigateMock,
   useParams: () => ({}),
 }));
 
@@ -215,8 +217,9 @@ describe('PlatformWelcomeAvatar', () => {
 describe('PlatformOverview', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
+    navigateMock.mockClear();
   });
-  it('renders the mock chart and calendar widgets on the workbench', () => {
+  it('renders the notification center in the calendar slot', () => {
     render(<PlatformOverview appCodes={[]} />);
 
     expect(screen.getByRole('heading', { name: 'AI 数据洞悉' })).toBeVisible();
@@ -251,26 +254,53 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('button', { name: '下一条用量洞察' }),
     ).toBeVisible();
-    expect(screen.getByRole('heading', { name: '日程' })).toBeVisible();
-    expect(screen.getByTestId('platform-calendar')).toBeVisible();
+    expect(screen.getByRole('heading', { name: '消息通知' })).toBeVisible();
+    expect(screen.getByTestId('platform-weekly-goals')).not.toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'AI 每周目标' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('3 条待处理')).toBeVisible();
+    expect(screen.getByTestId('platform-notification-center')).toBeVisible();
+    expect(screen.getByRole('button', { name: '全部 6' })).toHaveStyle({
+      backgroundColor: '#ebebed',
+      borderColor: '#3f3f46',
+      color: '#3f3f46',
+    });
+    expect(screen.getByTestId('platform-calendar')).not.toBeVisible();
     expect(
       screen.getByRole('region', { name: '问问小One' }).parentElement
         ?.className,
-    ).toContain('lg:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]');
+    ).toContain('lg:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)]');
     expect(
       screen.getByRole('region', { name: '问问小One' }).parentElement
         ?.className,
-    ).toContain('lg:h-[min(22rem,_calc(100dvh-56px-21rem))]');
-    expect(screen.getByTestId('platform-calendar-grid').className).toContain(
-      'overflow-y-auto',
+    ).toContain('xl:h-[min(22rem,_calc(100dvh-56px-21rem))]');
+    expect(screen.getByText('水库大坝巡检 · 航线等待批准')).toBeVisible();
+    expect(
+      screen.queryByText('边缘节点版本更新已完成'),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: '去处理：水库大坝巡检 · 航线等待批准',
+      }),
     );
-    expect(screen.getByRole('button', { name: '今日安排' })).toBeVisible();
-    expect(screen.queryByText('用量周报')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '今日安排' }));
-    expect(screen.getByText('用量周报')).toBeVisible();
-    expect(screen.getByText('10:00')).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: '收起' }));
-    expect(screen.queryByText('用量周报')).not.toBeInTheDocument();
+    expect(navigateMock).toHaveBeenCalledWith(
+      '/workspace/platform/notifications?notification=drone-dam-inspection',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '待处理 3' }));
+
+    expect(screen.getByText('水库大坝巡检 · 航线等待批准')).toBeVisible();
+    expect(
+      screen.getByText('雷雨大风预警 · 4 条无人机航线建议改期'),
+    ).toBeVisible();
+    expect(screen.getByText('AI 建议')).toBeVisible();
+    expect(
+      screen.getByText('1 号机坪充电桩离线，运维人员正在处理'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('边缘节点版本更新已完成'),
+    ).not.toBeInTheDocument();
   });
 
   it('links Project apps without adding management cards to the home', () => {

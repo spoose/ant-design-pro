@@ -64,7 +64,7 @@ export const PlatformStartConversation = () => {
   return (
     <section
       aria-labelledby="platform-start-conversation-title"
-      className={`${platformOverviewCardClassName} relative @container`}
+      className={`${platformOverviewCardClassName} @container`}
     >
       <header className={platformOverviewCardHeaderClassName}>
         <div className="flex min-w-0 items-center gap-2">
@@ -83,7 +83,7 @@ export const PlatformStartConversation = () => {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-24">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
         <Prompts
           aria-label="对话建议"
           className="min-w-0 [&_h6]:line-clamp-2 [&_p]:line-clamp-1"
@@ -97,7 +97,7 @@ export const PlatformStartConversation = () => {
           }
           classNames={{
             title: '!mb-2',
-            list: '!m-0 !grid !w-full !grid-cols-1 !gap-2 @min-[28rem]:!grid-cols-2',
+            list: '!m-0 !grid !w-full !grid-cols-1 !gap-x-3 !gap-y-2 @min-[28rem]:!grid-cols-[repeat(2,minmax(0,18rem))] @min-[28rem]:!justify-start',
             item: '!min-w-0 !border !border-zinc-200 !bg-white hover:!bg-zinc-50 dark:!border-zinc-700 dark:!bg-zinc-900 dark:hover:!bg-zinc-800',
             itemContent: 'min-w-0',
           }}
@@ -114,7 +114,7 @@ export const PlatformStartConversation = () => {
         />
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-white px-3 pb-3 pt-3 dark:bg-zinc-900">
+      <div className="shrink-0 bg-white px-3 pb-3 pt-2 dark:bg-zinc-900">
         <Sender
           autoSize={{ minRows: 1, maxRows: 4 }}
           className="shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
