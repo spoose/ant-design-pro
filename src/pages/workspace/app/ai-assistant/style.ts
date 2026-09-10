@@ -7,7 +7,7 @@ const useAiAssistantStyles = createStyles(({ css, token }) => ({
     min-height: 100%;
     padding: ${token.paddingLG}px;
     overflow-x: hidden;
-    background: ${token.colorBgLayout};
+    background: var(--workspace-page-background, ${token.colorBgLayout});
   `,
 
   workbench: css`

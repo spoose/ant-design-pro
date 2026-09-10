@@ -71,6 +71,16 @@ body,
   background: transparent;
 }
 /*
+ * 工作台背景预设：默认不注入变量，页面回落到 antd colorBgLayout；
+ * 只有用户选了冷灰蓝才在 Workspace 壳内注入，登录页 / 账户页不受影响。
+ * 色值需与 surfaceColors.pageCool 保持一致。
+ */
+@media (prefers-color-scheme: light) {
+  html[data-workspace-background='cool'] .workspace-layout {
+    --workspace-page-background: #f3f5f9;
+  }
+}
+/*
  * Workspace 继续使用 ProLayout 的 mix DOM，只在视觉上把 Logo 并入 Sidebar。
  * 248/64 分别来自 defaultSettings.siderWidth 与 menu.collapsedWidth。
  */

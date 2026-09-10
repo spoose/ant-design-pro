@@ -76,6 +76,7 @@ vi.mock('@ant-design/icons', () => ({
   AppstoreOutlined: () => null,
   AuditOutlined: () => null,
   BarChartOutlined: () => null,
+  BellOutlined: () => null,
   CloudServerOutlined: () => null,
   DatabaseOutlined: () => null,
   DashboardOutlined: () => null,
@@ -445,6 +446,7 @@ describe('app layout guard', () => {
     expect(runtimeLayout.menuDataRender?.([]).map((item) => item.path)).toEqual(
       [
         '/workspace/platform/overview',
+        '/workspace/platform/notifications',
         '/workspace/platform/stats',
         '/workspace/platform/system',
       ],
@@ -473,6 +475,7 @@ describe('app layout guard', () => {
     const menuItems = runtimeLayout.menuDataRender?.([]) ?? [];
     expect(menuItems.map((item) => item.path)).toEqual([
       '/workspace/platform/overview',
+      '/workspace/platform/notifications',
       '/workspace/platform/apps/ai-assistant',
       '/workspace/platform/stats',
       '/workspace/platform/system',

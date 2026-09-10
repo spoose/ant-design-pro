@@ -22,6 +22,12 @@ export const surfaceColors = {
   navChromeRaised: '#e8eef5',
   /** 标签激活：图标、文字、底部指示条。 */
   navActiveInk: '#3b82f6',
+  /**
+   * 工作台背景预设；页面默认值仍来自 antd colorBgLayout（与 pageClassic 同值），
+   * 这里同时供设置项色块预览使用，改动需同步 src/global.less 的 .workspace-layout 规则。
+   */
+  pageClassic: '#f5f5f5',
+  pageCool: '#f3f5f9',
 } as const;
 
 /** Workspace 身份标识与组织图标共用的中性颜色。 */

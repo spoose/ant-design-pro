@@ -8,7 +8,8 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     min-height: 100%;
     overflow-x: hidden;
-    background: ${token.colorBgLayout};
+    /* 页面底色单一来源：默认回落到 antd 布局 token，Workspace 壳可用变量整体覆盖。 */
+    background: var(--workspace-page-background, ${token.colorBgLayout});
     /* 圆角改由 .ant-pro-layout-content 滚动容器裁剪提供，滚动时弧度常驻。 */
   `,
 
@@ -19,7 +20,7 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     align-items: flex-end;
     justify-content: space-between;
     gap: ${token.marginLG}px;
-    background: ${token.colorBgLayout};
+    background: var(--workspace-page-background, ${token.colorBgLayout});
     border-bottom: 1px solid ${token.colorBorderSecondary};
   `,
 
@@ -99,14 +100,14 @@ const useWorkspacePageStyles = createStyles(({ css, token }) => ({
     max-width: 100%;
     padding: ${token.paddingLG}px;
     overflow-x: hidden;
-    background: ${token.colorBgLayout};
+    background: var(--workspace-page-background, ${token.colorBgLayout});
 
     .ant-table-wrapper {
       width: 100%;
       min-width: 0;
       max-width: 100%;
       overflow: hidden;
-      background: ${token.colorBgLayout};
+      background: var(--workspace-page-background, ${token.colorBgLayout});
     }
 
     .ant-table-content {

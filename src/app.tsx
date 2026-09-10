@@ -1,6 +1,5 @@
 import { LinkOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
-import { SettingDrawer } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
 import dayjs from 'dayjs';
@@ -18,6 +17,7 @@ import {
   OfflineBanner,
   WorkspaceTabsHeader,
 } from '@/components';
+import WorkspaceThemeDrawer from '@/components/WorkspaceThemeDrawer';
 import type { AuthCurrentUser, AuthSession } from '@/services/auth';
 import { loadAuthSession } from '@/services/auth-session';
 import { surfaceColors, workspaceIconColorVariables } from '@/theme/colors';
@@ -497,26 +497,13 @@ export const layout: RunTimeLayoutConfig = ({
       return (
         <>
           {children}
-          {false && (
-            <SettingDrawer
-              disableUrlParams
-              enableDarkTheme
-              collapse={initialState?.settingDrawerOpen}
-              onCollapseChange={(open) => {
-                setInitialState((s) => ({
-                  ...s,
-                  settingDrawerOpen: open,
-                }));
-              }}
-              settings={initialState?.settings}
-              onSettingChange={(settings) => {
-                setInitialState((s) => ({
-                  ...s,
-                  settings,
-                }));
-              }}
-            />
-          )}
+          {/* 头像菜单「主题设置」的落点；settingDrawerOpen 由 AvatarDropdown 打开。 */}
+          <WorkspaceThemeDrawer
+            onClose={() =>
+              setInitialState((s) => ({ ...s, settingDrawerOpen: false }))
+            }
+            open={Boolean(initialState?.settingDrawerOpen)}
+          />
         </>
       );
     },
