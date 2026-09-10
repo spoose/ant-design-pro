@@ -24,9 +24,11 @@ vi.mock('antd', () => ({
   Tag: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
-vi.mock('@ant-design/icons', () => {
+vi.mock('@ant-design/icons', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ant-design/icons')>();
   const Icon = () => <span data-testid="app-icon" />;
   return {
+    ...actual,
     AuditOutlined: Icon,
     DatabaseOutlined: Icon,
     FileDoneOutlined: Icon,
