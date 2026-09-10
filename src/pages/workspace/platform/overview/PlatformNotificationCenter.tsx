@@ -9,78 +9,12 @@ import {
   tagColors,
 } from '@/theme/statusColors';
 
-type NotificationStatus = 'pending' | 'processing' | 'done' | 'rejected';
-type NotificationSeverity = 'urgent' | 'high' | 'normal';
-type NotificationFilter = 'all' | 'pending' | 'handled';
-
-type NotificationItem = {
-  key: string;
-  type: string;
-  title: string;
-  time: string;
-  dateTime: string;
-  severity: NotificationSeverity;
-  status: NotificationStatus;
-  aiSuggested?: boolean;
-};
-
-const notificationItems: NotificationItem[] = [
-  {
-    key: 'drone-dam-inspection',
-    type: '无人机审批',
-    title: '水库大坝巡检 · 航线等待批准',
-    time: '14:32',
-    dateTime: '2026-08-31T14:32:00+08:00',
-    severity: 'high',
-    status: 'pending',
-  },
-  {
-    key: 'weather-operation-notice',
-    type: '无人机审批',
-    title: '雷雨大风预警 · 4 条无人机航线建议改期',
-    time: '13:48',
-    dateTime: '2026-08-31T13:48:00+08:00',
-    severity: 'urgent',
-    status: 'pending',
-    aiSuggested: true,
-  },
-  {
-    key: 'charging-station-offline',
-    type: '设备告警',
-    title: '1 号机坪充电桩离线，运维人员正在处理',
-    time: '11:40',
-    dateTime: '2026-08-31T11:40:00+08:00',
-    severity: 'urgent',
-    status: 'processing',
-  },
-  {
-    key: 'edge-node-upgrade',
-    type: '系统维护',
-    title: '边缘节点版本更新已完成',
-    time: '昨日 23:10',
-    dateTime: '2026-08-30T23:10:00+08:00',
-    severity: 'normal',
-    status: 'done',
-  },
-  {
-    key: 'airport-zone-review',
-    type: '无人机审批',
-    title: '机场禁区临时航线申请未通过',
-    time: '昨日 18:25',
-    dateTime: '2026-08-30T18:25:00+08:00',
-    severity: 'high',
-    status: 'rejected',
-  },
-  {
-    key: 'backup-complete',
-    type: '运维通知',
-    title: '飞行任务数据备份已完成',
-    time: '昨日 02:00',
-    dateTime: '2026-08-30T02:00:00+08:00',
-    severity: 'normal',
-    status: 'done',
-  },
-];
+import {
+  type NotificationFilter,
+  type NotificationSeverity,
+  type NotificationStatus,
+  notificationItems,
+} from '../../notifications/data';
 
 const statusMeta: Record<
   NotificationStatus,
@@ -136,11 +70,6 @@ const filterOptions: Array<{
 
 const PREVIEW_COUNT = 3;
 
-const notificationCenterPath = '/workspace/platform/notifications';
-
-const getNotificationCenterPath = (notificationKey: string) =>
-  `${notificationCenterPath}?notification=${encodeURIComponent(notificationKey)}`;
-
 const isPendingNotification = (status: NotificationStatus) =>
   status === 'pending' || status === 'processing';
 
@@ -154,7 +83,13 @@ const matchesFilter = (
 };
 
 /** 工作台右侧消息摘要；用状态筛选替代原日历的日期交互。 */
-const PlatformNotificationCenter = () => {
+const PlatformNotificationCenter = ({
+  notificationCenterPath = '/workspace/platform/notifications',
+}: {
+  notificationCenterPath?: string;
+}) => {
+  const getNotificationCenterPath = (notificationKey: string) =>
+    `${notificationCenterPath}?notification=${encodeURIComponent(notificationKey)}`;
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [expanded, setExpanded] = useState(false);
@@ -187,7 +122,7 @@ const PlatformNotificationCenter = () => {
             className="m-0 text-lg font-semibold leading-tight text-zinc-900 dark:text-zinc-100"
             id="platform-notification-title"
           >
-            消息通知
+            通知中心
           </h2>
           <span className="shrink-0 pt-0.5 text-xs font-medium text-zinc-500 tabular-nums dark:text-zinc-400">
             {pendingCount} 条待处理

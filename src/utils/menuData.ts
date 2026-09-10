@@ -2,6 +2,7 @@ import {
   AppstoreOutlined,
   AuditOutlined,
   BarChartOutlined,
+  BellOutlined,
   DesktopOutlined,
   FileTextOutlined,
   HomeOutlined,
@@ -15,6 +16,7 @@ import { createElement } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
+  getNotificationCenterPath,
   getOrganizationAppPagePath,
   getOrganizationAppWorkspacePath,
   getOrganizationPagePath,
@@ -96,6 +98,7 @@ const isHomeSidebarApp = (appKey: string | undefined) =>
 /** 组织首页侧栏顺序；members/roles 并入“组织设置”分组（角色管理隐藏，路由保留）。 */
 const ORGANIZATION_HOME_SIDEBAR_ORDER = [
   'home',
+  'notifications',
   'ai-assistant',
   'stats',
   'settings',
@@ -104,6 +107,7 @@ const ORGANIZATION_HOME_SIDEBAR_ORDER = [
 /** Project 管理侧栏顺序；organizations 已并入“系统设置”分组，users/permissions 一级隐藏。 */
 const PLATFORM_HOME_SIDEBAR_ORDER = [
   'overview',
+  'notifications',
   'ai-assistant',
   'stats',
   'users',
@@ -260,6 +264,13 @@ export const createOrganizationWorkspaceMenus = (
   const hasAiAssistant = availableAppCodes.includes(HOME_SIDEBAR_SKILL_CODE);
 
   return ORGANIZATION_HOME_SIDEBAR_ORDER.flatMap((slot) => {
+    if (slot === 'notifications')
+      return [
+        createFixedHomeMenuItem(
+          { name: '通知中心', icon: BellOutlined },
+          getNotificationCenterPath(organizationId),
+        ),
+      ];
     if (slot === 'ai-assistant') {
       if (!hasAiAssistant) return [];
       const appMenu = createHomeSidebarAppMenu(
@@ -324,6 +335,13 @@ export const createPlatformWorkspaceMenus = (
   const hasAiAssistant = availableAppCodes.includes(HOME_SIDEBAR_SKILL_CODE);
 
   return PLATFORM_HOME_SIDEBAR_ORDER.flatMap((slot) => {
+    if (slot === 'notifications')
+      return [
+        createFixedHomeMenuItem(
+          { name: '通知中心', icon: BellOutlined },
+          getNotificationCenterPath(),
+        ),
+      ];
     if (slot === 'ai-assistant') {
       if (!hasAiAssistant) return [];
       const appMenu = createHomeSidebarAppMenu(

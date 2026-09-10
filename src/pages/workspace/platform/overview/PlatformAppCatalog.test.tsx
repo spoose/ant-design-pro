@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PlatformAppCatalog from './PlatformAppCatalog';
 
-vi.mock('@umijs/max', () => ({
+vi.mock('@umijs/max', async () => ({
+  ...(await vi.importActual('react-router-dom')),
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
     <a href={to} {...props}>
       {children}

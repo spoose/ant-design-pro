@@ -87,6 +87,10 @@ describe('Workspace menus', () => {
         path: '/workspace/org/organization%2Fa/home',
       },
       {
+        name: '通知中心',
+        path: '/workspace/org/organization%2Fa/notifications',
+      },
+      {
         name: '组织设置',
         path: '/workspace/org/organization%2Fa/settings',
       },
@@ -108,6 +112,7 @@ describe('Workspace menus', () => {
       ),
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
+      { name: '通知中心', path: '/workspace/platform/notifications' },
       {
         name: '系统设置',
         path: '/workspace/platform/system',
@@ -158,6 +163,7 @@ describe('Workspace menus', () => {
         name: '组织首页',
         path: '/workspace/org/organization-1/home',
       },
+      { name: '通知中心', path: '/workspace/org/organization-1/notifications' },
       {
         name: 'xOneAI',
         path: '/workspace/org/organization-1/apps/ai-assistant',
@@ -197,6 +203,7 @@ describe('Workspace menus', () => {
       ),
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
+      { name: '通知中心', path: '/workspace/platform/notifications' },
       {
         name: 'xOneAI',
         path: '/workspace/platform/apps/ai-assistant',
@@ -263,6 +270,7 @@ describe('Workspace menus', () => {
       ),
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
+      { name: '通知中心', path: '/workspace/platform/notifications' },
       {
         name: '统计',
         path: '/workspace/platform/stats',
@@ -288,7 +296,7 @@ describe('Workspace menus', () => {
         [],
         false,
       ).map(({ name }) => name),
-    ).toEqual(['组织首页', '组织设置']);
+    ).toEqual(['组织首页', '通知中心', '组织设置']);
   });
 
   it('derives Platform, Organization and App sidebars from the URL', () => {
@@ -338,7 +346,10 @@ describe('Workspace menus', () => {
       title: '工作台',
     });
     expect(descriptor?.items.map(({ name, path }) => ({ name, path }))).toEqual(
-      [{ name: '工作台', path: '/workspace/platform/overview' }],
+      [
+        { name: '工作台', path: '/workspace/platform/overview' },
+        { name: '通知中心', path: '/workspace/platform/notifications' },
+      ],
     );
   });
 
@@ -364,6 +375,7 @@ describe('Workspace menus', () => {
       platformMenu?.items.map(({ name, path }) => ({ name, path })),
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
+      { name: '通知中心', path: '/workspace/platform/notifications' },
       {
         name: 'xOneAI',
         path: '/workspace/platform/apps/ai-assistant',
@@ -402,6 +414,7 @@ describe('Workspace menus', () => {
     });
     expect(organizationMenu?.items.map(({ name }) => name)).toEqual([
       '组织首页',
+      '通知中心',
       'xOneAI',
       '统计',
       '组织设置',

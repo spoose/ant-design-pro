@@ -15,6 +15,7 @@ export type WorkspaceRecent = {
 };
 
 const PLATFORM_PAGE_TITLES: Record<string, string> = {
+  notifications: '通知中心',
   organizations: '组织管理',
   users: '用户管理',
   permissions: '权限管理',
@@ -22,6 +23,7 @@ const PLATFORM_PAGE_TITLES: Record<string, string> = {
 };
 
 const ORGANIZATION_PAGE_TITLES: Record<string, string> = {
+  notifications: '通知中心',
   members: '成员',
   roles: '角色',
   settings: '设置',

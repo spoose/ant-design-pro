@@ -1,4 +1,8 @@
 import WorkspaceAppList from '@/components/WorkspaceAppList';
+import {
+  getNotificationCenterPath,
+  getWorkspaceOrganizationId,
+} from '@/utils/workspaceRoutes';
 import PlatformAppCatalog from '../platform/overview/PlatformAppCatalog';
 import PlatformMockCalendar from '../platform/overview/PlatformMockCalendar';
 import PlatformMockChart from '../platform/overview/PlatformMockChart';
@@ -32,7 +36,11 @@ export const WorkspaceHomeModules = ({
     {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
     <div className="grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)] lg:justify-start xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto">
       <PlatformStartConversation />
-      <PlatformNotificationCenter />
+      <PlatformNotificationCenter
+        notificationCenterPath={getNotificationCenterPath(
+          getWorkspaceOrganizationId(getAppPath('ai-assistant')),
+        )}
+      />
       {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
       <div aria-hidden="true" className="hidden" hidden>
         <PlatformWeeklyGoals />

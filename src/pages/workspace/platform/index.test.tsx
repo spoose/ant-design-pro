@@ -254,7 +254,7 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('button', { name: '下一条用量洞察' }),
     ).toBeVisible();
-    expect(screen.getByRole('heading', { name: '消息通知' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '通知中心' })).toBeVisible();
     expect(screen.getByTestId('platform-weekly-goals')).not.toBeVisible();
     expect(
       screen.queryByRole('heading', { name: 'AI 每周目标' }),

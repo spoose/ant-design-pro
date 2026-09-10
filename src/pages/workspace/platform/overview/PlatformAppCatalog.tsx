@@ -1,6 +1,10 @@
 import { Link } from '@umijs/max';
 import { useState, useSyncExternalStore } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
+import {
+  getNotificationCenterPath,
+  getWorkspaceOrganizationId,
+} from '@/utils/workspaceRoutes';
 
 /** 从 public 静态目录读取全部应用图标，确保内网或离线环境也能正常显示。 */
 const appCatalogIconSrc = (name: string) =>
@@ -188,7 +192,13 @@ const PlatformAppCatalog = ({
               aria-label={app.title}
               className={cardClassName}
               key={app.code}
-              to={getAppPath(app.code)}
+              to={
+                app.code === 'notice-center'
+                  ? getNotificationCenterPath(
+                      getWorkspaceOrganizationId(getAppPath(app.code)),
+                    )
+                  : getAppPath(app.code)
+              }
             >
               <img
                 alt=""

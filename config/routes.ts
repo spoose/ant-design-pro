@@ -89,6 +89,16 @@ export default [
     wrappers: ['@/wrappers/workspaceAccess'],
   },
   {
+    path: '/workspace/platform/notifications',
+    component: './workspace/notifications',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
+    path: '/workspace/org/:organizationId/notifications',
+    component: './workspace/notifications',
+    wrappers: ['@/wrappers/workspaceAccess'],
+  },
+  {
     path: '/workspace/platform/:platformPageKey',
     component: './workspace/platform',
     wrappers: ['@/wrappers/workspaceAccess'],

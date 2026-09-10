@@ -225,4 +225,22 @@ describe('resolveWorkspaceRouteDecision', () => {
       ),
     ).toEqual({ kind: 'allow' });
   });
+
+  it('opens the notification center in both scopes and hides unknown organizations', () => {
+    expect(
+      resolveWorkspaceRouteDecision(user, '/workspace/platform/notifications'),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-1/notifications',
+      ),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/org/organization-2/notifications',
+      ),
+    ).toEqual({ kind: 'forbidden' });
+  });
 });

@@ -203,3 +203,9 @@ export const resolveWorkspaceScopeFromPath = (
   const organizationId = getWorkspaceOrganizationId(pathname);
   return organizationId ? { kind: 'organization', organizationId } : undefined;
 };
+
+/** 通知详情使用查询参数，保留当前工作区菜单及返回列表的位置。 */
+export const getNotificationCenterPath = (organizationId?: string) =>
+  organizationId
+    ? `/workspace/org/${encodeURIComponent(organizationId)}/notifications`
+    : '/workspace/platform/notifications';

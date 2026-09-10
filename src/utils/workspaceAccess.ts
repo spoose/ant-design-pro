@@ -1,6 +1,7 @@
 import { getAppDefinition } from '@/config/appRegistry';
 import type { AuthCurrentUser, AuthSession } from '@/services/auth';
 import {
+  getNotificationCenterPath,
   getOrganizationAppPagePath,
   getOrganizationStatsPagePath,
   getPlatformAppPagePath,
@@ -74,6 +75,13 @@ export const resolveWorkspaceRouteDecision = (
     organizationId !== session.activeOrganizationId
   ) {
     return { kind: 'redirect', to: getPlatformHomePath() };
+  }
+
+  if (pathname === getNotificationCenterPath(organizationId)) {
+    return !organizationId ||
+      getOrganizationAccess(user, organizationId).accessible
+      ? { kind: 'allow' }
+      : { kind: 'forbidden' };
   }
 
   if (isPlatformWorkspacePath(pathname)) {
