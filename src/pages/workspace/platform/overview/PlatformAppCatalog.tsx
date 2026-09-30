@@ -78,6 +78,7 @@ const extraApps: CatalogApp[] = [
 ];
 
 const fallbackCopy = { icon: 'documents', subtitle: '打开应用，继续当前工作' };
+const OCTOP_CONNECTION_URL = 'http://localhost:5173/';
 const NARROW_PREVIEW_COUNT = 4;
 const DESKTOP_PREVIEW_COUNT = 8;
 const NARROW_QUERY = '(max-width: 639px)';
@@ -187,35 +188,55 @@ const PlatformAppCatalog = ({
               前端未定义应用：<code>{appCode}</code>
             </div>
           ))}
-          {visibleApps.map((app) => (
-            <Link
-              aria-label={app.title}
-              className={cardClassName}
-              key={app.code}
-              to={
-                app.code === 'notice-center'
-                  ? getNotificationCenterPath(
-                      getWorkspaceOrganizationId(getAppPath(app.code)),
-                    )
-                  : getAppPath(app.code)
-              }
-            >
-              <img
-                alt=""
-                className="size-12 shrink-0"
-                draggable={false}
-                src={appCatalogIconSrc(app.icon)}
-              />
-              <span className="grid min-w-0 gap-0.5">
-                <strong className="truncate text-sm font-semibold text-zinc-950">
-                  {app.title}
-                </strong>
-                <span className="truncate text-xs text-zinc-500">
-                  {app.subtitle}
+          {visibleApps.map((app) => {
+            const opensOctopConnection = app.code === 'ai-assistant';
+            const destination =
+              app.code === 'notice-center'
+                ? getNotificationCenterPath(
+                    getWorkspaceOrganizationId(getAppPath(app.code)),
+                  )
+                : getAppPath(app.code);
+            const cardContent = (
+              <>
+                <img
+                  alt=""
+                  className="size-12 shrink-0"
+                  draggable={false}
+                  src={appCatalogIconSrc(app.icon)}
+                />
+                <span className="grid min-w-0 gap-0.5">
+                  <strong className="truncate text-sm font-semibold text-zinc-950">
+                    {app.title}
+                  </strong>
+                  <span className="truncate text-xs text-zinc-500">
+                    {app.subtitle}
+                  </span>
                 </span>
-              </span>
-            </Link>
-          ))}
+              </>
+            );
+
+            return opensOctopConnection ? (
+              <a
+                aria-label={app.title}
+                className={cardClassName}
+                key={app.code}
+                href={OCTOP_CONNECTION_URL}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {cardContent}
+              </a>
+            ) : (
+              <Link
+                aria-label={app.title}
+                className={cardClassName}
+                key={app.code}
+                to={destination}
+              >
+                {cardContent}
+              </Link>
+            );
+          })}
           {hideOverflow ? (
             <button
               aria-expanded={false}
