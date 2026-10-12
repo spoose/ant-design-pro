@@ -20,7 +20,7 @@ export type AuthBackendLoginResult = {
 
 /**
  * Backend 层只加载会话刷新数据，不直接生成页面使用的 AuthCurrentUser。
- * XOne 当前仅返回 listOrgs；已验证身份来自登录 Token 和最小会话 metadata。
+ * XOne 当前仅返回组织列表；已验证身份来自登录 Token 和最小会话 metadata。
  */
 export type AuthBackendIdentitySnapshot =
   | {
@@ -45,7 +45,7 @@ export type AuthBackendRequestOptions = Record<string, unknown>;
 
 /**
  * 当前“登录会话”阶段的公共边界，只覆盖登录、加载身份上下文、切换组织三项能力。
- * loadCurrentUser 是兼容两套后端的领域名称：Legacy 调 currentUser，XOne 当前只调 listOrgs；
+ * loadCurrentUser 是兼容两套后端的领域名称：Legacy 调 currentUser，XOne 当前只调组织列表接口；
  * 注册、登出、找回密码和用户管理尚未纳入该边界。
  */
 export interface AuthBackend {

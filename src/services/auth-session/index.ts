@@ -149,24 +149,19 @@ export const createAuthSessionService = (backend: AuthBackend) => {
       throw new AuthBackendMismatchError();
     }
     const accessToken = getAccessToken();
-    const xoneOrganizationId =
-      backend.kind === 'xone'
-        ? decodeXoneTokenClaims(accessToken).organizationId
-        : undefined;
-    const isXoneOrganizationToken =
-      xoneOrganizationId !== undefined && xoneOrganizationId !== null;
-    if (
-      isXoneOrganizationToken &&
-      (!metadata?.organizations || metadata.organizations.length === 0)
-    ) {
+    if (backend.kind === 'xone') {
+      // Token 缺失或损坏时立即失败，禁止把未认证请求发到 XOne。
+      decodeXoneTokenClaims(accessToken);
+    }
+    // 组织级 Token 与登录 Token 都能查询组织列表，整页刷新一律取实时数据。
+    const snapshot = await backend.loadCurrentUser(options);
+    // 空列表无法区分"该用户确实没有组织"与"后端异常"，回退本地快照会把空值静默固化成
+    // 后续刷新的唯一依据；这里改为显式失败，交由既有的会话失效收敛路径清 Token 并回登录页。
+    if (snapshot.source === 'xone' && snapshot.organizations.length === 0) {
       throw new XoneTokenClaimsError(
-        'XOne 组织会话缺少已保存的组织列表，请重新登录',
+        'XOne 未返回任何可进入的组织，请确认账号授权或联系管理员',
       );
     }
-    // 组织 Token 调用 listOrgs 会返回 data:null；整页刷新时直接使用登录后保存的真实列表。
-    const snapshot = isXoneOrganizationToken
-      ? createStoredXoneSnapshot(metadata?.organizations ?? [])
-      : await backend.loadCurrentUser(options);
     const currentUser = normalizeAuthCurrentUser(
       snapshot,
       accessToken,
@@ -245,7 +240,7 @@ export const createAuthSessionService = (backend: AuthBackend) => {
 
   /**
    * 核心链路：保存旧 Token -> 后端切换 -> 暂存新 Token -> 提交会话。
-   * XOne 沿用登录时已验证的组织列表，不再调用 listOrgs（组织级 Token 无该接口权限）；
+   * 切换后沿用本地已验证的组织列表作为基线（目标组织刚校验通过，无需再查一次）；
    * Legacy 仍刷新用户获取新的默认组织。新 Token 后的会话重建失败会恢复旧 Token。
    */
   const switchOrganization = async (
@@ -299,7 +294,7 @@ export const createAuthSessionService = (backend: AuthBackend) => {
         setAccessToken(switchResult.accessToken);
         tokenReplaced = true;
       }
-      // XOne 组织级 Token 的 listOrgs 返回 data:null，因此只恢复登录时保存的真实列表；
+      // XOne 切换后不再查询组织列表：本地保存的列表就是刚刚验证过的基线；
       // Legacy 切换只更新默认组织，仍需从旧 API 刷新用户。
       let currentUser: AuthSession['currentUser'];
       if (backend.kind === 'xone') {

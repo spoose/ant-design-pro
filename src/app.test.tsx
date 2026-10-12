@@ -16,6 +16,7 @@ const mockClearAccessToken = vi.fn();
 const mockClearAuthSessionMetadata = vi.fn();
 const mockGetAccessToken = vi.fn();
 const mockHandleAccessTokenFailure = vi.fn();
+const mockMessageError = vi.fn();
 
 vi.mock('@umijs/max', async () => {
   const { generatePath, matchPath } =
@@ -66,6 +67,12 @@ vi.mock('@/components', () => ({
   OfflineBanner: () => null,
   VersionDropdown: () => null,
   WorkspaceTabsHeader: () => null,
+}));
+
+vi.mock('antd', () => ({
+  message: {
+    error: mockMessageError,
+  },
 }));
 
 vi.mock('@ant-design/pro-components', () => ({
@@ -190,7 +197,7 @@ describe('app getInitialState', () => {
     expect(state.currentUser).toBeUndefined();
   });
 
-  it('should clear a stale XOne session when listOrgs returns 403', async () => {
+  it('should clear a stale XOne session when the organization list returns 403', async () => {
     const { getInitialState } = await import('./app');
     mockHistory.location = {
       pathname: '/workspace/platform/overview',
@@ -222,6 +229,33 @@ describe('app getInitialState', () => {
 
     expect(mockHandleAccessTokenFailure).toHaveBeenCalledWith(networkError);
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('should report an unreachable backend instead of failing the initial state', async () => {
+    const { getInitialState } = await import('./app');
+    mockHistory.location = {
+      pathname: '/workspace/platform/overview',
+      search: '',
+      hash: '',
+    };
+    // 真实超时/网络中断的形态：有 request、没有 response。
+    mockLoadAuthSession.mockRejectedValue({
+      code: 'ECONNABORTED',
+      request: {},
+    });
+
+    const state = await getInitialState();
+
+    expect(mockMessageError).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith(
+      `/user/login?redirect=${encodeURIComponent(
+        '/workspace/platform/overview',
+      )}`,
+    );
+    expect(state.currentUser).toBeUndefined();
+    // 网络中断不等于凭据失效：保留 Token，网络恢复后同一凭据仍可继续使用。
+    expect(mockClearAccessToken).not.toHaveBeenCalled();
+    expect(mockClearAuthSessionMetadata).not.toHaveBeenCalled();
   });
 
   it('should not fetch currentUser on login page', async () => {

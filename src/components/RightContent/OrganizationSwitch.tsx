@@ -33,7 +33,7 @@ export const OrganizationSwitch: React.FC = () => {
   >();
   // pathname 来源于 Umi Browser Router，是当前 Platform/Organization Scope 的唯一标识。
   const { pathname } = useLocation();
-  // currentUser 来源于认证会话；XOne 当前由登录上下文 + listOrgs 构建。
+  // currentUser 来源于认证会话；XOne 当前由登录上下文 + 组织列表接口构建。
   const { initialState, setInitialState } = useModel('@@initialState');
   const currentUser = initialState?.currentUser;
   // 旧 isSuperAdmin 当前由认证适配层映射为 Project Admin；普通用户不显示管理入口。
@@ -60,13 +60,13 @@ export const OrganizationSwitch: React.FC = () => {
     : (currentOrganization?.organizationName ?? '未选择组织');
 
   /**
-   * 核心链路：目标组织 -> selectAndChangeOrg -> 校验并提交新 Token/Session
+   * 核心链路：目标组织 -> selectAndChange -> 校验并提交新 Token/Session
    * -> initialState -> 目标首页整页导航。失败时会话服务恢复旧 Token，本组件保持原 URL。
    */
   const handleSwitch: MenuProps['onClick'] = async ({ key }) => {
     if (switchingOrganizationId) return;
     if (key === PROJECT_MANAGEMENT_SCOPE_KEY && canEnterProjectManagement) {
-      // Project 管理沿用当前已验证会话；这里只导航，禁止调用 selectAndChangeOrg。
+      // Project 管理沿用当前已验证会话；这里只导航，禁止调用 selectAndChange。
       history.push(getPlatformHomePath());
       return;
     }

@@ -73,7 +73,7 @@ describe('auth backends', () => {
 
   it('loads XOne organizations without calling the unavailable current-user API', async () => {
     requestMock.mockImplementation((url: string) => {
-      if (url === '/web/system/organization/listOrgs') {
+      if (url === '/web/system/organization/list') {
         return Promise.resolve({
           code: 200,
           data: [
@@ -107,7 +107,7 @@ describe('auth backends', () => {
     });
     expect(requestMock).toHaveBeenCalledTimes(1);
     expect(requestMock).toHaveBeenCalledWith(
-      '/web/system/organization/listOrgs',
+      '/web/system/organization/list',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,7 +149,7 @@ describe('auth backends', () => {
       accessToken: 'xone-switched-token',
     });
     expect(requestMock).toHaveBeenCalledWith(
-      '/web/system/organization/selectAndChangeOrg',
+      '/web/system/organization/selectAndChange',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

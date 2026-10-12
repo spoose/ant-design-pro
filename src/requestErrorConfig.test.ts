@@ -364,7 +364,7 @@ describe('requestErrorConfig', () => {
       setAccessToken('xone-token');
 
       const result = interceptor({
-        url: '/web/system/organization/listOrgs?includeDisabled=false',
+        url: '/web/system/organization/list?includeDisabled=false',
         method: 'POST',
         headers: { Accept: 'application/json' },
       });

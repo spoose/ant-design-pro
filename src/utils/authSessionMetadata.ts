@@ -15,7 +15,7 @@ export type AuthSessionMetadata = {
   /** XOne 登录 identifier；Legacy 中等同于 username。 */
   identifier?: string;
   activeOrganizationId?: string;
-  /** XOne 登录后获得的真实组织列表，用于组织 Token 整页刷新后恢复页面会话。 */
+  /** XOne 登录后获得的真实组织列表；组织切换后据此重建会话，不再回查后端列表。 */
   organizations?: Array<{
     organizationId: string;
     organizationCode: string;

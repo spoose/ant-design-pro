@@ -67,7 +67,7 @@ export const xoneAuthBackend: AuthBackend = {
   },
 
   /**
-   * 核心链路：Bearer Token -> listOrgs -> 当前 Project 的组织原始数据。
+   * 核心链路：Bearer Token -> /list -> 当前 Project 的组织原始数据。
    * XOne getCurrentUser 尚未开放；userId/projectId/sub 来自已验证的登录 Token 会话。
    */
   async loadCurrentUser(options?: AuthBackendRequestOptions) {

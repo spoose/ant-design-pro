@@ -2,6 +2,7 @@ import { LinkOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import React from 'react';
@@ -70,13 +71,31 @@ export async function getInitialState(): Promise<{
       if (handleAccessTokenFailure(error)) return undefined;
       const failure = error as {
         name?: string;
-        code?: number;
+        code?: number | string;
+        request?: unknown;
         response?: { status?: number };
       };
-      // XOne 未认证访问 listOrgs 可能返回 403；只在会话恢复边界将它视为登录失效。
+      // XOne 未认证访问组织列表接口可能返回 403；只在会话恢复边界将它视为登录失效。
       const isSessionForbidden =
         failure.response?.status === 403 ||
         (failure.name === 'XoneAuthBackendError' && failure.code === 403);
+      // 后端不可达（请求超时/网络中断）表现为"有 request 无 response"。此时会话无法建立，
+      // 但绝不能让 getInitialState 抛错 —— 那会让整页停在空白且没有任何可见提示。
+      // 这里给出弹窗并回到登录页；凭据保留，网络恢复后同一 Token 仍可继续使用。
+      const isBackendUnreachable =
+        !failure.response &&
+        (failure.code === 'ECONNABORTED' ||
+          failure.code === 'ETIMEDOUT' ||
+          Boolean(failure.request));
+      if (isBackendUnreachable) {
+        message.error({
+          content:
+            'XOne 后端连接超时：请检查内网连接（10.20.x）后重试，或联系管理员确认服务状态。',
+          key: 'auth-session-unreachable',
+        });
+        history.replace(buildAccessTokenLoginPath(history.location));
+        return undefined;
+      }
       if (!isSessionForbidden) throw error;
       clearAccessToken();
       clearAuthSessionMetadata();
@@ -89,7 +108,7 @@ export async function getInitialState(): Promise<{
 
   const { location } = history;
   if (!authFreePaths.includes(location.pathname)) {
-    // 核心链路：受保护 URL + 无 Token -> 登录页；禁止先请求 XOne listOrgs。
+    // 核心链路：受保护 URL + 无 Token -> 登录页；禁止先请求 XOne 组织列表接口。
     if (!getAccessToken()) {
       history.replace(buildAccessTokenLoginPath(location));
       return {

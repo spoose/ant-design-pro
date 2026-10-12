@@ -97,7 +97,7 @@ export const assertXoneLoginToken = (
 };
 
 /**
- * 校验 Token 的登录主体。前端只比较明文字段；签名、过期和注销状态仍由 listOrgs 后端校验。
+ * 校验 Token 的登录主体。前端只比较明文字段；签名、过期和注销状态仍由组织列表接口的后端校验。
  */
 export const assertXoneTokenSubject = (
   accessToken: string | undefined,

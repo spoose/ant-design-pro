@@ -16,6 +16,7 @@ import {
   createAuthSessionService,
   normalizeAuthCurrentUser,
 } from './index';
+import { XoneTokenClaimsError } from './xoneTokenClaims';
 
 const createLegacyCurrentUser = (
   organizationId = 'organization-1',
@@ -346,7 +347,13 @@ describe('auth session normalization', () => {
       kind: 'xone',
       login: vi.fn(),
       switchOrganization: vi.fn(),
-      loadCurrentUser: vi.fn(),
+      loadCurrentUser: vi.fn().mockResolvedValue({
+        source: 'xone',
+        organizations: [
+          { id: '1', organizationCode: 'org001', organizationName: '组织一' },
+          { id: '2', organizationCode: 'org002', organizationName: '组织二' },
+        ],
+      }),
     } satisfies AuthBackend;
 
     await expect(createAuthSessionService(backend).load()).resolves.toMatchObject(
@@ -360,7 +367,45 @@ describe('auth session normalization', () => {
         },
       },
     );
-    expect(backend.loadCurrentUser).not.toHaveBeenCalled();
+    // 组织级 Token 现在也能查询组织列表，刷新时取实时数据而不是本地快照。
+    expect(backend.loadCurrentUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an XOne session instead of falling back when the live list is empty', async () => {
+    setAccessToken(
+      createUnsignedTestToken({ organizationId: 2, sub: 'xone-user' }),
+    );
+    saveAuthSessionMetadata({
+      backend: 'xone',
+      userId: '1',
+      projectId: '1111',
+      identifier: 'xone-user',
+      activeOrganizationId: '2',
+      organizations: [
+        {
+          organizationId: '2',
+          organizationCode: 'org002',
+          organizationName: '组织二',
+          defaultFlag: true,
+        },
+      ],
+    });
+    const backend = {
+      kind: 'xone',
+      login: vi.fn(),
+      switchOrganization: vi.fn(),
+      loadCurrentUser: vi.fn().mockResolvedValue({
+        source: 'xone',
+        organizations: [],
+      }),
+    } satisfies AuthBackend;
+
+    // 空列表不再回退本地快照：既无法区分"该用户没有组织"与"后端异常"，空值还会被
+    // 固化成后续刷新的唯一依据。必须是 XoneTokenClaimsError，否则整页刷新不会走
+    // authFailure 的会话失效收敛路径（清 Token + 回登录页）。
+    await expect(
+      createAuthSessionService(backend).load(),
+    ).rejects.toBeInstanceOf(XoneTokenClaimsError);
   });
 
   it('clears the partial login state when identity loading fails', async () => {
@@ -452,7 +497,7 @@ describe('auth session normalization', () => {
     expect(getAuthSessionMetadata()).toBeUndefined();
   });
 
-  it('reuses the stored organizations without refreshing listOrgs for XOne', async () => {
+  it('reuses the stored organizations without refreshing the organization list for XOne', async () => {
     setAccessToken('token-a');
     saveAuthSessionMetadata({
       backend: 'xone',
@@ -485,7 +530,7 @@ describe('auth session normalization', () => {
       backend,
     ).switchOrganization('2');
 
-    // 方案 B：组织级 Token 无 listOrgs 权限，切换时不再调用刷新。
+    // 切换后不再查询组织列表：本地保存的列表就是刚刚校验过的基线。
     expect(backend.loadCurrentUser).not.toHaveBeenCalled();
     expect(session).toMatchObject({
       backend: 'xone',

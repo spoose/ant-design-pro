@@ -17,7 +17,7 @@ export const XONE_OFFLINE_TEST_ACCOUNT = {
 } as const;
 
 /**
- * 离线组织目录来自 2026-08-24 的 listOrgs 历史响应。
+ * 离线组织目录来自 2026-08-24 的历史组织列表响应。
  * id 在真实响应中是字符串，虽然 OpenAPI 将它声明为 int64，因此 mock 保留真实类型。
  */
 const historicalOrganizations = [
@@ -43,7 +43,7 @@ const historicalOrganizations = [
 
 /**
  * mockTokenSessions 是本地 Mock 的 Token 会话表：
- * login 写入未选择组织的会话，selectAndChangeOrg 写入携带 orgId 的新会话。
+ * login 写入未选择组织的会话，selectAndChange 写入携带 orgId 的新会话。
  * 旧 Token 故意保留，用来验证前端不能依赖服务端立即销毁旧 Token。
  */
 type MockTokenSession = {
@@ -158,11 +158,7 @@ const listOrganizations = (request: Request, response: Response) => {
     sendUnauthorized(response);
     return;
   }
-  // 与已观察到的内网行为一致：切换后的组织 Token 返回 data:null。
-  if (currentSession.orgId) {
-    sendSuccess(response, null);
-    return;
-  }
+  // 2026-09-30 实测：组织级 Token 同样能取到组织列表，不再返回 data:null。
   sendSuccess(
     response,
     historicalOrganizations.map((organization) => ({ ...organization })),
@@ -205,7 +201,7 @@ const selectAndChangeOrganization = (
 
 export default {
   'POST /web/auth/login': login,
-  'POST /web/system/organization/listOrgs': listOrganizations,
-  'POST /web/system/organization/selectAndChangeOrg':
+  'POST /web/system/organization/list': listOrganizations,
+  'POST /web/system/organization/selectAndChange':
     selectAndChangeOrganization,
 };

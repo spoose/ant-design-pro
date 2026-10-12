@@ -6,10 +6,10 @@ type MockHandler = (request: Request, response: Response) => void;
 
 const loginHandler = xoneMock['POST /web/auth/login'] as MockHandler;
 const listOrganizationsHandler = xoneMock[
-  'POST /web/system/organization/listOrgs'
+  'POST /web/system/organization/list'
 ] as MockHandler;
 const switchOrganizationHandler = xoneMock[
-  'POST /web/system/organization/selectAndChangeOrg'
+  'POST /web/system/organization/selectAndChange'
 ] as MockHandler;
 
 const invokeLogin = (body: Record<string, unknown>) => {
@@ -54,7 +54,7 @@ describe('XOne offline login mock', () => {
     });
   });
 
-  it('matches the observed null listOrgs response after switching organizations', () => {
+  it('lists organizations for an organization-scoped Token as well', () => {
     const loginResponse = invokeLogin({
       projectId: XONE_OFFLINE_TEST_ACCOUNT.projectId,
       authType: XONE_OFFLINE_TEST_ACCOUNT.authType,
@@ -82,10 +82,15 @@ describe('XOne offline login mock', () => {
       { send: listSend } as unknown as Response,
     );
 
-    expect(listSend).toHaveBeenCalledWith({
+    expect(listSend).toHaveBeenCalledTimes(1);
+    expect(listSend.mock.calls[0]?.[0]).toMatchObject({
       code: 200,
-      data: null,
       msg: '操作成功',
     });
+    expect(
+      (listSend.mock.calls[0]?.[0].data as Array<{ id: string }>).map(
+        (organization) => organization.id,
+      ),
+    ).toEqual(['2', '1']);
   });
 });
