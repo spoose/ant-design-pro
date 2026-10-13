@@ -97,7 +97,7 @@ export const PlatformStartConversation = () => {
           }
           classNames={{
             title: '!mb-2',
-            list: '!m-0 !grid !w-full !grid-cols-1 !gap-x-3 !gap-y-2 @min-[28rem]:!grid-cols-[repeat(2,minmax(0,18rem))] @min-[28rem]:!justify-start',
+            list: '!m-0 !grid !w-full !grid-cols-1 !gap-x-3 !gap-y-2 @min-[28rem]:!grid-cols-[repeat(2,minmax(0,1fr))]',
             item: '!min-w-0 !border !border-zinc-200 !bg-white hover:!bg-zinc-50 dark:!border-zinc-700 dark:!bg-zinc-900 dark:hover:!bg-zinc-800',
             itemContent: 'min-w-0',
           }}

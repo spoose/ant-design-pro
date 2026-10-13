@@ -8,6 +8,7 @@ import PlatformMockCalendar from '../platform/overview/PlatformMockCalendar';
 import PlatformMockChart from '../platform/overview/PlatformMockChart';
 import { PlatformStartConversation } from '../platform/overview/PlatformMockConversations';
 import PlatformNotificationCenter from '../platform/overview/PlatformNotificationCenter';
+import PlatformPowerStation from '../platform/overview/PlatformPowerStation';
 import PlatformQuickEntry from '../platform/overview/PlatformQuickEntry';
 import PlatformWeeklyGoals from '../platform/overview/PlatformWeeklyGoals';
 
@@ -20,6 +21,8 @@ export type WorkspaceHomeModulesProps = {
   appTitle: string;
   /** 当前 Scope 没有应用授权时展示的明确说明。 */
   emptyDescription: string;
+  showAppList?: boolean;
+  showPowerStation?: boolean;
 };
 
 /**
@@ -31,23 +34,30 @@ export const WorkspaceHomeModules = ({
   getAppPath,
   appTitle,
   emptyDescription,
+  showAppList = true,
+  showPowerStation = false,
 }: WorkspaceHomeModulesProps) => (
   <>
     {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
-    <div className="grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)] lg:justify-start xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto">
-      <PlatformStartConversation />
-      <PlatformNotificationCenter
-        notificationCenterPath={getNotificationCenterPath(
-          getWorkspaceOrganizationId(getAppPath('ai-assistant')),
-        )}
-      />
-      {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
-      <div aria-hidden="true" className="hidden" hidden>
-        <PlatformWeeklyGoals />
-      </div>
-      {/* 日历保留供后续恢复；当前由通知中心占用原卡槽。 */}
-      <div aria-hidden="true" className="hidden" hidden>
-        <PlatformMockCalendar />
+    <div className="@container/home">
+      <div
+        className={`grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)] xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_clamp(27.5rem,33.333%,30rem)] ${showPowerStation ? '@[80rem]/home:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)_minmax(0,1fr)]' : ''}`}
+      >
+        <PlatformStartConversation />
+        <PlatformNotificationCenter
+          notificationCenterPath={getNotificationCenterPath(
+            getWorkspaceOrganizationId(getAppPath('ai-assistant')),
+          )}
+        />
+        {showPowerStation ? <PlatformPowerStation /> : null}
+        {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
+        <div aria-hidden="true" className="hidden" hidden>
+          <PlatformWeeklyGoals />
+        </div>
+        {/* 日历保留供后续恢复；当前由通知中心占用原卡槽。 */}
+        <div aria-hidden="true" className="hidden" hidden>
+          <PlatformMockCalendar />
+        </div>
       </div>
     </div>
 
@@ -60,13 +70,28 @@ export const WorkspaceHomeModules = ({
 
     <PlatformAppCatalog getAppPath={getAppPath} appCodes={appCodes} />
 
-    <WorkspaceAppList
-      emptyDescription={emptyDescription}
-      getAppPath={getAppPath}
-      appCodes={appCodes}
-      title={appTitle}
-    />
+    <div className={showAppList ? undefined : 'hidden'} hidden={!showAppList}>
+      <WorkspaceAppList
+        emptyDescription={emptyDescription}
+        getAppPath={getAppPath}
+        appCodes={appCodes}
+        title={appTitle}
+      />
+    </div>
 
-    <PlatformMockChart />
+    <section
+      aria-labelledby="workspace-statistics-title"
+      className="grid min-w-0 gap-3"
+    >
+      <header className="flex items-center justify-between gap-3">
+        <h2
+          className="m-0 text-base font-semibold text-zinc-950 dark:text-zinc-50"
+          id="workspace-statistics-title"
+        >
+          数据统计
+        </h2>
+      </header>
+      <PlatformMockChart />
+    </section>
   </>
 );

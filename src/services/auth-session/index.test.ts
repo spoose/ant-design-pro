@@ -371,7 +371,84 @@ describe('auth session normalization', () => {
     expect(backend.loadCurrentUser).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects an XOne session instead of falling back when the live list is empty', async () => {
+  it('refreshes stored organizations before switching to a newly granted organization', async () => {
+    setAccessToken(createUnsignedTestToken({ sub: 'xone-user' }));
+    saveAuthSessionMetadata({
+      backend: 'xone',
+      userId: '1',
+      projectId: '1111',
+      identifier: 'xone-user',
+      organizations: [
+        {
+          organizationId: '1',
+          organizationCode: 'org001',
+          organizationName: '组织一',
+          defaultFlag: false,
+        },
+      ],
+    });
+    const backend = {
+      kind: 'xone',
+      login: vi.fn(),
+      loadCurrentUser: vi.fn().mockResolvedValue({
+        source: 'xone',
+        organizations: [
+          { id: '2', organizationCode: 'org002', organizationName: '组织二' },
+        ],
+      }),
+      switchOrganization: vi.fn().mockResolvedValue({
+        organizationId: '2',
+        accessToken: createUnsignedTestToken({
+          organizationId: 2,
+          sub: 'xone-user',
+        }),
+      }),
+    } satisfies AuthBackend;
+    const service = createAuthSessionService(backend);
+
+    await service.load();
+    expect(
+      getAuthSessionMetadata()?.organizations?.map((org) => org.organizationId),
+    ).toEqual(['2']);
+    await expect(service.switchOrganization('2')).resolves.toMatchObject({
+      activeOrganizationId: '2',
+    });
+    expect(backend.loadCurrentUser).toHaveBeenCalledWith({ timeout: 10000 });
+    await service.load({ timeout: 20000 });
+    expect(backend.loadCurrentUser).toHaveBeenLastCalledWith({ timeout: 20000 });
+  });
+
+  it.each([1, 2])('allows a valid XOne login with no organizations for user %s', async (userId) => {
+    const accessToken = createUnsignedTestToken({
+      userId,
+      projectId: 1111,
+      sub: 'xone-user',
+    });
+    const backend = {
+      kind: 'xone',
+      login: vi.fn().mockResolvedValue({ accessToken, tokenType: 'Bearer' }),
+      loadCurrentUser: vi.fn().mockResolvedValue({
+        source: 'xone',
+        organizations: [],
+      }),
+      switchOrganization: vi.fn(),
+    } satisfies AuthBackend;
+
+    const session = await createAuthSessionService(backend).login({
+      projectId: 1111,
+      authType: 'password',
+      username: 'xone-user',
+      password: 'secret',
+    });
+
+    expect(session.currentUser.organizations).toEqual([]);
+    expect(session.currentUser.isSuperAdmin).toBe(userId === 1);
+    expect(session.activeOrganizationId).toBeUndefined();
+    expect(getAccessToken()).toBe(accessToken);
+    expect(getAuthSessionMetadata()?.organizations).toEqual([]);
+  });
+
+  it('rejects an organization Token when its organization is absent from the live list', async () => {
     setAccessToken(
       createUnsignedTestToken({ organizationId: 2, sub: 'xone-user' }),
     );
@@ -400,9 +477,7 @@ describe('auth session normalization', () => {
       }),
     } satisfies AuthBackend;
 
-    // 空列表不再回退本地快照：既无法区分"该用户没有组织"与"后端异常"，空值还会被
-    // 固化成后续刷新的唯一依据。必须是 XoneTokenClaimsError，否则整页刷新不会走
-    // authFailure 的会话失效收敛路径（清 Token + 回登录页）。
+    // 不得用旧快照恢复实时列表中已不存在的活动组织。
     await expect(
       createAuthSessionService(backend).load(),
     ).rejects.toBeInstanceOf(XoneTokenClaimsError);

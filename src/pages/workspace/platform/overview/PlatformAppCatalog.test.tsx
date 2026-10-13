@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { OCTOP_BASE_URL } from '@/config/externalApps';
 import PlatformAppCatalog from './PlatformAppCatalog';
 
 vi.mock('@umijs/max', async () => ({
@@ -36,12 +37,16 @@ describe('PlatformAppCatalog', () => {
     );
 
     expect(screen.getByRole('heading', { name: '全部应用' })).toBeVisible();
-    expect(screen.getByRole('link', { name: 'xOneAI' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'AI助手' })).toHaveAttribute(
       'href',
-      '/apps/ai-assistant',
+      OCTOP_BASE_URL,
+    );
+    expect(screen.getByRole('link', { name: 'AI助手' })).toHaveAttribute(
+      'target',
+      '_blank',
     );
     expect(
-      screen.getByRole('link', { name: 'xOneAI' }).querySelector('img'),
+      screen.getByRole('link', { name: 'AI助手' }).querySelector('img'),
     ).toHaveAttribute('src', '/assets/icons/app-catalog/chatbot.png');
     expect(screen.getByRole('link', { name: '文件审查' })).toBeVisible();
     expect(screen.getByRole('link', { name: '知识检索' })).toBeVisible();
@@ -74,7 +79,7 @@ describe('PlatformAppCatalog', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: 'xOneAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'AI助手' })).toBeVisible();
     expect(screen.getByRole('link', { name: '文件审查' })).toBeVisible();
     expect(screen.getByRole('link', { name: '会议纪要' })).toBeVisible();
     expect(screen.getByRole('link', { name: '数据看板' })).toBeVisible();

@@ -552,12 +552,12 @@ const PlatformUsageInsight = () => {
     >
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-baseline gap-1.5">
-          <h2
+          <h3
             className="m-0 text-sm font-semibold text-zinc-950 dark:text-zinc-50"
             id="platform-usage-insight-title"
           >
             AI 数据洞悉
-          </h2>
+          </h3>
           <span className="text-sm tabular-nums text-zinc-400 dark:text-zinc-500">
             {INSIGHT_PAGES.length}
           </span>

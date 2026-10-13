@@ -90,7 +90,7 @@ export async function getInitialState(): Promise<{
       if (isBackendUnreachable) {
         message.error({
           content:
-            'XOne 后端连接超时：请检查内网连接（10.20.x）后重试，或联系管理员确认服务状态。',
+            '服务连接失败：请检查网络连接后重试，或联系管理员确认服务状态。',
           key: 'auth-session-unreachable',
         });
         history.replace(buildAccessTokenLoginPath(history.location));

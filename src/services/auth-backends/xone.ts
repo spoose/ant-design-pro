@@ -74,7 +74,7 @@ export const xoneAuthBackend: AuthBackend = {
     const organizationsResponse = await listOrganizations(options);
     return {
       source: 'xone' as const,
-      // 登录 Token 若返回空 data，则当前用户没有可进入的组织；组织 Token 不走此函数。
+      // 成功响应为空时表示没有可用组织，不回退到旧的本地授权列表。
       organizations:
         assertXoneSuccess('XOne 组织列表查询', organizationsResponse) ?? [],
     };

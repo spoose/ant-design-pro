@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -242,7 +242,7 @@ describe('PlatformOverview', () => {
       '/account/settings',
     );
     expect(
-      screen.queryByRole('link', { name: '打开 xOneAI' }),
+      screen.queryByRole('link', { name: '打开 AI助手' }),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('platform-mock-chart')).toBeVisible();
     expect(screen.getByText('输入 Token')).toBeVisible();
@@ -270,7 +270,7 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('region', { name: '问问小One' }).parentElement
         ?.className,
-    ).toContain('lg:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)]');
+    ).toContain('lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]');
     expect(
       screen.getByRole('region', { name: '问问小One' }).parentElement
         ?.className,
@@ -306,13 +306,13 @@ describe('PlatformOverview', () => {
   it('links Project apps without adding management cards to the home', () => {
     render(<PlatformOverview appCodes={['file-review']} />);
 
-    expect(screen.getByRole('link', { name: '打开 文件审查' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '文件审查' })).toHaveAttribute(
       'href',
       '/workspace/platform/apps/file-review/overview',
     );
     expect(
-      screen.getByText('从空白开始，或让助手引导你完成审查。'),
-    ).toBeVisible();
+      screen.queryByRole('link', { name: '打开 文件审查' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: '组织工作区' }),
     ).not.toBeInTheDocument();
@@ -321,16 +321,16 @@ describe('PlatformOverview', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps the shared application empty state', () => {
+  it('hides the Project application empty state', () => {
     render(<PlatformOverview appCodes={[]} />);
 
     expect(screen.getByRole('link', { name: '个人设置' })).toBeVisible();
     expect(
       screen.getByText('当前账号暂无项目应用，请联系项目管理员授权。'),
-    ).toBeVisible();
+    ).not.toBeVisible();
   });
 
-  it('passes platform apps into the shared launch strip', () => {
+  it('hides the Project launch strip and labels the statistics section', () => {
     render(
       <PlatformOverview
         appCodes={[
@@ -342,22 +342,15 @@ describe('PlatformOverview', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: '项目应用' })).toBeVisible();
+    expect(screen.getByText('项目应用', { selector: 'h2' })).not.toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '数据统计', level: 2 }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: 'AI 数据洞悉', level: 3 }),
+    ).toBeVisible();
     expect(screen.getByRole('heading', { name: '全部应用' })).toBeVisible();
     expect(screen.getByRole('link', { name: '知识检索' })).toHaveAttribute(
-      'href',
-      '/workspace/platform/apps/knowledge-search/overview',
-    );
-    const appList = screen
-      .getByRole('heading', { name: '项目应用' })
-      .closest('section');
-    expect(appList).not.toBeNull();
-    fireEvent.click(
-      within(appList as HTMLElement).getByRole('button', {
-        name: '更多，还有 1 个应用',
-      }),
-    );
-    expect(screen.getByRole('link', { name: '打开 知识检索' })).toHaveAttribute(
       'href',
       '/workspace/platform/apps/knowledge-search/overview',
     );

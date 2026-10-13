@@ -30,7 +30,7 @@ describe('appRegistry', () => {
       navigation: [{ pathSegment: 'overview', title: '运行总览' }],
     });
     expect(getAppDefinition('ai-assistant')).toMatchObject({
-      title: 'xOneAI',
+      title: 'AI助手',
       navigation: [
         { pathSegment: 'overview', title: 'AI助手' },
         { pathSegment: 'resources', title: '资源' },

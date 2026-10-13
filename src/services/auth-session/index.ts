@@ -154,14 +154,10 @@ export const createAuthSessionService = (backend: AuthBackend) => {
       decodeXoneTokenClaims(accessToken);
     }
     // 组织级 Token 与登录 Token 都能查询组织列表，整页刷新一律取实时数据。
-    const snapshot = await backend.loadCurrentUser(options);
-    // 空列表无法区分"该用户确实没有组织"与"后端异常"，回退本地快照会把空值静默固化成
-    // 后续刷新的唯一依据；这里改为显式失败，交由既有的会话失效收敛路径清 Token 并回登录页。
-    if (snapshot.source === 'xone' && snapshot.organizations.length === 0) {
-      throw new XoneTokenClaimsError(
-        'XOne 未返回任何可进入的组织，请确认账号授权或联系管理员',
-      );
-    }
+    const snapshot = await backend.loadCurrentUser({
+      timeout: 10000,
+      ...options,
+    });
     const currentUser = normalizeAuthCurrentUser(
       snapshot,
       accessToken,
@@ -184,6 +180,13 @@ export const createAuthSessionService = (backend: AuthBackend) => {
             currentUser,
             metadata?.activeOrganizationId,
           );
+    // 切换组织使用保存的列表；只有实时会话校验成功后才更新，避免两处授权数据不一致。
+    if (backend.kind === 'xone' && metadata) {
+      saveAuthSessionMetadata({
+        ...metadata,
+        organizations: toStoredOrganizations(currentUser),
+      });
+    }
     return createAuthSession(
       backend,
       currentUser,

@@ -1,6 +1,7 @@
 import { Link } from '@umijs/max';
 import { useState, useSyncExternalStore } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
+import { OCTOP_BASE_URL } from '@/config/externalApps';
 import {
   getNotificationCenterPath,
   getWorkspaceOrganizationId,
@@ -78,7 +79,6 @@ const extraApps: CatalogApp[] = [
 ];
 
 const fallbackCopy = { icon: 'documents', subtitle: '打开应用，继续当前工作' };
-const OCTOP_CONNECTION_URL = 'http://localhost:5173/';
 const NARROW_PREVIEW_COUNT = 4;
 const DESKTOP_PREVIEW_COUNT = 8;
 const NARROW_QUERY = '(max-width: 639px)';
@@ -220,7 +220,7 @@ const PlatformAppCatalog = ({
                 aria-label={app.title}
                 className={cardClassName}
                 key={app.code}
-                href={OCTOP_CONNECTION_URL}
+                href={OCTOP_BASE_URL}
                 rel="noopener noreferrer"
                 target="_blank"
               >

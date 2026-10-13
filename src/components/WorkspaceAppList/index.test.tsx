@@ -81,7 +81,7 @@ describe('WorkspaceAppList', () => {
     );
   });
 
-  it('places xOneAI first while preserving the remaining app order', () => {
+  it('places AI助手 first while preserving the remaining app order', () => {
     render(
       <WorkspaceAppList
         emptyDescription="暂无应用"
@@ -95,7 +95,7 @@ describe('WorkspaceAppList', () => {
       screen
         .getAllByRole('link')
         .map((link) => link.getAttribute('aria-label')),
-    ).toEqual(['打开 xOneAI', '打开 文件审查', '打开 知识检索']);
+    ).toEqual(['打开 AI助手', '打开 文件审查', '打开 知识检索']);
   });
 
   it('collapses overflow apps behind a more control that can expand', () => {
@@ -113,7 +113,7 @@ describe('WorkspaceAppList', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: '打开 xOneAI' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '打开 AI助手' })).toBeVisible();
     expect(screen.getByRole('link', { name: '打开 文件审查' })).toBeVisible();
     expect(screen.getByRole('link', { name: '打开 文档总结' })).toBeVisible();
     expect(

@@ -57,7 +57,7 @@ export type AppDefinition = {
  */
 export const appRegistry = {
   'ai-assistant': {
-    title: 'xOneAI',
+    title: 'AI助手',
     icon: RobotOutlined,
     pageComponent: lazy(() => import('@/pages/workspace/app/ai-assistant')),
     navigation: [

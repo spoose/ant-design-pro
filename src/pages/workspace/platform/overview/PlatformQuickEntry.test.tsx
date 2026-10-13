@@ -78,7 +78,7 @@ describe('PlatformQuickEntry', () => {
       screen.queryByRole('link', { name: '操作痕迹' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: 'xOneAI' }),
+      screen.queryByRole('link', { name: 'AI助手' }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: '组织管理' }),

@@ -30,10 +30,6 @@ interface ResponseStructure {
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const errorConfig: RequestConfig = {
-  // XOne 内网不可达时开发代理会一直等待目标响应，没有超时则请求永久挂起：
-  // 应用初始化拿不到会话，getInitialState 永不 resolve，整页停在空白且没有任何提示。
-  // 这里把"永久挂起"收敛为"可失败"，超时后由 errorHandler / 调用方处理。
-  timeout: 10000,
   // 错误处理： umi@3 的错误处理方案。
   errorConfig: {
     // 错误抛出

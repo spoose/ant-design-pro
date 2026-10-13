@@ -87,7 +87,7 @@ describe('workspaceRecents', () => {
         '/workspace/platform/apps/ai-assistant/overview',
         'x',
       ),
-    ).toBe('xOneAI');
+    ).toBe('AI助手');
   });
 
   it('removes an entry by app or page key', () => {

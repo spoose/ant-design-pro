@@ -246,7 +246,10 @@ describe('app getInitialState', () => {
 
     const state = await getInitialState();
 
-    expect(mockMessageError).toHaveBeenCalled();
+    expect(mockMessageError).toHaveBeenCalledWith({
+      content: '服务连接失败：请检查网络连接后重试，或联系管理员确认服务状态。',
+      key: 'auth-session-unreachable',
+    });
     expect(mockReplace).toHaveBeenCalledWith(
       `/user/login?redirect=${encodeURIComponent(
         '/workspace/platform/overview',
@@ -516,7 +519,7 @@ describe('app layout guard', () => {
     ]);
     expect(
       menuItems
-        .find((item) => item.name === 'xOneAI')
+        .find((item) => item.name === 'AI助手')
         ?.children?.map((child) => child.path),
     ).toEqual([
       '/workspace/platform/apps/ai-assistant/overview',

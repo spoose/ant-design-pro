@@ -135,7 +135,7 @@ describe('Workspace menus', () => {
     ).toEqual(['用户管理', '日志']);
   });
 
-  it('nests xOneAI under Organization and Platform home menus when authorized', () => {
+  it('nests AI助手 under Organization and Platform home menus when authorized', () => {
     const serializeMenus = (items: MenuDataItem[]) =>
       items.map(({ name, path, children }) => ({
         name,
@@ -165,7 +165,7 @@ describe('Workspace menus', () => {
       },
       { name: '通知中心', path: '/workspace/org/organization-1/notifications' },
       {
-        name: 'xOneAI',
+        name: 'AI助手',
         path: '/workspace/org/organization-1/apps/ai-assistant',
         children: [
           {
@@ -205,7 +205,7 @@ describe('Workspace menus', () => {
       { name: '工作台', path: '/workspace/platform/overview' },
       { name: '通知中心', path: '/workspace/platform/notifications' },
       {
-        name: 'xOneAI',
+        name: 'AI助手',
         path: '/workspace/platform/apps/ai-assistant',
         children: [
           {
@@ -234,7 +234,7 @@ describe('Workspace menus', () => {
     const paiMenu = createPlatformWorkspaceMenus(
       ['overview'],
       ['ai-assistant'],
-    ).find((item) => item.name === 'xOneAI');
+    ).find((item) => item.name === 'AI助手');
     expect(paiMenu?.path).toBe('/workspace/platform/apps/ai-assistant');
     expect(paiMenu?.key).toBe('/workspace/platform/apps/ai-assistant');
     expect(paiMenu?.children?.map((child) => child.path)).toEqual([
@@ -247,7 +247,7 @@ describe('Workspace menus', () => {
     );
   });
 
-  it('nests stats after xOneAI for administrators only', () => {
+  it('nests stats after AI助手 for administrators only', () => {
     const serialize = (
       items: ReturnType<typeof createPlatformWorkspaceMenus>,
     ) =>
@@ -353,7 +353,7 @@ describe('Workspace menus', () => {
     );
   });
 
-  it('keeps the home sidebar on xOneAI URLs instead of swapping to an App sidebar', () => {
+  it('keeps the home sidebar on AI助手 URLs instead of swapping to an App sidebar', () => {
     const userWithPai = {
       ...superAdmin,
       projectAppCodes: ['ai-assistant', 'knowledge-search'],
@@ -377,7 +377,7 @@ describe('Workspace menus', () => {
       { name: '工作台', path: '/workspace/platform/overview' },
       { name: '通知中心', path: '/workspace/platform/notifications' },
       {
-        name: 'xOneAI',
+        name: 'AI助手',
         path: '/workspace/platform/apps/ai-assistant',
       },
       {
@@ -391,7 +391,7 @@ describe('Workspace menus', () => {
     ]);
     expect(
       platformMenu?.items
-        .find((item) => item.name === 'xOneAI')
+        .find((item) => item.name === 'AI助手')
         ?.children?.map(({ name }) => name),
     ).toEqual(['AI助手', '资源', '记忆']);
     expect(
@@ -415,7 +415,7 @@ describe('Workspace menus', () => {
     expect(organizationMenu?.items.map(({ name }) => name)).toEqual([
       '组织首页',
       '通知中心',
-      'xOneAI',
+      'AI助手',
       '统计',
       '组织设置',
     ]);

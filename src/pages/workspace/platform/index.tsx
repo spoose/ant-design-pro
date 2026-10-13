@@ -111,6 +111,7 @@ export const PlatformOverview = ({
       emptyDescription="当前账号暂无项目应用，请联系项目管理员授权。"
       getAppPath={(appCode) => getPlatformAppPagePath(appCode, 'overview')}
       appCodes={appCodes}
+      showAppList={false}
     />
   </div>
 );
@@ -195,29 +196,37 @@ const PlatformManagementPage = () => {
       : pageMeta;
 
   return (
-    <WorkspacePage
-      breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, [
-        pageMeta.title,
-      ])}
-      description={pageHeading.description || undefined}
-      leading={
-        pageKey === 'overview' && currentUser ? (
-          <PlatformWelcomeAvatar
-            avatar={currentUser.avatar}
-            userName={currentUser.name}
-          />
-        ) : undefined
-      }
-      title={pageHeading.title}
-      actions={
-        pageKey === 'permissions' ? <Tag color="blue">静态演示</Tag> : undefined
+    <div
+      className={
+        pageKey === 'overview' ? 'mx-auto w-full max-w-[90rem]' : undefined
       }
     >
-      <PlatformPageContent
-        pageKey={pageKey}
-        projectAppCodes={projectAppCodes}
-      />
-    </WorkspacePage>
+      <WorkspacePage
+        breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, [
+          pageMeta.title,
+        ])}
+        description={pageHeading.description || undefined}
+        leading={
+          pageKey === 'overview' && currentUser ? (
+            <PlatformWelcomeAvatar
+              avatar={currentUser.avatar}
+              userName={currentUser.name}
+            />
+          ) : undefined
+        }
+        title={pageHeading.title}
+        actions={
+          pageKey === 'permissions' ? (
+            <Tag color="blue">静态演示</Tag>
+          ) : undefined
+        }
+      >
+        <PlatformPageContent
+          pageKey={pageKey}
+          projectAppCodes={projectAppCodes}
+        />
+      </WorkspacePage>
+    </div>
   );
 };
 
