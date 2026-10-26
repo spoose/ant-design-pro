@@ -2,7 +2,10 @@
 
 import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
-import { OCTOP_BASE_URL } from '../src/config/externalApps';
+import {
+  OCTOP_BASE_URL,
+  XONE_PUBLIC_BASE_URL,
+} from '../src/config/externalApps';
 import { surfaceColors } from '../src/theme/colors';
 import defaultSettings from './defaultSettings';
 import proxy, { createXoneProxy } from './proxy';
@@ -255,6 +258,7 @@ export default defineConfig({
   exportStatic: {},
   define: {
     'process.env.AUTH_BACKEND': authBackend,
+    'process.env.XONE_PUBLIC_BASE_URL': XONE_PUBLIC_BASE_URL,
     'process.env.OCTOP_BASE_URL': OCTOP_BASE_URL,
     'process.env.CI': process.env.CI,
     'process.env.COMMIT_HASH': commitHash,

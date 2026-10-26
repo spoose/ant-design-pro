@@ -1,11 +1,14 @@
 import { Link } from '@umijs/max';
+import { App } from 'antd';
 import { useState, useSyncExternalStore } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
 import { OCTOP_BASE_URL } from '@/config/externalApps';
+import { handleAccessTokenFailure } from '@/utils/authFailure';
 import {
   getNotificationCenterPath,
   getWorkspaceOrganizationId,
 } from '@/utils/workspaceRoutes';
+import { getOctopLaunchUrl } from './service';
 
 /** 从 public 静态目录读取全部应用图标，确保内网或离线环境也能正常显示。 */
 const appCatalogIconSrc = (name: string) =>
@@ -109,6 +112,34 @@ const PlatformAppCatalog = ({
   getAppPath,
   emptyDescription = '暂无授权应用。',
 }: PlatformAppCatalogProps) => {
+  const { message } = App.useApp();
+  const [launchPending, setLaunchPending] = useState(false);
+
+  const launchOctop = async () => {
+    if (launchPending) return;
+    // 先同步打开新页，避免等待 ticket 后被浏览器当作弹窗拦截。
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) {
+      message.error('请允许浏览器打开新标签页后重试');
+      return;
+    }
+    popup.opener = null;
+    setLaunchPending(true);
+    try {
+      const launchUrl = await getOctopLaunchUrl();
+      if (!popup.closed) popup.location.replace(launchUrl);
+    } catch (error) {
+      popup.close();
+      if (!handleAccessTokenFailure(error)) {
+        message.error(
+          error instanceof Error ? error.message : '小One打开失败，请稍后重试',
+        );
+      }
+    } finally {
+      setLaunchPending(false);
+    }
+  };
+
   const orderedAppCodes = appCodes.includes('ai-assistant')
     ? [
         'ai-assistant',
@@ -120,7 +151,7 @@ const PlatformAppCatalog = ({
     const definition = getAppDefinition(appCode);
     if (!definition) return [];
     const copy = appCopy[appCode] ?? fallbackCopy;
-    return [
+    const apps = [
       {
         code: appCode,
         title: definition.title,
@@ -128,6 +159,15 @@ const PlatformAppCatalog = ({
         subtitle: copy.subtitle,
       },
     ];
+    if (appCode === 'ai-assistant') {
+      apps.push({
+        code: 'xiao-one',
+        title: '小One',
+        icon: 'chatbot',
+        subtitle: 'Octop 单点登录测试',
+      });
+    }
+    return apps;
   });
   const extraVisible = extraApps.filter(
     (app) => !grantedApps.some((item) => item.code === app.code),
@@ -209,11 +249,29 @@ const PlatformAppCatalog = ({
                     {app.title}
                   </strong>
                   <span className="truncate text-xs text-zinc-500">
-                    {app.subtitle}
+                    {app.code === 'xiao-one' && launchPending
+                      ? '正在打开 Octop…'
+                      : app.subtitle}
                   </span>
                 </span>
               </>
             );
+
+            if (app.code === 'xiao-one') {
+              return (
+                <button
+                  aria-busy={launchPending}
+                  aria-label={app.title}
+                  className={`${cardClassName} w-full cursor-pointer text-left disabled:cursor-wait disabled:opacity-60`}
+                  disabled={launchPending}
+                  key={app.code}
+                  onClick={launchOctop}
+                  type="button"
+                >
+                  {cardContent}
+                </button>
+              );
+            }
 
             return opensOctopConnection ? (
               <a
