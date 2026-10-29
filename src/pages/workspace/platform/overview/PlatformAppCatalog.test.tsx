@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OCTOP_BASE_URL } from '@/config/externalApps';
+import { XoneAuthBackendError } from '@/services/auth-backends/xone';
 import PlatformAppCatalog from './PlatformAppCatalog';
 
 const { getOctopLaunchUrlMock, messageError, handleAuthFailureMock } =
@@ -275,6 +276,44 @@ describe('PlatformAppCatalog', () => {
     );
     expect(popup.close).toHaveBeenCalledTimes(1);
     expect(messageError).not.toHaveBeenCalled();
+  });
+
+  it('prompts for an organization on 602001 without falling back to Octop', async () => {
+    getOctopLaunchUrlMock.mockRejectedValue(
+      new XoneAuthBackendError('获取免登票据', {
+        code: 602001,
+        msg: '未选择组织',
+      }),
+    );
+    const popup = {
+      opener: {},
+      closed: false,
+      location: { replace: vi.fn() },
+      close: vi.fn(),
+    };
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(popup as unknown as Window);
+    render(
+      <PlatformAppCatalog
+        appCodes={['ai-assistant']}
+        getAppPath={(code) => `/apps/${code}`}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '小One' }));
+    await waitFor(() =>
+      expect(messageError).toHaveBeenCalledWith(
+        '请先切换到具体组织，再使用 SSO 登录',
+      ),
+    );
+    expect(popup.close).toHaveBeenCalledOnce();
+    expect(popup.location.replace).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: '小One' })).toBeEnabled();
+    expect(screen.getByRole('link', { name: 'AI助手' })).toHaveAttribute(
+      'href',
+      OCTOP_BASE_URL,
+    );
   });
 
   it('does not navigate a popup the user closed while waiting', async () => {

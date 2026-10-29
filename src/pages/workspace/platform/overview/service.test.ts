@@ -26,16 +26,28 @@ describe('Octop handoff', () => {
     requestMock.mockResolvedValue(ticketResponse);
   });
 
-  it('requests organization 1 and resolves launchUrl against XOne, not Octop', async () => {
+  it('lets the Token determine the organization and resolves launchUrl against XOne', async () => {
     await expect(getOctopLaunchUrl()).resolves.toBe(
       'http://xone.test:18086/web/ai/octop/launch?ticket=test-ticket',
     );
     expect(requestMock).toHaveBeenCalledWith('/web/ai/octop/ticket', {
       method: 'POST',
       baseURL: '',
-      data: { organizationId: 1 },
       skipErrorHandler: true,
     });
+  });
+
+  it('accepts an absolute launchUrl from the configured XOne origin', async () => {
+    requestMock.mockResolvedValue({
+      code: 200,
+      data: {
+        launchUrl:
+          'http://xone.test:18086/web/ai/octop/launch?ticket=test-ticket',
+      },
+    });
+    await expect(getOctopLaunchUrl()).resolves.toBe(
+      'http://xone.test:18086/web/ai/octop/launch?ticket=test-ticket',
+    );
   });
 
   it('uses the current origin when XOne is served through the same public gateway', async () => {
@@ -58,12 +70,24 @@ describe('Octop handoff', () => {
     });
   });
 
+  it('preserves 602001 so the caller can prompt for an organization', async () => {
+    requestMock.mockResolvedValue({
+      code: 602001,
+      msg: '未选择组织',
+      data: null,
+    });
+    await expect(getOctopLaunchUrl()).rejects.toMatchObject({
+      name: 'XoneAuthBackendError',
+      code: 602001,
+    });
+  });
+
   it.each([
     null,
     {},
-    { ticket: 'test-ticket' },
-    { ticket: '', launchUrl: '/web/ai/octop/launch?ticket=' },
-  ])('rejects incomplete ticket data: %j', async (data) => {
+    { launchUrl: '' },
+    { launchUrl: 123 },
+  ])('rejects missing launch data: %j', async (data) => {
     requestMock.mockResolvedValue({ code: 200, data });
     await expect(getOctopLaunchUrl()).rejects.toThrow('免登票据响应不完整');
   });
@@ -72,13 +96,23 @@ describe('Octop handoff', () => {
     'https://other.test/web/ai/octop/launch?ticket=test-ticket',
     '//other.test/web/ai/octop/launch?ticket=test-ticket',
     'javascript:alert(1)',
-    '/user/login?ticket=test-ticket',
-    '/web/ai/octop/launch?ticket=different-ticket',
     'http://user:password@xone.test:18086/web/ai/octop/launch?ticket=test-ticket',
   ])('rejects an unexpected launch destination: %s', async (launchUrl) => {
     requestMock.mockResolvedValue({
       ...ticketResponse,
       data: { ...ticketResponse.data, launchUrl },
+    });
+    await expect(getOctopLaunchUrl()).rejects.toThrow('免登跳转地址无效');
+  });
+
+  it('does not trust an absolute backend URL when its public origin is not configured', async () => {
+    config.XONE_PUBLIC_BASE_URL = '';
+    requestMock.mockResolvedValue({
+      code: 200,
+      data: {
+        launchUrl:
+          'http://xone.test:18086/web/ai/octop/launch?ticket=test-ticket',
+      },
     });
     await expect(getOctopLaunchUrl()).rejects.toThrow('免登跳转地址无效');
   });

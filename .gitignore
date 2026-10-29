@@ -56,3 +56,8 @@ requestRecord.mock.js
 
 # 本地生成的软件著作权申请资料，不纳入代码仓库
 /软件著作权申请资料/
+
+# Private environment overrides; keep .env.example tracked.
+.env
+.env.local
+.env.*.local

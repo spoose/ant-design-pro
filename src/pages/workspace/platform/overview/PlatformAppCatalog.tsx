@@ -3,6 +3,7 @@ import { App } from 'antd';
 import { useState, useSyncExternalStore } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
 import { OCTOP_BASE_URL } from '@/config/externalApps';
+import { XoneAuthBackendError } from '@/services/auth-backends/xone';
 import { handleAccessTokenFailure } from '@/utils/authFailure';
 import {
   getNotificationCenterPath,
@@ -130,11 +131,14 @@ const PlatformAppCatalog = ({
       if (!popup.closed) popup.location.replace(launchUrl);
     } catch (error) {
       popup.close();
-      if (!handleAccessTokenFailure(error)) {
-        message.error(
-          error instanceof Error ? error.message : '小One打开失败，请稍后重试',
-        );
+      if (handleAccessTokenFailure(error)) return;
+      if (error instanceof XoneAuthBackendError && error.code === 602001) {
+        message.error('请先切换到具体组织，再使用 SSO 登录');
+        return;
       }
+      message.error(
+        error instanceof Error ? error.message : '小One打开失败，请稍后重试',
+      );
     } finally {
       setLaunchPending(false);
     }
