@@ -93,13 +93,14 @@ const organizationMenuDefinitions: Record<
 const HOME_SIDEBAR_SKILL_CODE = 'ai-assistant';
 
 const isHomeSidebarApp = (appKey: string | undefined) =>
-  appKey === HOME_SIDEBAR_SKILL_CODE;
+  appKey === HOME_SIDEBAR_SKILL_CODE || appKey === 'octop';
 
 /** 组织首页侧栏顺序；members/roles 并入“组织设置”分组（角色管理隐藏，路由保留）。 */
 const ORGANIZATION_HOME_SIDEBAR_ORDER = [
   'home',
   'notifications',
   'ai-assistant',
+  'octop',
   'stats',
   'settings',
 ] as const;
@@ -109,6 +110,7 @@ const PLATFORM_HOME_SIDEBAR_ORDER = [
   'overview',
   'notifications',
   'ai-assistant',
+  'octop',
   'stats',
   'users',
   'system',
@@ -121,7 +123,7 @@ const HIDDEN_PLATFORM_HOME_MENU_KEYS = new Set<PlatformMenuKey>([
   'permissions',
 ]);
 
-/** 把 pAI 做成首页侧栏二级菜单；子路径仍使用现有 App URL。 */
+/** pAI 使用分组，octop 使用单项入口；路径仍使用现有 App URL。 */
 const createHomeSidebarAppMenu = (
   organizationId: string | undefined,
   appCode: string,
@@ -133,6 +135,14 @@ const createHomeSidebarAppMenu = (
     organizationId
       ? getOrganizationAppPagePath(organizationId, appCode, pageKey)
       : getPlatformAppPagePath(appCode, pageKey);
+  if (appCode === 'octop') {
+    return {
+      path: getPagePath('overview'),
+      name: definition.title,
+      icon: createElement(definition.icon),
+      locale: false,
+    };
+  }
   // 与 /list → /list/table-list 相同：父级 path/key 用 App 根路径，子项用更长的独立 path。
   // 点父级会落到无 pageKey 的 App 根 URL，由 workspaceAccess 重定向到 overview。
   const appWorkspacePath = organizationId
@@ -261,7 +271,6 @@ export const createOrganizationWorkspaceMenus = (
   canViewStats = false,
 ): MenuDataItem[] => {
   const visibleKeys = new Set(visibleMenuKeys);
-  const hasAiAssistant = availableAppCodes.includes(HOME_SIDEBAR_SKILL_CODE);
 
   return ORGANIZATION_HOME_SIDEBAR_ORDER.flatMap((slot) => {
     if (slot === 'notifications')
@@ -271,12 +280,9 @@ export const createOrganizationWorkspaceMenus = (
           getNotificationCenterPath(organizationId),
         ),
       ];
-    if (slot === 'ai-assistant') {
-      if (!hasAiAssistant) return [];
-      const appMenu = createHomeSidebarAppMenu(
-        organizationId,
-        HOME_SIDEBAR_SKILL_CODE,
-      );
+    if (slot === 'ai-assistant' || slot === 'octop') {
+      if (!availableAppCodes.includes(slot)) return [];
+      const appMenu = createHomeSidebarAppMenu(organizationId, slot);
       return appMenu ? [appMenu] : [];
     }
     if (slot === 'stats') {
@@ -332,7 +338,6 @@ export const createPlatformWorkspaceMenus = (
   canViewStats = false,
 ): MenuDataItem[] => {
   const visibleKeys = new Set(visibleMenuKeys);
-  const hasAiAssistant = availableAppCodes.includes(HOME_SIDEBAR_SKILL_CODE);
 
   return PLATFORM_HOME_SIDEBAR_ORDER.flatMap((slot) => {
     if (slot === 'notifications')
@@ -342,12 +347,9 @@ export const createPlatformWorkspaceMenus = (
           getNotificationCenterPath(),
         ),
       ];
-    if (slot === 'ai-assistant') {
-      if (!hasAiAssistant) return [];
-      const appMenu = createHomeSidebarAppMenu(
-        undefined,
-        HOME_SIDEBAR_SKILL_CODE,
-      );
+    if (slot === 'ai-assistant' || slot === 'octop') {
+      if (!availableAppCodes.includes(slot)) return [];
+      const appMenu = createHomeSidebarAppMenu(undefined, slot);
       return appMenu ? [appMenu] : [];
     }
     if (slot === 'stats') {

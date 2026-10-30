@@ -33,6 +33,32 @@ const appTab = createWorkspaceTab({
 });
 
 describe('useWorkspaceTabs', () => {
+  it('reuses the octop tab within an organization and isolates the next organization', () => {
+    const octop = {
+      kind: 'app' as const,
+      appKey: 'octop',
+      title: 'octop',
+      url: '/workspace/org/organization-1/apps/octop/overview',
+    };
+    const first = renderHook(() =>
+      useWorkspaceTabs('user-1', scopeKey, 'app:octop', homeTab),
+    );
+    act(() => {
+      first.result.current.upsertRouteTab(octop);
+      first.result.current.upsertRouteTab(octop);
+    });
+    expect(first.result.current.tabs.map((tab) => tab.id)).toEqual([
+      'home',
+      'app:octop',
+    ]);
+    const second = renderHook(() =>
+      useWorkspaceTabs('user-1', 'organization:organization-2', 'home', {
+        ...homeTab,
+        url: '/workspace/org/organization-2/home',
+      }),
+    );
+    expect(second.result.current.tabs.map((tab) => tab.id)).toEqual(['home']);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();

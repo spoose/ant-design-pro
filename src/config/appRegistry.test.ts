@@ -5,6 +5,7 @@ describe('appRegistry', () => {
   it('maps every configured app code to static UI metadata', () => {
     expect(Object.keys(appRegistry)).toEqual([
       'ai-assistant',
+      'octop',
       'integrated-operations',
       'drone-operations',
       'file-review',
@@ -38,6 +39,11 @@ describe('appRegistry', () => {
       ],
     });
     expect(getAppDefinition('ai-assistant')?.pageComponent).toBeDefined();
+    expect(getAppDefinition('octop')).toMatchObject({
+      title: 'octop',
+      navigation: [{ pathSegment: 'overview', title: 'octop' }],
+    });
+    expect(getAppDefinition('octop')?.pageComponent).toBeDefined();
     expect(getAppDefinition('document-summary')?.pageComponent).toBeUndefined();
   });
 

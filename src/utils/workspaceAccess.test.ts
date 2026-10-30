@@ -35,6 +35,27 @@ const user = {
 } as AuthCurrentUser;
 
 describe('resolveWorkspaceRouteDecision', () => {
+  it('requires an explicit octop grant in the current scope', () => {
+    const path = '/workspace/org/organization-1/apps/octop/overview';
+    expect(resolveWorkspaceRouteDecision(user, path)).toEqual({
+      kind: 'forbidden',
+    });
+    expect(
+      resolveWorkspaceRouteDecision(
+        {
+          ...user,
+          organizations: [{ ...user.organizations[0], appCodes: ['octop'] }],
+        },
+        path,
+      ),
+    ).toEqual({ kind: 'allow' });
+    expect(
+      resolveWorkspaceRouteDecision(
+        user,
+        '/workspace/platform/apps/octop/overview',
+      ),
+    ).toEqual({ kind: 'forbidden' });
+  });
   it('opens the shared Project home without exposing management pages', () => {
     const regularUser = {
       ...user,

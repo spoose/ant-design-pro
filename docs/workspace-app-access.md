@@ -53,6 +53,11 @@ projectAppCodes / organization.appCodes
 | --- | --- | --- |
 | `integrated-operations` | 集约运维 | 通用占位页 |
 | `drone-operations` | 政务低空 | Mock 运行总览 |
+| `octop` | octop | qiankun 3 内嵌完整 Octop 页面 |
+
+`octop` 沿用当前 Scope 的应用授权：XOne 使用现有临时全开策略，Legacy 必须由后端返回
+`octop` App Code，不根据超级管理员身份自动补齐。嵌入不会自动复用工作台 Token，也不代表
+Octop 已具备组织/租户数据隔离；接入与认证边界见 [Octop 微前端说明](./octop-micro-frontend.md)。
 
 路由和菜单都通过 `appRegistry` 读取静态标题、图标和导航定义。页面是否可进入仍由当前
 Scope 的 `appCodes` 判断，不能只靠手工修改 URL。

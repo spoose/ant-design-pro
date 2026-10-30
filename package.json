@@ -57,6 +57,7 @@
     "dayjs": "^1.11.20",
     "highlight.js": "^11.11.1",
     "liveline": "^0.0.7",
+    "qiankun-v3": "npm:qiankun@3.0.0-rc.22",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "topojson-client": "^3.1.0"

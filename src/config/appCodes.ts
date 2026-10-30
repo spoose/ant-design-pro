@@ -4,6 +4,7 @@
  */
 export const ALL_APP_CODES = [
   'ai-assistant',
+  'octop',
   'integrated-operations',
   'drone-operations',
   'file-review',

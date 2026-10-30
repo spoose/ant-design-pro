@@ -42,6 +42,39 @@ const superAdmin = {
   ],
 } as AuthCurrentUser;
 
+describe('octop home sidebar entry', () => {
+  it('uses one flat authorized entry and preserves the home sidebar', () => {
+    const granted = {
+      ...superAdmin,
+      projectAppCodes: ['octop'],
+      organizations: [{ ...superAdmin.organizations[0], appCodes: ['octop'] }],
+    };
+    for (const pathname of [
+      '/workspace/platform/apps/octop/overview',
+      '/workspace/org/organization-1/apps/octop/overview',
+    ]) {
+      const menu = resolveWorkspaceMenuDescriptor(granted, pathname);
+      expect(menu?.kind).not.toBe('app');
+      expect(menu?.items.find((item) => item.name === 'octop')).toMatchObject({
+        path: pathname,
+      });
+      expect(
+        menu?.items.find((item) => item.name === 'octop')?.children,
+      ).toBeUndefined();
+    }
+    expect(
+      createPlatformWorkspaceMenus(['overview'], []).some(
+        (item) => item.name === 'octop',
+      ),
+    ).toBe(false);
+    expect(
+      createOrganizationWorkspaceMenus('organization-1', ['home'], []).some(
+        (item) => item.name === 'octop',
+      ),
+    ).toBe(false);
+  });
+});
+
 describe('groupTemplateExampleMenus', () => {
   it('groups template pages without changing paths', () => {
     const menuData: MenuDataItem[] = [

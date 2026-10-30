@@ -10,6 +10,7 @@ export const SUPER_ADMIN_PLATFORM_PERMISSIONS = [
 /** Project Scope 内已注册的全部应用。 */
 export const PROJECT_APP_CODES = [
   'ai-assistant',
+  'octop',
   'drone-operations',
   'file-review',
   'document-summary',
@@ -19,6 +20,7 @@ export const PROJECT_APP_CODES = [
 /** Organization Scope 内已注册的全部应用。 */
 export const ORGANIZATION_APP_CODES = [
   'ai-assistant',
+  'octop',
   'drone-operations',
   'file-review',
   'document-summary',

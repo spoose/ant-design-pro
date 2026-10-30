@@ -23,6 +23,10 @@ type CatalogApp = {
 };
 
 const appCopy: Record<string, { icon: string; subtitle: string }> = {
+  octop: {
+    icon: 'chatbot',
+    subtitle: '知识库与智能助手',
+  },
   'ai-assistant': {
     icon: 'chatbot',
     subtitle: '处理日常管理与协作任务',

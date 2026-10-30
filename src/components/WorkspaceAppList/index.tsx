@@ -9,6 +9,7 @@ const PRIMARY_APP_CODE = 'ai-assistant';
 
 /** 启动卡默认说明；可按 appCode 覆盖，不进入 App Registry。 */
 const defaultAppDescriptions: Record<string, string> = {
+  octop: '打开 Octop 知识库与智能助手。',
   'ai-assistant': '使用 pAI 处理日常管理与协作任务。',
   'integrated-operations': '统一查看运维任务、资源状态和服务运行情况。',
   'drone-operations': '查看低空飞行任务、运行态势与安全预警。',

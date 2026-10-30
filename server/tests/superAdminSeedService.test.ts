@@ -47,6 +47,7 @@ describe('SuperAdminSeedService', () => {
     );
     expect(capturedInput?.projectAppCodes).toEqual([
       'ai-assistant',
+      'octop',
       'drone-operations',
       'file-review',
       'document-summary',

@@ -79,6 +79,14 @@ export const appRegistry = {
       },
     ],
   },
+  octop: {
+    title: 'octop',
+    icon: RobotOutlined,
+    pageComponent: lazy(() => import('@/pages/workspace/app/octop')),
+    navigation: [
+      { pathSegment: 'overview', title: 'octop', icon: RobotOutlined },
+    ],
+  },
   'integrated-operations': {
     title: '集约运维',
     icon: CloudServerOutlined,

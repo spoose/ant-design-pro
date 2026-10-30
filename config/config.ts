@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
 import {
   OCTOP_BASE_URL,
+  OCTOP_MICRO_ENTRY,
   XONE_PUBLIC_BASE_URL,
 } from '../src/config/externalApps';
 import { surfaceColors } from '../src/theme/colors';
@@ -260,6 +261,7 @@ export default defineConfig({
     'process.env.AUTH_BACKEND': authBackend,
     'process.env.XONE_PUBLIC_BASE_URL': XONE_PUBLIC_BASE_URL,
     'process.env.OCTOP_BASE_URL': OCTOP_BASE_URL,
+    'process.env.OCTOP_MICRO_ENTRY': OCTOP_MICRO_ENTRY,
     'process.env.CI': process.env.CI,
     'process.env.COMMIT_HASH': commitHash,
     __APP_VERSION__: require('./../package.json').version,
