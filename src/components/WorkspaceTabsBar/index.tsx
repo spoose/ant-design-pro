@@ -1,7 +1,11 @@
 import { AppstoreOutlined, HomeOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import { Tabs } from 'antd';
-import { getAppDefinition } from '@/config/appRegistry';
+import {
+  getAppDefinition,
+  LEGACY_AI_ASSISTANT_LABEL,
+  OCTOP_ASSISTANT_LABEL,
+} from '@/config/appRegistry';
 import type { WorkspaceTab } from '@/utils/workspaceState';
 import useWorkspaceTabsBarStyles from './style';
 
@@ -43,7 +47,15 @@ const WorkspaceTabsBar = ({
           <TabIcon />
         </span>
       ),
-      label: <span className={styles.labelText}>{tab.title}</span>,
+      label: (
+        <span className={styles.labelText}>
+          {tab.kind === 'app' && tab.appKey === 'ai-assistant'
+            ? LEGACY_AI_ASSISTANT_LABEL
+            : tab.kind === 'app' && tab.appKey === 'octop'
+              ? OCTOP_ASSISTANT_LABEL
+              : tab.title}
+        </span>
+      ),
       // antd 标签默认可关闭；当前 Scope 的首页是唯一例外。
       closable: tab.kind !== 'home',
     };

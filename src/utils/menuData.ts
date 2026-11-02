@@ -4,6 +4,7 @@ import {
   BarChartOutlined,
   BellOutlined,
   DesktopOutlined,
+  EllipsisOutlined,
   FileTextOutlined,
   HomeOutlined,
   SafetyCertificateOutlined,
@@ -13,7 +14,11 @@ import {
 } from '@ant-design/icons';
 import type { MenuDataItem } from '@ant-design/pro-components';
 import { createElement } from 'react';
-import { getAppDefinition } from '@/config/appRegistry';
+import {
+  getAppDefinition,
+  LEGACY_AI_ASSISTANT_LABEL,
+  OCTOP_ASSISTANT_LABEL,
+} from '@/config/appRegistry';
 import type { AuthCurrentUser } from '@/services/auth';
 import {
   getNotificationCenterPath,
@@ -98,20 +103,18 @@ const isHomeSidebarApp = (appKey: string | undefined) =>
 /** 组织首页侧栏顺序；members/roles 并入“组织设置”分组（角色管理隐藏，路由保留）。 */
 const ORGANIZATION_HOME_SIDEBAR_ORDER = [
   'home',
-  'notifications',
-  'ai-assistant',
   'octop',
-  'stats',
+  'notifications',
+  'more',
   'settings',
 ] as const;
 
-/** Project 管理侧栏顺序；organizations 已并入“系统设置”分组，users/permissions 一级隐藏。 */
+/** Project 管理侧栏顺序；organizations 已并入“设置”分组，users/permissions 一级隐藏。 */
 const PLATFORM_HOME_SIDEBAR_ORDER = [
   'overview',
-  'notifications',
-  'ai-assistant',
   'octop',
-  'stats',
+  'notifications',
+  'more',
   'users',
   'system',
   'permissions',
@@ -138,7 +141,7 @@ const createHomeSidebarAppMenu = (
   if (appCode === 'octop') {
     return {
       path: getPagePath('overview'),
-      name: definition.title,
+      name: OCTOP_ASSISTANT_LABEL,
       icon: createElement(definition.icon),
       locale: false,
     };
@@ -152,7 +155,7 @@ const createHomeSidebarAppMenu = (
   return {
     path: appWorkspacePath,
     key: appWorkspacePath,
-    name: definition.title,
+    name: LEGACY_AI_ASSISTANT_LABEL,
     // 侧栏父级图标来自 appRegistry.icon（与首页卡片共用）；子项用 navigation[].icon。
     icon: createElement(definition.icon),
     locale: false,
@@ -206,7 +209,31 @@ const createStatsHomeMenu = (
   };
 };
 
-/** 系统设置：组织管理 / 用户管理 / 日志；一级 users/permissions 仍在顺序表里但隐藏。 */
+const createMoreHomeMenu = (
+  organizationId: string | undefined,
+  availableAppCodes: readonly string[],
+  canViewStats: boolean,
+): MenuDataItem[] => {
+  const items: MenuDataItem[] = [];
+  if (canViewStats) items.push(createStatsHomeMenu(organizationId));
+  if (availableAppCodes.includes('ai-assistant')) {
+    const assistant = createHomeSidebarAppMenu(organizationId, 'ai-assistant');
+    if (assistant) items.push(assistant);
+  }
+  return items.length
+    ? [
+        {
+          key: 'workspace-more',
+          name: '更多',
+          icon: createElement(EllipsisOutlined),
+          locale: false,
+          children: items,
+        },
+      ]
+    : [];
+};
+
+/** 设置：组织管理 / 用户管理 / 日志；一级 users/permissions 仍在顺序表里但隐藏。 */
 const createSystemAdminMenu = (
   visibleKeys: Set<PlatformMenuKey>,
 ): MenuDataItem[] => {
@@ -245,7 +272,7 @@ const createSystemAdminMenu = (
     {
       path,
       key: path,
-      name: '系统设置',
+      name: '设置',
       icon: createElement(SettingOutlined),
       locale: false,
       children,
@@ -276,17 +303,21 @@ export const createOrganizationWorkspaceMenus = (
     if (slot === 'notifications')
       return [
         createFixedHomeMenuItem(
-          { name: '通知中心', icon: BellOutlined },
+          { name: '通知', icon: BellOutlined },
           getNotificationCenterPath(organizationId),
         ),
       ];
-    if (slot === 'ai-assistant' || slot === 'octop') {
+    if (slot === 'octop') {
       if (!availableAppCodes.includes(slot)) return [];
       const appMenu = createHomeSidebarAppMenu(organizationId, slot);
       return appMenu ? [appMenu] : [];
     }
-    if (slot === 'stats') {
-      return canViewStats ? [createStatsHomeMenu(organizationId)] : [];
+    if (slot === 'more') {
+      return createMoreHomeMenu(
+        organizationId,
+        availableAppCodes,
+        canViewStats,
+      );
     }
     if (slot === 'settings') {
       // 组织设置升级为父级分组：原成员管理以“用户管理”子菜单并入，角色管理隐藏但路由保留。
@@ -343,17 +374,17 @@ export const createPlatformWorkspaceMenus = (
     if (slot === 'notifications')
       return [
         createFixedHomeMenuItem(
-          { name: '通知中心', icon: BellOutlined },
+          { name: '通知', icon: BellOutlined },
           getNotificationCenterPath(),
         ),
       ];
-    if (slot === 'ai-assistant' || slot === 'octop') {
+    if (slot === 'octop') {
       if (!availableAppCodes.includes(slot)) return [];
       const appMenu = createHomeSidebarAppMenu(undefined, slot);
       return appMenu ? [appMenu] : [];
     }
-    if (slot === 'stats') {
-      return canViewStats ? [createStatsHomeMenu(undefined)] : [];
+    if (slot === 'more') {
+      return createMoreHomeMenu(undefined, availableAppCodes, canViewStats);
     }
     if (slot === 'system') {
       return createSystemAdminMenu(visibleKeys);

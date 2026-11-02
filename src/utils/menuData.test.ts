@@ -55,21 +55,21 @@ describe('octop home sidebar entry', () => {
     ]) {
       const menu = resolveWorkspaceMenuDescriptor(granted, pathname);
       expect(menu?.kind).not.toBe('app');
-      expect(menu?.items.find((item) => item.name === 'octop')).toMatchObject({
+      expect(menu?.items.find((item) => item.name === 'AI助手')).toMatchObject({
         path: pathname,
       });
       expect(
-        menu?.items.find((item) => item.name === 'octop')?.children,
+        menu?.items.find((item) => item.name === 'AI助手')?.children,
       ).toBeUndefined();
     }
     expect(
       createPlatformWorkspaceMenus(['overview'], []).some(
-        (item) => item.name === 'octop',
+        (item) => item.name === 'AI助手',
       ),
     ).toBe(false);
     expect(
       createOrganizationWorkspaceMenus('organization-1', ['home'], []).some(
-        (item) => item.name === 'octop',
+        (item) => item.name === 'AI助手',
       ),
     ).toBe(false);
   });
@@ -120,7 +120,7 @@ describe('Workspace menus', () => {
         path: '/workspace/org/organization%2Fa/home',
       },
       {
-        name: '通知中心',
+        name: '通知',
         path: '/workspace/org/organization%2Fa/notifications',
       },
       {
@@ -145,9 +145,9 @@ describe('Workspace menus', () => {
       ),
     ).toEqual([
       { name: '工作台', path: '/workspace/platform/overview' },
-      { name: '通知中心', path: '/workspace/platform/notifications' },
+      { name: '通知', path: '/workspace/platform/notifications' },
       {
-        name: '系统设置',
+        name: '设置',
         path: '/workspace/platform/system',
         children: [
           { name: '组织管理', path: '/workspace/platform/organizations' },
@@ -157,179 +157,78 @@ describe('Workspace menus', () => {
     ]);
   });
 
-  it('orders 用户管理 before 日志 under 系统设置', () => {
+  it('orders 用户管理 before 日志 under 设置', () => {
     expect(
       createPlatformWorkspaceMenus(['overview', 'users', 'logs']).flatMap(
         (item) =>
-          item.name === '系统设置'
+          item.name === '设置'
             ? (item.children?.map((child) => child.name) ?? [])
             : [],
       ),
     ).toEqual(['用户管理', '日志']);
   });
 
-  it('nests AI助手 under Organization and Platform home menus when authorized', () => {
-    const serializeMenus = (items: MenuDataItem[]) =>
-      items.map(({ name, path, children }) => ({
-        name,
-        path,
-        ...(children
-          ? {
-              children: children.map((child) => ({
-                name: child.name,
-                path: child.path,
-              })),
-            }
-          : {}),
-      }));
-
-    expect(
-      serializeMenus(
+  it('places the knowledge assistant second and puts authorized legacy entries in more', () => {
+    for (const [menus, root] of [
+      [
+        createPlatformWorkspaceMenus(
+          ['overview'],
+          ['octop', 'ai-assistant'],
+          true,
+        ),
+        '/workspace/platform',
+      ],
+      [
         createOrganizationWorkspaceMenus(
           'organization-1',
-          ['home', 'members'],
-          ['ai-assistant'],
+          ['home'],
+          ['octop', 'ai-assistant'],
+          true,
         ),
-      ),
-    ).toEqual([
-      {
-        name: '组织首页',
-        path: '/workspace/org/organization-1/home',
-      },
-      { name: '通知中心', path: '/workspace/org/organization-1/notifications' },
-      {
-        name: 'AI助手',
-        path: '/workspace/org/organization-1/apps/ai-assistant',
-        children: [
-          {
-            name: 'AI助手',
-            path: '/workspace/org/organization-1/apps/ai-assistant/overview',
-          },
-          {
-            name: '资源',
-            path: '/workspace/org/organization-1/apps/ai-assistant/resources',
-          },
-          {
-            name: '记忆',
-            path: '/workspace/org/organization-1/apps/ai-assistant/memory',
-          },
-        ],
-      },
-      {
-        name: '组织设置',
-        path: '/workspace/org/organization-1/settings',
-        children: [
-          {
-            name: '用户管理',
-            path: '/workspace/org/organization-1/members',
-          },
-        ],
-      },
-    ]);
-
-    expect(
-      serializeMenus(
-        createPlatformWorkspaceMenus(
-          ['overview', 'organizations'],
-          ['ai-assistant'],
-        ),
-      ),
-    ).toEqual([
-      { name: '工作台', path: '/workspace/platform/overview' },
-      { name: '通知中心', path: '/workspace/platform/notifications' },
-      {
-        name: 'AI助手',
-        path: '/workspace/platform/apps/ai-assistant',
-        children: [
-          {
-            name: 'AI助手',
-            path: '/workspace/platform/apps/ai-assistant/overview',
-          },
-          {
-            name: '资源',
-            path: '/workspace/platform/apps/ai-assistant/resources',
-          },
-          {
-            name: '记忆',
-            path: '/workspace/platform/apps/ai-assistant/memory',
-          },
-        ],
-      },
-      {
-        name: '系统设置',
-        path: '/workspace/platform/system',
-        children: [
-          { name: '组织管理', path: '/workspace/platform/organizations' },
-        ],
-      },
-    ]);
-
-    const paiMenu = createPlatformWorkspaceMenus(
-      ['overview'],
-      ['ai-assistant'],
-    ).find((item) => item.name === 'AI助手');
-    expect(paiMenu?.path).toBe('/workspace/platform/apps/ai-assistant');
-    expect(paiMenu?.key).toBe('/workspace/platform/apps/ai-assistant');
-    expect(paiMenu?.children?.map((child) => child.path)).toEqual([
-      '/workspace/platform/apps/ai-assistant/overview',
-      '/workspace/platform/apps/ai-assistant/resources',
-      '/workspace/platform/apps/ai-assistant/memory',
-    ]);
-    expect(paiMenu?.children?.map((child) => child.path)).not.toContain(
-      paiMenu?.path,
-    );
+        '/workspace/org/organization-1',
+      ],
+    ] as const) {
+      expect(menus.slice(0, 3).map((item) => item.name)).toEqual([
+        root.includes('/org/') ? '组织首页' : '工作台',
+        'AI助手',
+        '通知',
+      ]);
+      const more = menus.find((item) => item.key === 'workspace-more');
+      expect(more?.children?.map((item: MenuDataItem) => item.name)).toEqual([
+        '统计',
+        'AI助手(Legacy)',
+      ]);
+      expect(
+        more?.children?.[0].children?.map((item: MenuDataItem) => item.path),
+      ).toEqual([
+        `${root}/stats/users`,
+        `${root}/stats/requests`,
+        `${root}/stats/traces`,
+      ]);
+      expect(
+        more?.children?.[1].children?.map((item: MenuDataItem) => item.path),
+      ).toEqual([
+        `${root}/apps/ai-assistant/overview`,
+        `${root}/apps/ai-assistant/resources`,
+        `${root}/apps/ai-assistant/memory`,
+      ]);
+    }
   });
 
-  it('nests stats after AI助手 for administrators only', () => {
-    const serialize = (
-      items: ReturnType<typeof createPlatformWorkspaceMenus>,
-    ) =>
-      items.map(({ name, path, children }) => ({
-        name,
-        path,
-        ...(children
-          ? {
-              children: children.map((child) => ({
-                name: child.name,
-                path: child.path,
-              })),
-            }
-          : {}),
-      }));
-
+  it('only shows more entries that are authorized', () => {
+    const more = (apps: string[], stats: boolean) =>
+      createPlatformWorkspaceMenus(['overview'], apps, stats).find(
+        (item) => item.key === 'workspace-more',
+      );
+    expect(more([], false)).toBeUndefined();
     expect(
-      serialize(
-        createPlatformWorkspaceMenus(['overview', 'organizations'], [], true),
+      more([], true)?.children?.map((item: MenuDataItem) => item.name),
+    ).toEqual(['统计']);
+    expect(
+      more(['ai-assistant'], false)?.children?.map(
+        (item: MenuDataItem) => item.name,
       ),
-    ).toEqual([
-      { name: '工作台', path: '/workspace/platform/overview' },
-      { name: '通知中心', path: '/workspace/platform/notifications' },
-      {
-        name: '统计',
-        path: '/workspace/platform/stats',
-        children: [
-          { name: '用户规模', path: '/workspace/platform/stats/users' },
-          { name: '请求用量', path: '/workspace/platform/stats/requests' },
-          { name: '操作痕迹', path: '/workspace/platform/stats/traces' },
-        ],
-      },
-      {
-        name: '系统设置',
-        path: '/workspace/platform/system',
-        children: [
-          { name: '组织管理', path: '/workspace/platform/organizations' },
-        ],
-      },
-    ]);
-
-    expect(
-      createOrganizationWorkspaceMenus(
-        'organization-1',
-        ['home', 'members'],
-        [],
-        false,
-      ).map(({ name }) => name),
-    ).toEqual(['组织首页', '通知中心', '组织设置']);
+    ).toEqual(['AI助手(Legacy)']);
   });
 
   it('derives Platform, Organization and App sidebars from the URL', () => {
@@ -381,7 +280,7 @@ describe('Workspace menus', () => {
     expect(descriptor?.items.map(({ name, path }) => ({ name, path }))).toEqual(
       [
         { name: '工作台', path: '/workspace/platform/overview' },
-        { name: '通知中心', path: '/workspace/platform/notifications' },
+        { name: '通知', path: '/workspace/platform/notifications' },
       ],
     );
   });
@@ -404,38 +303,21 @@ describe('Workspace menus', () => {
       kind: 'platform',
       title: '项目控制台',
     });
-    expect(
-      platformMenu?.items.map(({ name, path }) => ({ name, path })),
-    ).toEqual([
-      { name: '工作台', path: '/workspace/platform/overview' },
-      { name: '通知中心', path: '/workspace/platform/notifications' },
-      {
-        name: 'AI助手',
-        path: '/workspace/platform/apps/ai-assistant',
-      },
-      {
-        name: '统计',
-        path: '/workspace/platform/stats',
-      },
-      {
-        name: '系统设置',
-        path: '/workspace/platform/system',
-      },
+    const more = platformMenu?.items.find(
+      (item) => item.key === 'workspace-more',
+    );
+    expect(more?.children?.map((item: MenuDataItem) => item.name)).toEqual([
+      '统计',
+      'AI助手(Legacy)',
     ]);
     expect(
-      platformMenu?.items
-        .find((item) => item.name === 'AI助手')
-        ?.children?.map(({ name }) => name),
+      more?.children?.[1].children?.map((item: MenuDataItem) => item.name),
     ).toEqual(['AI助手', '资源', '记忆']);
     expect(
       platformMenu?.items
-        .find((item) => item.name === '系统设置')
-        ?.children?.map(({ name, path }) => ({ name, path })),
-    ).toEqual([
-      { name: '组织管理', path: '/workspace/platform/organizations' },
-      { name: '用户管理', path: '/workspace/platform/users' },
-      { name: '日志', path: '/workspace/platform/logs' },
-    ]);
+        .find((item) => item.name === '设置')
+        ?.children?.map(({ name }) => name),
+    ).toEqual(['组织管理', '用户管理', '日志']);
 
     const organizationMenu = resolveWorkspaceMenuDescriptor(
       userWithPai,
@@ -447,9 +329,8 @@ describe('Workspace menus', () => {
     });
     expect(organizationMenu?.items.map(({ name }) => name)).toEqual([
       '组织首页',
-      '通知中心',
-      'AI助手',
-      '统计',
+      '通知',
+      '更多',
       '组织设置',
     ]);
   });

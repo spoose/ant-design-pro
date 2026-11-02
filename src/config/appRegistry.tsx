@@ -16,6 +16,9 @@ import type React from 'react';
 import { lazy } from 'react';
 import type { AppCode } from './appCodes';
 
+export const LEGACY_AI_ASSISTANT_LABEL = 'AI助手(Legacy)';
+export const OCTOP_ASSISTANT_LABEL = 'AI助手';
+
 export type AppPageProps = {
   /** App 内部页面 Key，来源于 Workspace App URL。 */
   pageKey?: string;

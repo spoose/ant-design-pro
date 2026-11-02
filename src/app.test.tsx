@@ -96,6 +96,7 @@ vi.mock('@ant-design/icons', () => ({
   HomeOutlined: () => null,
   InboxOutlined: () => null,
   LinkOutlined: () => null,
+  EllipsisOutlined: () => null,
   OllamaFilled: () => null,
   RadarChartOutlined: () => null,
   RobotOutlined: () => null,
@@ -484,7 +485,7 @@ describe('app layout guard', () => {
       [
         '/workspace/platform/overview',
         '/workspace/platform/notifications',
-        '/workspace/platform/stats',
+        undefined,
         '/workspace/platform/system',
       ],
     );
@@ -513,15 +514,48 @@ describe('app layout guard', () => {
     expect(menuItems.map((item) => item.path)).toEqual([
       '/workspace/platform/overview',
       '/workspace/platform/notifications',
-      '/workspace/platform/apps/ai-assistant',
-      '/workspace/platform/stats',
+      undefined,
       '/workspace/platform/system',
     ]);
     expect(
       menuItems
-        .find((item) => item.name === 'AI助手')
-        ?.children?.map((child) => child.path),
+        .find((item) => item.key === 'workspace-more')
+        ?.children?.find((item: any) => item.name === 'AI助手(Legacy)')
+        ?.children?.map((child: any) => child.path),
     ).toEqual([
+      '/workspace/platform/apps/ai-assistant/overview',
+      '/workspace/platform/apps/ai-assistant/resources',
+      '/workspace/platform/apps/ai-assistant/memory',
+    ]);
+  });
+
+  it('keeps the more menu and its nested pages after route transformation', async () => {
+    const { transformRoute } = await import('@umijs/route-utils');
+    const { layout } = await import('./app');
+    mockHistory.location.pathname = '/workspace/platform/overview';
+    const runtimeLayout = layout({
+      initialState: {
+        currentUser: {
+          userId: 'super-admin',
+          platformPermissions: ['platform:organization:update'],
+          projectAppCodes: ['ai-assistant'],
+          organizations: [],
+        },
+      },
+      setInitialState: vi.fn(),
+    } as any);
+    const { menuData } = transformRoute(
+      runtimeLayout.menuDataRender?.([]) ?? [],
+      false,
+      undefined,
+      true,
+    );
+    const more = menuData.find((item) => item.key === 'workspace-more');
+    expect(more?.children?.map((item) => item.name)).toEqual([
+      '统计',
+      'AI助手(Legacy)',
+    ]);
+    expect(more?.children?.[1].children?.map((item) => item.path)).toEqual([
       '/workspace/platform/apps/ai-assistant/overview',
       '/workspace/platform/apps/ai-assistant/resources',
       '/workspace/platform/apps/ai-assistant/memory',

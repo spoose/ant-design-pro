@@ -16,6 +16,42 @@ const appTab = createWorkspaceTab({
 });
 
 describe('WorkspaceTabsBar', () => {
+  it('shows AI助手 for a restored Octop tab', () => {
+    const octopTab = createWorkspaceTab({
+      kind: 'app',
+      appKey: 'octop',
+      title: 'octop',
+      url: '/workspace/org/organization-1/apps/octop/overview',
+    });
+    render(
+      <WorkspaceTabsBar
+        tabs={[homeTab, octopTab]}
+        activeTabId={homeTab.id}
+        onActivate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'AI助手' })).toBeVisible();
+  });
+
+  it('shows the legacy name for both new and restored AI assistant tabs', () => {
+    const legacyTab = createWorkspaceTab({
+      kind: 'app',
+      appKey: 'ai-assistant',
+      title: 'AI助手',
+      url: '/workspace/org/organization-1/apps/ai-assistant/overview',
+    });
+    render(
+      <WorkspaceTabsBar
+        tabs={[homeTab, legacyTab]}
+        activeTabId={homeTab.id}
+        onActivate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: /AI助手\(Legacy\)/ })).toBeVisible();
+  });
+
   it('uses antd activeKey and onChange for activation', () => {
     const onActivate = vi.fn();
     const { container } = render(
