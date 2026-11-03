@@ -53,7 +53,7 @@ projectAppCodes / organization.appCodes
 | --- | --- | --- |
 | `integrated-operations` | 集约运维 | 通用占位页 |
 | `drone-operations` | 政务低空 | Mock 运行总览 |
-| `octop` | octop | qiankun 3 内嵌完整 Octop 页面 |
+| `octop` | octop | wujie 内嵌完整 Octop 页面 |
 
 `octop` 沿用当前 Scope 的应用授权：XOne 使用现有临时全开策略，Legacy 必须由后端返回
 `octop` App Code，不根据超级管理员身份自动补齐。嵌入不会自动复用工作台 Token，也不代表

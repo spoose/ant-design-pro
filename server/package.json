@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:wujie": "tsx watch --import ./scripts/wujie-env.mjs src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/src/index.js",
     "typecheck": "tsc --noEmit",

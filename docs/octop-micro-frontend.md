@@ -1,61 +1,66 @@
-# 工作台内嵌 octop
+# 工作台内嵌 Octop（wujie）
 
-左侧 `octop` 菜单打开右侧完整 Octop 页面，顶部复用工作台应用标签。每个 Scope 内重复点击只激活同一个标签；切走或关闭时卸载，返回时重新挂载，不额外保活。
+左侧 `octop` 菜单打开完整 Octop 页面，顶部复用工作台应用标签。同一 Scope 内重复点击只激活一个标签。第一阶段采用不保活的重建模式：切走或关闭时由框架清理，返回重新加载。
 
-## 入口与启动
+## 普通入口与启动
 
-工作台通过 `qiankun-v3` 别名固定使用 `qiankun@3.0.0-rc.22`，保留 Umi 自带的 qiankun 2，不启用 Umi 的 qiankun master 插件。
+工作台固定使用 `wujie-react@2.1.0`，加载 Octop 普通 `index.html` 入口，不需要专用微前端 HTML 或构建插件。
 
-需要先在 Octop 功能工作树的 `dashboard/` 中构建并启动预览：
-
-```sh
-BASE_URL=http://localhost:8088 npm run build:micro
-BASE_URL=http://localhost:8088 npm run preview:micro -- --host 127.0.0.1 --port 4173 --strictPort
-```
-
-`BASE_URL` 必须指向实际 Octop API 来源；以上 8088 仅为本地示例。跨域 API 的 CORS、Cookie 和 WebSocket 配置要单独联调。
-
-工作台默认加载 `http://localhost:4173/micro.html`。需要调整时在工作台构建/启动前设置：
+在 Octop 的 wujie 工作树 `dashboard/` 中启动普通 Vite 开发服务，例如：
 
 ```sh
-PORT=8010 OCTOP_MICRO_ENTRY=http://127.0.0.1:4173/micro.html npm start
+npm run dev:wujie
 ```
 
-这是编译期配置，需要重启工作台开发服务。`OCTOP_BASE_URL` 继续控制已有的独立打开入口，两者分别配置。请勿填写 Octop 的原生 Vite dev 地址或本地 HTML 文件地址；当前验证可用的是 HTTP 构建预览入口。修改 Octop 后手动重新构建，再刷新工作台。
+在工作台的 wujie 工作树启动：
 
-以上示例使用明确的 IPv4 地址，避免 `localhost` 优先访问到其他 IPv6 服务。工作台 Legacy 后端的 `CORS_ORIGINS` 也需要允许实际工作台来源（示例为 `http://localhost:8010`）；Octop 后端单独配置 `cors_origins`，两者不共用白名单。
+```sh
+npm run start:wujie
+```
 
-生产部署时，入口 HTML、模块、动态分块和 CSS 均需允许工作台来源访问。原生 ESM 需要 Chrome/Edge 133+ 或 Safari 18.4+；Firefox 默认不支持，信创浏览器必须按实际内核验证。
+访问 `http://zh-mac.local:8001`。上述工作台命令固定使用 Legacy；后端另运行 `npm run start:wujie:legacy`。完整端口表、Octop 后端命令、构建后由 8088 提供页面的演示模式及本机依赖说明见 [wujie 本地开发与演示](./wujie-local-development.md)。早期验证使用过离线 XOne Mock，其登录结果不代表真实 Legacy 后端认证验证。
+
+`OCTOP_BASE_URL` 同时控制嵌入与已有独立打开入口，默认 `http://localhost:5173/`；它是编译期配置，修改后需要重启工作台。配置边界只接受 HTTP(S) 地址或同源路径，不接受携带用户名/密码的地址。
+
+生产环境使用 Octop 普通构建入口，实际子路径、资源地址、API 和 WebSocket 部署须联调验证。开发入口、HTML、ESM 模块、CSS 和动态资源须允许工作台来源读取；Vite 开发代理与实际后端的 CORS 配置应分别核对。没有沿用原接入方案的浏览器版本门槛，实际支持范围以两应用和框架在目标浏览器的验证为准。
 
 ## 授权与会话边界
 
-- `octop` 是独立 App Code，菜单、路由和标签继续按当前 Scope 的 `appCodes` 判断。
-- XOne 沿用现有 `ALL_APP_CODES` 临时全开策略；Legacy 必须由后端返回 `octop` 授权。前端不根据超级管理员身份追加该授权。
-- Legacy 迁移 `011_grant_octop_to_existing_super_admins.sql` 为现有 Super Admin 补齐平台 `octop` 授权；新建 Super Admin 的平台应用目录也包含 `octop`。组织工作区不自动授予。
-- 本步不传工作台 Token，不自动登录 Octop，不改变既有“小One”SSO 或独立打开入口。
-- 工作台账号与 Octop 账号没有绑定。Octop 使用自己的 Token；嵌入时其浏览器存储属于工作台来源，不能直接复用独立页面其他端口的 localStorage。工作台退出或切换账号不会同步清除 Octop 登录态。
-- 组织切换会重挂载界面，但不会自动隔离或清除 Octop 的 Cookie、存储和服务端会话；这不是租户数据隔离。认证、组织切换后的账号行为和 SSO 仍需后续验证。
+- `octop` 保留独立 App Code，菜单、路由和标签继续按当前 Scope 的 `appCodes` 判断。
+- XOne 沿用现有 `ALL_APP_CODES` 临时全开策略；Legacy 必须由后端返回 `octop` 授权，前端不按超级管理员身份自动补齐。
+- 已有应用目录和 `011_grant_octop_to_existing_super_admins.sql` 授权迁移保留；切换嵌入框架不回滚应用授权。
+- 工作台不向 Octop 传递 Token，两套账号没有自动绑定；不改变既有“小One”SSO 入口。
+- wujie 的 JS iframe 与工作台同源，嵌入不自动复用其他来源独立页面的 localStorage。工作台账号或组织变化不会自动清除 Octop 登录态。
+- 不同用户/Scope 使用不同实例名称，只区分界面实例，不提供账号或租户数据隔离。后端仍需独立鉴权。
 
-## 挂载与销毁
+## 加载、路由与重载
 
-Octop 只在其页面激活后按需加载。快速切换时，新实例等待旧实例完成挂载/卸载；React 销毁页面时将子应用 DOM 临时移到隐藏容器，等待 qiankun 清理完成后再移除，避免 React 19 与 Octop React 18 同时接管节点。
+工作台应用注册表按需加载 Octop 页面；页面使用官方 React 组件，配置 `alive=false`、`sync=true`。Octop 不提供自定义 mount/unmount 生命周期，使用 wujie 重建模式。
 
-加载失败显示重试入口；明确缺失的浏览器能力显示兼容提示。隐藏容器仅用于异步卸载，不作为保活缓存。标签仍只保存标题、顺序和 URL，不保存子应用组件或业务状态。
+实例名包含工作台用户和 Scope。子路由由 wujie 同步到主 URL 的查询参数，用于刷新后恢复；工作台标签仍按 App Key 去重。路由同步不保存内存草稿、组件状态或滚动位置。
 
-## 待排查：Vite 开发入口的模块映射冲突
+Octop 自身已有的 `sessionStorage` 草稿恢复继续生效，不能用草稿是否恢复判断实例是否保活。草稿沿用原有的 250ms 延迟保存，立即切走可能丢失尚未保存的最后输入。
 
-完整 Octop 直连 Vite dev 时曾观察到 qiankun 模块映射冲突和加载失败；当时未保存完整冲突日志和调用栈，实际故障链尚未确认。继续使用上面的构建预览方式联调，不将 Vite dev 入口视为已验证方案。
+初次加载使用 wujie 的默认加载提示。资源加载失败显示工作台错误提示，点击重试重新创建组件。Octop 通过 `$wujie.props.reload()` 请求同一重试动作，避免原生 `location.reload()` 替换 iframe 文档。
 
-排查时发现，当前安装的 `qiankun@3.0.0-rc.22` 及其 `@qiankunjs/shared@0.1.0-rc.14` 存在一个可产生同类冲突的内部竞态：`EsmSandboxEngine.probeModule` 在异步检查完成前将模块标记为 `probed`，并发路径可能跳过等待并通过 `flushImportMapEntries` 先登记旧 Blob 地址；如果检查随后触发 `rebuildModule`，同一合成模块标识符会尝试登记新 Blob 地址。import map 保留第一次映射，而重建会撤销旧 Blob 地址，可能导致加载失败。
+Octop 的普通入口在嵌入时禁用自身 PWA 安装和缓存清理副作用；内部登录/初始化跳转保持当前 iframe，通过路由更新完成。SSO/OIDC 的外部跳转与跨窗口通知仍需单独验证。
 
-已通过受控测试调用当前安装包的检查、重建和登记方法，复现同一标识符对应两个不同 Blob 地址的冲突日志；该测试人为控制了并发顺序，并非 Octop 浏览器端到端复现。Octop 的 Vite React 插件会注入额外模块，qiankun 可并行准备模块图，但尚未证明此前故障就是此竞态，也没有证据证明工作台路由预加载与点击并发或实例生命周期是触发原因。
+## 内嵌布局边界
 
-后续处理：在 Vite dev 嵌入场景复现时，保留完整冲突日志中的合成标识符、两个 Blob 地址和调用栈，并在 `probeModule`、`rebuildModule`、`flushImportMapEntries` 处记录模块 URL、实例标识与执行顺序，确认是否先登记旧地址再重建。确认后检查 qiankun 上游修复或提交最小复现，并用真实浏览器验证开发入口、切换和重挂载；版本升级后重新核对该行为。
+Octop 原有根节点使用固定定位和 `100lvh` 最小高度；Shadow DOM 不自动约束固定定位，因此完整页面曾越出工作台内容区，左菜单被宿主侧栏遮挡。工作台容器通过 `contain: layout paint` 建立定位和绘制边界，并让 `wujie-app` 填满容器；Octop 在启动时标记嵌入模式，仅该模式下将 HTML、body 和根节点改为容器高度、取消全视口最小高度。独立运行保持原布局。
 
-## 验证范围与限制
+## 验证阶段
 
-已验证本地 Chrome 下的菜单与单标签行为、Legacy 平台应用授权、Octop 自身登录退出、聊天恢复、会话和模型读取、WeKnora 连接器列表、工作区目录及已有 HTML 文件预览。空闲时切走和关闭标签会移除 Octop 容器，日志记录旧连接关闭；返回可重新挂载并恢复有效登录。CORS 预检、未认证和无效 Token 的 401 响应头，以及固定图片资源来源已单独核对。
+本次是工作台加载器替换。单元测试覆盖普通入口、不保活和路由同步选项、用户/Scope 变化、加载失败重试及子应用重载回调；框架本身的销毁行为不由 Mock 单元测试证明。
 
-工作台已执行 lint、antd 检查、类型检查和生产构建；最小接入版本的前端全量测试为 66 个文件、344 项通过。后续授权目录改动及本次待提交快照的检查结果以提交说明为准。
+2026-11-03 本地验证：工作台全部 67 个测试文件、352 个测试通过，Biome、TypeScript、antd 检查和生产构建通过。使用工作台离线 XOne Mock 登录，实际加载独立 Vite 服务的 Octop 普通入口，内嵌登录页正常显示，`/login` 同步到主 URL。该验证没有登录 Octop，也没有提交聊天请求。
 
-尚未实现工作台与 Octop 的账号绑定、统一登录、同步退出及组织/租户隔离。未完整验证功能分支独立入口的真实登录和消息发送、生成中切换、上传删除及配置保存、SSO/OIDC 整页跳转、生产子路径部署、实际信创浏览器和长时间连接泄漏。原生 Vite dev 入口与监听重建尚不能作为已验证的嵌入开发方式；qiankun 3 仍为固定的 RC 版本。
+2026-11-03 第五步已验证的范围：
+
+- 工作台使用离线 XOne Mock；Octop 使用真实登录后的已有会话。切走后实际 DOM 和沙箱 iframe 均为 0，子应用 Vite 进程的活动 TCP 连接回到 0；返回后登录态和会话路由恢复。
+- 关闭应用标签后移除实例，重新打开后恢复会话；连续 5 轮快速切换，每次切走均为 0 个实例/iframe，最终只存在 1 个；测试草稿已清空。
+- 浏览器后退、前进、整页刷新恢复原会话；项目与组织工作区切换后，仅保留当前 Scope 的实例名称。
+- 桌面根节点与容器同为 602px 高，专家详情抽屉及遮罩限制在内容区；390×844 窄屏的导航抽屉也限制在内嵌区。独立入口没有嵌入标记，根节点仍覆盖其完整视口。
+- 用户变化和授权规则由现有单元测试覆盖；未操作真实账号撤权。框架销毁依赖浏览器移除 iframe，不增加子应用自定义卸载协议或宿主异步队列。
+
+模型生成中切换、上传删除、SSO/OIDC、完整弹层主题、生产子路径和目标浏览器仍按后续验证结果记录。本步未发送新的聊天请求，没有以连接回收结果代替生成恢复验证。

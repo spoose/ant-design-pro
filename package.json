@@ -23,6 +23,9 @@
     "record": "cross-env NODE_ENV=development UMI_ENV=test max record --scene=login",
     "simple": "node scripts/simple.js",
     "start": "cross-env UMI_ENV=dev MOCK=none max dev",
+    "start:wujie": "cross-env HOST=0.0.0.0 PORT=8001 AUTH_BACKEND=legacy OCTOP_BASE_URL=http://zh-mac.local:5174/ npm start",
+    "start:wujie:demo": "cross-env HOST=0.0.0.0 PORT=8001 AUTH_BACKEND=legacy OCTOP_BASE_URL=http://zh-mac.local:8088/ npm start",
+    "start:wujie:legacy": "npm --prefix server run dev:wujie",
     "start:xone-mock": "cross-env UMI_ENV=dev AUTH_BACKEND=xone max dev",
     "start:xone": "cross-env UMI_ENV=xone AUTH_BACKEND=xone MOCK=none max dev",
     "start:no-mock": "cross-env MOCK=none max dev",
@@ -57,10 +60,10 @@
     "dayjs": "^1.11.20",
     "highlight.js": "^11.11.1",
     "liveline": "^0.0.7",
-    "qiankun-v3": "npm:qiankun@3.0.0-rc.22",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "topojson-client": "^3.1.0"
+    "topojson-client": "^3.1.0",
+    "wujie-react": "2.1.0"
   },
   "devDependencies": {
     "@ant-design/cli": "^6.5.0",

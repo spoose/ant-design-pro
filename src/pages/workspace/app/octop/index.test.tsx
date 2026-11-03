@@ -1,22 +1,33 @@
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import OctopPage from '.';
 
+type WujieOptions = {
+  name: string;
+  url: string;
+  alive: boolean;
+  sync: boolean;
+  props: { reload: () => void };
+  loadError: (url: string, error: Error) => void;
+};
+
 const mocks = vi.hoisted(() => ({
-  load: vi.fn(),
-  compatible: vi.fn(() => true),
+  render: vi.fn<(options: WujieOptions) => void>(),
+  mounted: vi.fn(),
+  disposed: vi.fn(),
   pathname: '/workspace/org/org-1/apps/octop/overview',
+  userId: 'user-1',
 }));
-vi.mock('qiankun-v3', () => ({
-  loadMicroApp: mocks.load,
-  isRuntimeCompatible: mocks.compatible,
+vi.mock('wujie-react', () => ({
+  default: function WujieMock(options: WujieOptions) {
+    mocks.render(options);
+    useEffect(() => {
+      mocks.mounted(options.name);
+      return () => mocks.disposed(options.name);
+    }, []);
+    return <div data-testid="octop-child">Octop content</div>;
+  },
 }));
 vi.mock('@umijs/max', async () => {
   const router =
@@ -27,130 +38,75 @@ vi.mock('@umijs/max', async () => {
     generatePath: router.generatePath,
     matchPath: router.matchPath,
     useLocation: () => ({ pathname: mocks.pathname }),
-    useModel: () => ({ initialState: { currentUser: { userId: 'user-1' } } }),
+    useModel: () => ({
+      initialState: { currentUser: { userId: mocks.userId } },
+    }),
   };
 });
 
-const pending: Array<() => void> = [];
-function deferred() {
-  let finish!: () => void;
-  const promise = new Promise<void>((resolve) => {
-    finish = resolve;
-  });
-  pending.push(finish);
-  return { promise, finish };
-}
-const createApp = (
-  mountPromise = Promise.resolve(),
-  unmountPromise = Promise.resolve(),
-) => ({
-  loadPromise: Promise.resolve(),
-  bootstrapPromise: Promise.resolve(),
-  mountPromise,
-  unmount: vi.fn(() => unmountPromise),
-});
-
 beforeEach(() => {
-  mocks.load.mockReset();
-  mocks.compatible.mockReturnValue(true);
+  mocks.render.mockClear();
+  mocks.mounted.mockClear();
+  mocks.disposed.mockClear();
   mocks.pathname = '/workspace/org/org-1/apps/octop/overview';
-  Object.defineProperty(window, 'CSSScopeRule', {
-    configurable: true,
-    value: class {},
-  });
-});
-afterEach(async () => {
-  cleanup();
-  await act(async () => {
-    for (const finish of pending.splice(0)) finish();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  mocks.userId = 'user-1';
 });
 
 describe('Octop workspace container', () => {
-  it('loads with isolation and retains its DOM until unmount completes', async () => {
-    const done = deferred();
-    const app = createApp(Promise.resolve(), done.promise);
-    let child: HTMLElement | undefined;
-    mocks.load.mockImplementation(
-      ({ container }: { container: HTMLElement }) => {
-        child = container;
-        container.textContent = 'Octop content';
-        return app;
-      },
-    );
-    const view = render(<OctopPage />);
-    await waitFor(() =>
-      expect(screen.queryByRole('status')).not.toBeInTheDocument(),
-    );
-    expect(mocks.load).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'octop',
-        entry: 'http://localhost:4173/micro.html',
-      }),
-      { sandbox: { styleIsolation: true } },
-    );
-    view.unmount();
-    await waitFor(() => expect(app.unmount).toHaveBeenCalledOnce());
-    expect(child?.isConnected).toBe(true);
-    expect(child?.closest('[hidden]')).not.toBeNull();
-    done.finish();
-    await waitFor(() => expect(child?.isConnected).toBe(false));
-  });
-
-  it('waits for a pending mount and teardown before opening the next instance', async () => {
-    const mounted = deferred();
-    const disposed = deferred();
-    const first = createApp(mounted.promise, disposed.promise);
-    const second = createApp();
-    mocks.load.mockReturnValueOnce(first).mockReturnValueOnce(second);
-    const view = render(<OctopPage />);
-    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
-    view.unmount();
+  it('uses the ordinary entry without keep-alive and enables route sync', () => {
     render(<OctopPage />);
-    mounted.finish();
-    await waitFor(() => expect(first.unmount).toHaveBeenCalledOnce());
-    expect(mocks.load).toHaveBeenCalledTimes(1);
-    disposed.finish();
-    await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+    expect(mocks.render).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        url: 'http://localhost:5173/',
+        alive: false,
+        sync: true,
+      }),
+    );
+    expect(screen.getByTestId('octop-child')).toBeInTheDocument();
   });
 
-  it('unmounts and reloads when the organization changes', async () => {
-    const first = createApp();
-    mocks.load.mockReturnValueOnce(first).mockReturnValueOnce(createApp());
+  it('remounts with a different instance name when the scope changes', () => {
     const view = render(<OctopPage />);
-    await waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    const firstName = mocks.mounted.mock.calls[0][0];
     mocks.pathname = '/workspace/org/org-2/apps/octop/overview';
     view.rerender(<OctopPage />);
-    await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
-    expect(first.unmount).toHaveBeenCalledOnce();
+    expect(mocks.disposed).toHaveBeenCalledWith(firstName);
+    expect(mocks.mounted).toHaveBeenCalledTimes(2);
+    expect(mocks.mounted.mock.calls[1][0]).not.toBe(firstName);
   });
 
-  it('shows a retry action after a load failure', async () => {
-    const failed = createApp();
-    mocks.load.mockImplementationOnce(() => ({
-      ...failed,
-      mountPromise: Promise.reject(new Error('Network unavailable')),
-    }));
-    mocks.load.mockReturnValueOnce(createApp());
+  it('remounts with a different instance name when the user changes', () => {
+    const view = render(<OctopPage />);
+    const firstName = mocks.mounted.mock.calls[0][0];
+    mocks.userId = 'user-2';
+    view.rerender(<OctopPage />);
+    expect(mocks.disposed).toHaveBeenCalledWith(firstName);
+    expect(mocks.mounted.mock.calls[1][0]).not.toBe(firstName);
+  });
+
+  it('recreates the component after a load failure and retry', () => {
     render(<OctopPage />);
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'octop 加载失败',
-    );
+    const options = mocks.render.mock.calls[0][0];
+    act(() => options.loadError(options.url, new Error('Network unavailable')));
+    expect(screen.getByRole('alert')).toHaveTextContent('octop 加载失败');
     fireEvent.click(screen.getByRole('button', { name: /重\s*试/ }));
-    await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
-    expect(failed.unmount).toHaveBeenCalledOnce();
-    await waitFor(() =>
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
-    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(mocks.mounted).toHaveBeenCalledTimes(2);
+    expect(mocks.disposed).toHaveBeenCalledOnce();
   });
 
-  it('shows an unsupported-browser message without loading Octop', async () => {
-    mocks.compatible.mockReturnValue(false);
+  it('connects the child reload callback to the same retry action', () => {
     render(<OctopPage />);
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      '当前浏览器不支持',
-    );
-    expect(mocks.load).not.toHaveBeenCalled();
+    const options = mocks.render.mock.calls[0][0];
+    act(() => options.props.reload());
+    expect(mocks.mounted).toHaveBeenCalledTimes(2);
+    expect(mocks.disposed).toHaveBeenCalledWith(options.name);
+    expect(mocks.mounted.mock.calls[1][0]).toBe(options.name);
+  });
+
+  it('unmounts the Wujie component when leaving the page', () => {
+    const view = render(<OctopPage />);
+    view.unmount();
+    expect(mocks.disposed).toHaveBeenCalledOnce();
   });
 });
