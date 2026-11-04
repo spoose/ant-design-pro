@@ -18,6 +18,7 @@ import {
   OfflineBanner,
   WorkspaceTabsHeader,
 } from '@/components';
+import OctopRuntimeBoundary from '@/components/OctopRuntimeBoundary';
 import WorkspaceThemeDrawer from '@/components/WorkspaceThemeDrawer';
 import type { AuthCurrentUser, AuthSession } from '@/services/auth';
 import { loadAuthSession } from '@/services/auth-session';
@@ -515,6 +516,7 @@ export const layout: RunTimeLayoutConfig = ({
       // if (initialState?.loading) return <PageLoading />;
       return (
         <>
+          <OctopRuntimeBoundary />
           {children}
           {/* 头像菜单「主题设置」的落点；settingDrawerOpen 由 AvatarDropdown 打开。 */}
           <WorkspaceThemeDrawer

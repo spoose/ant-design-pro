@@ -1,28 +1,36 @@
 import { useLocation, useModel } from '@umijs/max';
 import { Alert, Button } from 'antd';
-import { type ComponentType, useState } from 'react';
+import {
+  type ComponentType,
+  type RefAttributes,
+  useRef,
+  useState,
+} from 'react';
 import WujieReact from 'wujie-react';
 import { OCTOP_BASE_URL } from '@/config/externalApps';
+import { getOctopInstanceName } from '@/utils/octopRuntime';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
-import { buildWorkspaceScopeKey } from '@/utils/workspaceState';
 
-// The published wrapper omits its props type; reuse the core option declaration.
+// The published wrapper omits its props and refresh method declarations.
+type WujieHandle = { refresh: () => Promise<void> };
 const Wujie = WujieReact as unknown as ComponentType<
-  Parameters<typeof WujieReact.setupApp>[0] & { width: string; height: string }
+  Parameters<typeof WujieReact.setupApp>[0] & {
+    width: string;
+    height: string;
+  } & RefAttributes<WujieHandle>
 >;
 
 const OctopPage = () => {
-  const [attempt, setAttempt] = useState(0);
+  const wujieRef = useRef<WujieHandle>(null);
   const [error, setError] = useState<string>();
   const { pathname } = useLocation();
   const { initialState } = useModel('@@initialState');
   const userId = initialState?.currentUser?.userId;
   const scope = resolveWorkspaceScopeFromPath(pathname);
-  const scopeKey = scope ? buildWorkspaceScopeKey(scope) : 'platform';
-  const name = `octop:${encodeURIComponent(userId ?? 'anonymous')}:${scopeKey}`;
+  const name = getOctopInstanceName(userId, scope);
   const retry = () => {
     setError(undefined);
-    setAttempt((value) => value + 1);
+    void wujieRef.current?.refresh();
   };
 
   return (
@@ -36,12 +44,13 @@ const OctopPage = () => {
         style={{ contain: 'layout paint' }}
       >
         <Wujie
-          key={`${name}:${attempt}`}
+          key={name}
+          ref={wujieRef}
           name={name}
           url={OCTOP_BASE_URL}
           width="100%"
           height="100%"
-          alive={false}
+          alive={true}
           sync
           props={{ reload: retry }}
           loadError={() => setError('octop 加载失败，请确认服务已启动后重试。')}

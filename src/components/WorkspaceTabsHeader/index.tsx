@@ -3,11 +3,16 @@ import { useEffect, useMemo } from 'react';
 import { getAppDefinition } from '@/config/appRegistry';
 import { useWorkspaceTabs } from '@/hooks/useWorkspaceTabs';
 import {
+  destroyOctopInstance,
+  getOctopInstanceName,
+} from '@/utils/octopRuntime';
+import {
   getOrganizationHomePath,
   getPlatformHomePath,
   getWorkspaceAppKey,
   getWorkspaceOrganizationId,
   isPlatformWorkspacePath,
+  resolveWorkspaceScopeFromPath,
 } from '@/utils/workspaceRoutes';
 import {
   getOrganizationAccess,
@@ -53,7 +58,18 @@ const WorkspaceTabsController = ({
       activeTabId={activeTabId}
       tabs={tabs}
       onActivate={activateTab}
-      onClose={closeTab}
+      onClose={(tabId) => {
+        const tab = tabs.find((item) => item.id === tabId);
+        if (tab?.kind === 'app' && tab.appKey === 'octop') {
+          void destroyOctopInstance(
+            getOctopInstanceName(
+              userId,
+              resolveWorkspaceScopeFromPath(homeTab.url),
+            ),
+          );
+        }
+        closeTab(tabId);
+      }}
     />
   );
 };
