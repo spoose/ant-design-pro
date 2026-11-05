@@ -1,14 +1,16 @@
-import { useLocation, useModel } from '@umijs/max';
+import { useLocation, useModel, useNavigate } from '@umijs/max';
 import { Alert, Button } from 'antd';
 import {
   type ComponentType,
   type RefAttributes,
+  useEffect,
   useRef,
   useState,
 } from 'react';
 import WujieReact from 'wujie-react';
 import { OCTOP_BASE_URL } from '@/config/externalApps';
 import { getOctopInstanceName } from '@/utils/octopRuntime';
+import { useOctopBridge } from '@/utils/useOctopBridge';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
 
 // The published wrapper omits its props and refresh method declarations.
@@ -23,11 +25,23 @@ const Wujie = WujieReact as unknown as ComponentType<
 const OctopPage = () => {
   const wujieRef = useRef<WujieHandle>(null);
   const [error, setError] = useState<string>();
-  const { pathname } = useLocation();
+  const { pathname, search, hash, state } = useLocation();
+  const navigate = useNavigate();
   const { initialState } = useModel('@@initialState');
   const userId = initialState?.currentUser?.userId;
   const scope = resolveWorkspaceScopeFromPath(pathname);
   const name = getOctopInstanceName(userId, scope);
+  const { session } = useOctopBridge(name);
+
+  // 首页「问问知识库助手」经 location.state 传入问题。交给 bridge 后清除 state，
+  // 避免刷新或再次进入页面时重复发送；Octop 未登录时问题由 bridge 排队等待。
+  useEffect(() => {
+    const prompt = (state as { prompt?: unknown } | null)?.prompt;
+    if (!session || typeof prompt !== 'string' || !prompt.trim()) return;
+    session.submit(prompt);
+    navigate({ pathname, search, hash }, { replace: true, state: {} });
+  }, [session, state, pathname, search, hash, navigate]);
+
   const retry = () => {
     setError(undefined);
     void wujieRef.current?.refresh();

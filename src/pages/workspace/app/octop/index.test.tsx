@@ -19,6 +19,9 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn<() => Promise<void>>(),
   pathname: '/workspace/org/org-1/apps/octop/overview',
   userId: 'user-1',
+  locationState: undefined as unknown,
+  navigate: vi.fn(),
+  bridgeSubmit: vi.fn(),
 }));
 vi.mock('wujie-react', () => ({
   default: forwardRef(function WujieMock(options: WujieOptions, ref) {
@@ -31,6 +34,17 @@ vi.mock('wujie-react', () => ({
     return <div data-testid="octop-child">Octop content</div>;
   }),
 }));
+vi.mock('@/utils/useOctopBridge', () => {
+  const session = {
+    hello: vi.fn(),
+    submit: (prompt: string) => mocks.bridgeSubmit(prompt),
+    subscribe: vi.fn(() => () => undefined),
+    dispose: vi.fn(),
+  };
+  return {
+    useOctopBridge: () => ({ session, status: 'idle' }),
+  };
+});
 vi.mock('@umijs/max', async () => {
   const router =
     await vi.importActual<typeof import('react-router-dom')>(
@@ -39,7 +53,13 @@ vi.mock('@umijs/max', async () => {
   return {
     generatePath: router.generatePath,
     matchPath: router.matchPath,
-    useLocation: () => ({ pathname: mocks.pathname }),
+    useLocation: () => ({
+      pathname: mocks.pathname,
+      search: '?octop=%2Fchat',
+      hash: '',
+      state: mocks.locationState,
+    }),
+    useNavigate: () => mocks.navigate,
     useModel: () => ({
       initialState: { currentUser: { userId: mocks.userId } },
     }),
@@ -53,6 +73,9 @@ beforeEach(() => {
   mocks.refresh.mockReset().mockResolvedValue(undefined);
   mocks.pathname = '/workspace/org/org-1/apps/octop/overview';
   mocks.userId = 'user-1';
+  mocks.locationState = undefined;
+  mocks.navigate.mockClear();
+  mocks.bridgeSubmit.mockClear();
 });
 
 describe('Octop workspace container', () => {
@@ -113,5 +136,27 @@ describe('Octop workspace container', () => {
     const view = render(<OctopPage />);
     view.unmount();
     expect(mocks.disposed).toHaveBeenCalledOnce();
+  });
+
+  it('hands a prompt from the home card to the bridge and clears the route state', () => {
+    mocks.locationState = { prompt: '  整理知识库  ' };
+    render(<OctopPage />);
+    expect(mocks.bridgeSubmit).toHaveBeenCalledOnce();
+    expect(mocks.bridgeSubmit).toHaveBeenCalledWith('  整理知识库  ');
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      {
+        pathname: '/workspace/org/org-1/apps/octop/overview',
+        search: '?octop=%2Fchat',
+        hash: '',
+      },
+      { replace: true, state: {} },
+    );
+  });
+
+  it('ignores a missing or blank prompt in the route state', () => {
+    mocks.locationState = { prompt: '   ' };
+    render(<OctopPage />);
+    expect(mocks.bridgeSubmit).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
   });
 });

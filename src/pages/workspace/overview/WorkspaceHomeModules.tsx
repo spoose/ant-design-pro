@@ -1,3 +1,4 @@
+import { useModel } from '@umijs/max';
 import WorkspaceAppList from '@/components/WorkspaceAppList';
 import {
   getNotificationCenterPath,
@@ -8,6 +9,7 @@ import PlatformMockCalendar from '../platform/overview/PlatformMockCalendar';
 import PlatformMockChart from '../platform/overview/PlatformMockChart';
 import { PlatformStartConversation } from '../platform/overview/PlatformMockConversations';
 import PlatformNotificationCenter from '../platform/overview/PlatformNotificationCenter';
+import PlatformOctopConversations from '../platform/overview/PlatformOctopConversations';
 import PlatformPowerStation from '../platform/overview/PlatformPowerStation';
 import PlatformQuickEntry from '../platform/overview/PlatformQuickEntry';
 import PlatformWeeklyGoals from '../platform/overview/PlatformWeeklyGoals';
@@ -36,62 +38,73 @@ export const WorkspaceHomeModules = ({
   emptyDescription,
   showAppList = true,
   showPowerStation = false,
-}: WorkspaceHomeModulesProps) => (
-  <>
-    {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
-    <div className="@container/home">
-      <div
-        className={`grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)] xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_clamp(27.5rem,33.333%,30rem)] ${showPowerStation ? '@[80rem]/home:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)_minmax(0,1fr)]' : ''}`}
-      >
-        <PlatformStartConversation />
-        <PlatformNotificationCenter
-          notificationCenterPath={getNotificationCenterPath(
-            getWorkspaceOrganizationId(getAppPath('ai-assistant')),
-          )}
-        />
-        {showPowerStation ? <PlatformPowerStation /> : null}
-        {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
-        <div aria-hidden="true" className="hidden" hidden>
-          <PlatformWeeklyGoals />
-        </div>
-        {/* 日历保留供后续恢复；当前由通知中心占用原卡槽。 */}
-        <div aria-hidden="true" className="hidden" hidden>
-          <PlatformMockCalendar />
+}: WorkspaceHomeModulesProps) => {
+  const { initialState } = useModel('@@initialState');
+  const userId = initialState?.currentUser?.userId;
+  return (
+    <>
+      {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
+      <div className="@container/home">
+        <div
+          className={`grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)] xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_clamp(27.5rem,33.333%,30rem)] ${showPowerStation ? '@[80rem]/home:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)_minmax(0,1fr)]' : ''}`}
+        >
+          {/* 「问问小One」暂时隐藏，组件保留以便恢复。 */}
+          <div aria-hidden="true" className="hidden" hidden>
+            <PlatformStartConversation />
+          </div>
+          <PlatformOctopConversations
+            octopPath={getAppPath('octop')}
+            userId={userId}
+          />
+          <PlatformNotificationCenter
+            notificationCenterPath={getNotificationCenterPath(
+              getWorkspaceOrganizationId(getAppPath('ai-assistant')),
+            )}
+          />
+          {showPowerStation ? <PlatformPowerStation /> : null}
+          {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
+          <div aria-hidden="true" className="hidden" hidden>
+            <PlatformWeeklyGoals />
+          </div>
+          {/* 日历保留供后续恢复；当前由通知中心占用原卡槽。 */}
+          <div aria-hidden="true" className="hidden" hidden>
+            <PlatformMockCalendar />
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* 首页只保留普通快捷入口；管理能力统一从 Project Admin 侧栏进入。 */}
-    <PlatformQuickEntry
-      appCodes={appCodes}
-      getAppPath={getAppPath}
-      permissions={[]}
-    />
-
-    <PlatformAppCatalog getAppPath={getAppPath} appCodes={appCodes} />
-
-    <div className={showAppList ? undefined : 'hidden'} hidden={!showAppList}>
-      <WorkspaceAppList
-        emptyDescription={emptyDescription}
-        getAppPath={getAppPath}
+      {/* 首页只保留普通快捷入口；管理能力统一从 Project Admin 侧栏进入。 */}
+      <PlatformQuickEntry
         appCodes={appCodes}
-        title={appTitle}
+        getAppPath={getAppPath}
+        permissions={[]}
       />
-    </div>
 
-    <section
-      aria-labelledby="workspace-statistics-title"
-      className="grid min-w-0 gap-3"
-    >
-      <header className="flex items-center justify-between gap-3">
-        <h2
-          className="m-0 text-base font-semibold text-zinc-950 dark:text-zinc-50"
-          id="workspace-statistics-title"
-        >
-          数据统计
-        </h2>
-      </header>
-      <PlatformMockChart />
-    </section>
-  </>
-);
+      <PlatformAppCatalog getAppPath={getAppPath} appCodes={appCodes} />
+
+      <div className={showAppList ? undefined : 'hidden'} hidden={!showAppList}>
+        <WorkspaceAppList
+          emptyDescription={emptyDescription}
+          getAppPath={getAppPath}
+          appCodes={appCodes}
+          title={appTitle}
+        />
+      </div>
+
+      <section
+        aria-labelledby="workspace-statistics-title"
+        className="grid min-w-0 gap-3"
+      >
+        <header className="flex items-center justify-between gap-3">
+          <h2
+            className="m-0 text-base font-semibold text-zinc-950 dark:text-zinc-50"
+            id="workspace-statistics-title"
+          >
+            数据统计
+          </h2>
+        </header>
+        <PlatformMockChart />
+      </section>
+    </>
+  );
+};

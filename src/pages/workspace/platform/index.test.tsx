@@ -223,15 +223,17 @@ describe('PlatformOverview', () => {
     render(<PlatformOverview appCodes={[]} />);
 
     expect(screen.getByRole('heading', { name: 'AI 数据洞悉' })).toBeVisible();
-    expect(screen.getByRole('heading', { name: '问问小One' })).toBeVisible();
-    expect(screen.getByPlaceholderText('问问权限、用量或成员…')).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '问问知识库助手' }),
+    ).toBeVisible();
+    expect(screen.getByPlaceholderText('问问知识库助手…')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: '问问小One' })).toBeNull();
     expect(
       screen.queryByRole('link', { name: '新对话' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('查找特定用户')).toBeVisible();
     expect(
-      screen.getByRole('heading', { name: '你可以这样提问' }),
-    ).toBeVisible();
+      screen.getByRole('region', { name: '问问知识库助手' }).textContent,
+    ).toContain('介绍一下聚数公司');
     expect(
       screen.queryByRole('heading', { name: '最近' }),
     ).not.toBeInTheDocument();
@@ -268,11 +270,11 @@ describe('PlatformOverview', () => {
     });
     expect(screen.getByTestId('platform-calendar')).not.toBeVisible();
     expect(
-      screen.getByRole('region', { name: '问问小One' }).parentElement
+      screen.getByRole('region', { name: '问问知识库助手' }).parentElement
         ?.className,
     ).toContain('lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]');
     expect(
-      screen.getByRole('region', { name: '问问小One' }).parentElement
+      screen.getByRole('region', { name: '问问知识库助手' }).parentElement
         ?.className,
     ).toContain('xl:h-[min(22rem,_calc(100dvh-56px-21rem))]');
     expect(screen.getByText('水库大坝巡检 · 航线等待批准')).toBeVisible();
