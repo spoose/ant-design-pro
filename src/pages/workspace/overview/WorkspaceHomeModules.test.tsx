@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { Button } from 'antd';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WujieReact from 'wujie-react';
@@ -47,10 +48,15 @@ vi.mock('@ant-design/x', () => ({
     onSubmit,
     placeholder,
     disabled,
+    suffix,
   }: {
     onSubmit?: (message: string) => void;
     placeholder?: string;
     disabled?: boolean;
+    suffix?: (
+      node: ReactNode,
+      info: { components: { SendButton: typeof Button } },
+    ) => ReactNode;
   }) => (
     <form
       onSubmit={(event) => {
@@ -59,7 +65,13 @@ vi.mock('@ant-design/x', () => ({
       }}
     >
       <input disabled={disabled} placeholder={placeholder} />
-      <button type="submit">发送</button>
+      {suffix ? (
+        suffix(<button type="submit">发送</button>, {
+          components: { SendButton: Button },
+        })
+      ) : (
+        <button type="submit">发送</button>
+      )}
     </form>
   ),
 }));
@@ -113,10 +125,18 @@ const renderModules = (getAppPath: (appCode: string) => string) =>
 describe('WorkspaceHomeModules', () => {
   it('distinguishes Octop startup, login and service status on the home card', () => {
     renderModules((appCode) => `/workspace/platform/apps/${appCode}/overview`);
-    expect(screen.getByText('待打开')).toBeVisible();
+    const card = within(screen.getByRole('region', { name: '问问知识库助手' }));
+    expect(card.queryByRole('status')).toBeNull();
+    expect(card.queryByText('正在确认登录')).toBeNull();
+    expect(card.getByRole('button', { name: '助手准备中' })).toBeDisabled();
+    expect(card.getByPlaceholderText('问问知识库助手…')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /去\s*登\s*录/ })).toBeNull();
 
     act(() => WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'checking' }));
-    expect(screen.getByText('正在确认登录')).toBeVisible();
+    expect(card.queryByRole('status')).toBeNull();
+    expect(card.queryByText('正在确认登录')).toBeNull();
+    expect(card.getByRole('button', { name: '助手准备中' })).toBeDisabled();
+    expect(card.getByPlaceholderText('问问知识库助手…')).toBeDisabled();
 
     act(() =>
       WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'unauthenticated' }),
@@ -124,6 +144,8 @@ describe('WorkspaceHomeModules', () => {
     expect(screen.getByText('未登录')).toBeVisible();
     expect(screen.getByRole('button', { name: /去\s*登\s*录/ })).toBeVisible();
     expect(screen.getByPlaceholderText('登录后可提问')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /去\s*登\s*录/ }));
+    expect(testState.navigate).toHaveBeenLastCalledWith(PROJECT_OCTOP);
 
     act(() => WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'offline' }));
     expect(screen.getByText('服务不可用')).toBeVisible();
@@ -132,8 +154,40 @@ describe('WorkspaceHomeModules', () => {
     act(() =>
       WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
     );
-    expect(screen.getByText('已登录')).toBeVisible();
+    expect(card.queryByRole('status')).toBeNull();
+    expect(card.queryByText('已登录')).toBeNull();
+    expect(card.queryByRole('button', { name: '助手准备中' })).toBeNull();
     expect(screen.getByPlaceholderText('问问知识库助手…')).toBeEnabled();
+  });
+
+  it('enables questions when Octop restores its login without opening the assistant page', () => {
+    renderModules((appCode) => `/workspace/platform/apps/${appCode}/overview`);
+    act(() => WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'checking' }));
+    act(() =>
+      WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
+    );
+    expect(screen.queryByText('已登录')).toBeNull();
+    expect(screen.getByPlaceholderText('问问知识库助手…')).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /去\s*登\s*录/ })).toBeNull();
+    expect(testState.navigate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'idle',
+    'checking',
+    'unauthenticated',
+    'offline',
+  ] as const)('does not submit a prompt while Octop is %s', (status) => {
+    renderModules((appCode) => `/workspace/platform/apps/${appCode}/overview`);
+    if (status !== 'idle') {
+      act(() => WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: '介绍一下聚数公司' }));
+    // 直接触发表单，验证 UI 禁用以外的发送守卫也生效。
+    fireEvent.submit(
+      screen.getByRole('textbox').closest('form') as HTMLFormElement,
+    );
+    expect(testState.navigate).not.toHaveBeenCalled();
   });
 
   it('shows the Octop conversation card in the Project scope', () => {
@@ -163,6 +217,9 @@ describe('WorkspaceHomeModules', () => {
         ? PROJECT_OCTOP
         : `/workspace/platform/apps/${appCode}/overview`,
     );
+    act(() =>
+      WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
+    );
     fireEvent.click(screen.getByRole('button', { name: '介绍一下聚数公司' }));
     expect(testState.navigate).toHaveBeenCalledWith(PROJECT_OCTOP, {
       state: { prompt: '介绍一下聚数公司' },
@@ -175,6 +232,9 @@ describe('WorkspaceHomeModules', () => {
         ? ORG_OCTOP
         : `/workspace/org/org-1/apps/${appCode}/overview`,
     );
+    act(() =>
+      WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
+    );
     fireEvent.click(screen.getByRole('button', { name: '介绍一下聚数公司' }));
     expect(testState.navigate).toHaveBeenCalledWith(ORG_OCTOP, {
       state: { prompt: '介绍一下聚数公司' },
@@ -186,6 +246,9 @@ describe('WorkspaceHomeModules', () => {
       appCode === 'octop'
         ? ORG_OCTOP
         : `/workspace/org/org-1/apps/${appCode}/overview`,
+    );
+    act(() =>
+      WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
     );
     fireEvent.click(screen.getByRole('button', { name: '介绍一下聚数公司' }));
     // 卡片导航到的路径即 octop 页接收到的 pathname，两侧必须得出同一实例名。
@@ -203,6 +266,9 @@ describe('WorkspaceHomeModules', () => {
       appCode === 'octop'
         ? ORG_OCTOP
         : `/workspace/org/org-1/apps/${appCode}/overview`,
+    );
+    act(() =>
+      WujieReact.bus.$emit(OCTOP_STATUS_EVENT, { status: 'authenticated' }),
     );
     fireEvent.click(screen.getByRole('button', { name: '发送' }));
     expect(testState.navigate).toHaveBeenCalledWith(ORG_OCTOP, {

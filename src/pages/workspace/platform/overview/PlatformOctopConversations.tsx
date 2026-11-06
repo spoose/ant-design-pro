@@ -53,17 +53,13 @@ const promptItems: PromptsItemType[] = [
 ];
 
 const statusTag = {
-  idle: { color: 'default', text: '待打开' },
-  checking: { color: 'processing', text: '正在确认登录' },
-  authenticated: { color: 'success', text: '已登录' },
   unauthenticated: { color: 'default', text: '未登录' },
   offline: { color: 'warning', text: '服务不可用' },
 } as const;
 
 /**
  * 工作台「问问知识库助手」卡片：结构与「问问小One」一致，提问经 wujie 内嵌的 Octop 发送。
- * 未登录或服务不可用时，引导用户打开 Octop。提问统一导航到 Octop 页，
- * 由页面挂载后经 bridge 投递；登录态确认前问题在页面侧排队。
+ * 启动时等待 Octop 自动校验登录，确认已登录后允许提问；未登录或服务异常时提供入口。
  */
 export const PlatformOctopConversations = ({
   userId,
@@ -80,8 +76,12 @@ export const PlatformOctopConversations = ({
   const instanceName = getOctopInstanceName(userId, scope);
   const { status } = useOctopBridge(instanceName);
   const offline = status === 'offline';
-  const blocked = status === 'unauthenticated' || offline;
-  const badge = statusTag[status];
+  const checking = status === 'idle' || status === 'checking';
+  const blocked = status !== 'authenticated';
+  const badge =
+    status === 'unauthenticated' || status === 'offline'
+      ? statusTag[status]
+      : undefined;
 
   const ask = (raw: string) => {
     const prompt = raw.trim();
@@ -108,13 +108,15 @@ export const PlatformOctopConversations = ({
           >
             问问知识库助手
           </h2>
-          <Tag className="m-0" color={badge.color}>
-            {badge.text}
-          </Tag>
+          {badge ? (
+            <Tag className="m-0" color={badge.color}>
+              {badge.text}
+            </Tag>
+          ) : null}
         </div>
       </header>
 
-      {blocked ? (
+      {badge ? (
         <div
           className="mx-4 mt-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/40"
           role="status"
@@ -157,7 +159,7 @@ export const PlatformOctopConversations = ({
             item: {
               paddingBlock: 12,
               paddingInline: 12,
-              opacity: blocked ? 0.5 : 1,
+              opacity: badge ? 0.5 : 1,
               pointerEvents: blocked ? 'none' : 'auto',
             },
           }}
@@ -175,14 +177,22 @@ export const PlatformOctopConversations = ({
           placeholder={
             offline
               ? '服务不可用'
-              : blocked
+              : status === 'unauthenticated'
                 ? '登录后可提问'
                 : '问问知识库助手…'
+          }
+          suffix={(node, { components: { SendButton } }) =>
+            checking ? (
+              <SendButton aria-label="助手准备中" disabled loading />
+            ) : (
+              node
+            )
           }
           styles={{ input: { outline: 'none' } }}
           value={senderValue}
           onChange={setSenderValue}
           onSubmit={(message) => {
+            if (blocked) return;
             ask(message);
             setSenderValue('');
           }}
