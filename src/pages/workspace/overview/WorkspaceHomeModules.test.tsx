@@ -14,6 +14,7 @@ const instanceNameFor = (path: string) =>
 
 const testState = vi.hoisted(() => ({
   userId: 'user-1' as string | undefined,
+  userName: '测试用户',
   navigate: vi.fn(),
 }));
 
@@ -85,7 +86,9 @@ vi.mock('@umijs/max', async () => {
     generatePath: router.generatePath,
     matchPath: router.matchPath,
     useModel: () => ({
-      initialState: { currentUser: { userId: testState.userId } },
+      initialState: {
+        currentUser: { userId: testState.userId, name: testState.userName },
+      },
     }),
     useNavigate: () => testState.navigate,
     useParams: () => ({}),
@@ -194,6 +197,9 @@ describe('WorkspaceHomeModules', () => {
     renderModules((appCode) => `/workspace/platform/apps/${appCode}/overview`);
     expect(
       screen.getByRole('region', { name: '问问知识库助手' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '你好，测试用户' }),
     ).toBeVisible();
   });
 

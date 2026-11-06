@@ -25,6 +25,7 @@ const Home: React.FC = () => {
 
   return (
     <WorkspacePage
+      hideHeading
       breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, ['首页'])}
       description={pageHeading.description}
       leading={

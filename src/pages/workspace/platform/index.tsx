@@ -202,6 +202,7 @@ const PlatformManagementPage = () => {
       }
     >
       <WorkspacePage
+        hideHeading={pageKey === 'overview'}
         breadcrumb={buildWorkspaceBreadcrumb(currentUser, pathname, [
           pageMeta.title,
         ])}

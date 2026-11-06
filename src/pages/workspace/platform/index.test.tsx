@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -221,11 +221,12 @@ describe('PlatformOverview', () => {
   });
   it('renders the notification center in the calendar slot', () => {
     render(<PlatformOverview appCodes={[]} />);
+    const notifications = within(
+      screen.getByTestId('platform-notification-card'),
+    );
 
     expect(screen.getByRole('heading', { name: 'AI 数据洞悉' })).toBeVisible();
-    expect(
-      screen.getByRole('heading', { name: '问问知识库助手' }),
-    ).toBeVisible();
+    expect(screen.getByRole('heading', { name: '你好，用户' })).toBeVisible();
     expect(screen.getByPlaceholderText('问问知识库助手…')).toBeVisible();
     expect(screen.queryByRole('heading', { name: '问问小One' })).toBeNull();
     expect(
@@ -256,18 +257,17 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('button', { name: '下一条用量洞察' }),
     ).toBeVisible();
-    expect(screen.getByRole('heading', { name: '通知中心' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '通知' })).toBeVisible();
     expect(screen.getByTestId('platform-weekly-goals')).not.toBeVisible();
     expect(
       screen.queryByRole('heading', { name: 'AI 每周目标' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('3 条待处理')).toBeVisible();
-    expect(screen.getByTestId('platform-notification-center')).toBeVisible();
-    expect(screen.getByRole('button', { name: '全部 6' })).toHaveStyle({
-      backgroundColor: '#ebebed',
-      borderColor: '#3f3f46',
-      color: '#3f3f46',
-    });
+    expect(notifications.getByText('3 条待处理')).toBeVisible();
+    expect(
+      screen.getByTestId('platform-notification-center'),
+    ).not.toBeVisible();
+    expect(screen.getByTestId('platform-notification-card')).toBeVisible();
+    expect(notifications.getByRole('radio', { name: '全部 6' })).toBeChecked();
     expect(screen.getByTestId('platform-calendar')).not.toBeVisible();
     expect(
       screen.getByRole('region', { name: '问问知识库助手' }).parentElement
@@ -276,13 +276,15 @@ describe('PlatformOverview', () => {
     expect(
       screen.getByRole('region', { name: '问问知识库助手' }).parentElement
         ?.className,
-    ).toContain('xl:h-[min(22rem,_calc(100dvh-56px-21rem))]');
-    expect(screen.getByText('水库大坝巡检 · 航线等待批准')).toBeVisible();
+    ).toContain('lg:auto-rows-[28rem]');
     expect(
-      screen.queryByText('边缘节点版本更新已完成'),
+      notifications.getByText('水库大坝巡检 · 航线等待批准'),
+    ).toBeVisible();
+    expect(
+      notifications.queryByText('边缘节点版本更新已完成'),
     ).not.toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole('button', {
+      notifications.getByRole('button', {
         name: '去处理：水库大坝巡检 · 航线等待批准',
       }),
     );
@@ -290,18 +292,20 @@ describe('PlatformOverview', () => {
       '/workspace/platform/notifications?notification=drone-dam-inspection',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '待处理 3' }));
+    fireEvent.click(notifications.getByRole('radio', { name: '待处理 3' }));
 
-    expect(screen.getByText('水库大坝巡检 · 航线等待批准')).toBeVisible();
     expect(
-      screen.getByText('雷雨大风预警 · 4 条无人机航线建议改期'),
-    ).toBeVisible();
-    expect(screen.getByText('AI 建议')).toBeVisible();
-    expect(
-      screen.getByText('1 号机坪充电桩离线，运维人员正在处理'),
+      notifications.getByText('水库大坝巡检 · 航线等待批准'),
     ).toBeVisible();
     expect(
-      screen.queryByText('边缘节点版本更新已完成'),
+      notifications.getByText('雷雨大风预警 · 4 条无人机航线建议改期'),
+    ).toBeVisible();
+    expect(notifications.getByText('AI 建议')).toBeVisible();
+    expect(
+      notifications.getByText('1 号机坪充电桩离线，运维人员正在处理'),
+    ).toBeVisible();
+    expect(
+      notifications.queryByText('边缘节点版本更新已完成'),
     ).not.toBeInTheDocument();
   });
 

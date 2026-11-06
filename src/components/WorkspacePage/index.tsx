@@ -15,6 +15,8 @@ export type WorkspacePageProps = {
   leading?: ReactNode;
   /** 页面级操作或状态标识；不存在时标题区保持自然宽度。 */
   actions?: ReactNode;
+  /** 首页把问候放在助手卡片内，只保留页面面包屑。 */
+  hideHeading?: boolean;
   /** 页面主体，统一落入从 demo 提取的 24px 内容区。 */
   children: ReactNode;
 };
@@ -29,6 +31,7 @@ const WorkspacePage = ({
   description,
   leading,
   actions,
+  hideHeading = false,
   children,
 }: WorkspacePageProps) => {
   const { styles } = useWorkspacePageStyles();
@@ -40,42 +43,50 @@ const WorkspacePage = ({
 
   return (
     <section aria-labelledby={titleId} className={styles.page}>
-      {leading ? <div className={styles.breadcrumb}>{crumb}</div> : null}
-      <header className={clsx(styles.heading, leading && styles.headingCard)}>
-        <div
-          className={
-            leading ? styles.headingMainWithLeading : styles.headingMain
-          }
-        >
-          {leading ? (
-            <div className={styles.headingRow}>
-              <div className={styles.leading}>{leading}</div>
+      {leading || hideHeading ? (
+        <div className={styles.breadcrumb}>{crumb}</div>
+      ) : null}
+      {hideHeading ? (
+        <h1 className="sr-only" id={titleId}>
+          {title}
+        </h1>
+      ) : (
+        <header className={clsx(styles.heading, leading && styles.headingCard)}>
+          <div
+            className={
+              leading ? styles.headingMainWithLeading : styles.headingMain
+            }
+          >
+            {leading ? (
+              <div className={styles.headingRow}>
+                <div className={styles.leading}>{leading}</div>
+                <div className={styles.headingCopy}>
+                  <h1
+                    className={clsx(styles.title, styles.titleWithLeading)}
+                    id={titleId}
+                  >
+                    {title}
+                  </h1>
+                  {description ? (
+                    <p className={styles.description}>{description}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
               <div className={styles.headingCopy}>
-                <h1
-                  className={clsx(styles.title, styles.titleWithLeading)}
-                  id={titleId}
-                >
+                {crumb}
+                <h1 className={styles.title} id={titleId}>
                   {title}
                 </h1>
                 {description ? (
                   <p className={styles.description}>{description}</p>
                 ) : null}
               </div>
-            </div>
-          ) : (
-            <div className={styles.headingCopy}>
-              {crumb}
-              <h1 className={styles.title} id={titleId}>
-                {title}
-              </h1>
-              {description ? (
-                <p className={styles.description}>{description}</p>
-              ) : null}
-            </div>
-          )}
-        </div>
-        {actions ? <div className={styles.actions}>{actions}</div> : null}
-      </header>
+            )}
+          </div>
+          {actions ? <div className={styles.actions}>{actions}</div> : null}
+        </header>
+      )}
       <div className={styles.body}>{children}</div>
     </section>
   );

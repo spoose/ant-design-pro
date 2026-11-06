@@ -85,7 +85,11 @@ describe('Home', () => {
 
   it('renders the shared home with Organization apps and paths', () => {
     render(<Home />);
-    expect(screen.getByRole('heading', { name: '欢迎回来' })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: '欢迎回来' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('统一首页')).toBeNull();
+    expect(screen.queryByText('avatar')).toBeNull();
     expect(screen.getByText('组织一')).toBeVisible();
     expect(
       screen.getByText(

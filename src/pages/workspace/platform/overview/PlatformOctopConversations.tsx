@@ -1,9 +1,8 @@
 import {
   BulbOutlined,
-  CloudOutlined,
+  CoffeeOutlined,
   FileTextOutlined,
   LoginOutlined,
-  RadarChartOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { Prompts, type PromptsItemType, Sender } from '@ant-design/x';
@@ -15,10 +14,6 @@ import { statusColors } from '@/theme/statusColors';
 import { getOctopInstanceName } from '@/utils/octopRuntime';
 import { useOctopBridge } from '@/utils/useOctopBridge';
 import { resolveWorkspaceScopeFromPath } from '@/utils/workspaceRoutes';
-import {
-  platformOverviewCardClassName,
-  platformOverviewCardHeaderClassName,
-} from './cardChrome';
 import '@bible-strong/avatar-react/styles.css';
 import strobiDefinition from './strobi.avatar.json';
 
@@ -28,27 +23,33 @@ const StrobiAvatar = createAvatar(strobiDefinition);
 const promptItems: PromptsItemType[] = [
   {
     key: 'octop-knowledge',
-    icon: <FileTextOutlined style={{ color: '#13c2c2' }} />,
+    icon: <FileTextOutlined className="text-lg" style={{ color: '#13c2c2' }} />,
     label: '介绍一下聚数公司',
-    description: '了解聚数公司的基本情况',
   },
   {
     key: 'octop-research',
-    icon: <RadarChartOutlined style={{ color: statusColors.success.ink }} />,
+    icon: (
+      <CoffeeOutlined
+        className="text-lg"
+        style={{ color: statusColors.success.ink }}
+      />
+    ),
     label: '今日菜单',
-    description: '查询今天的食堂菜单',
   },
   {
     key: 'octop-draft',
-    icon: <CloudOutlined style={{ color: '#1677ff' }} />,
+    icon: <FileTextOutlined className="text-lg" style={{ color: '#1677ff' }} />,
     label: '帮我起草一份上会说明',
-    description: '根据事项起草上会材料',
   },
   {
     key: 'octop-explain',
-    icon: <SearchOutlined style={{ color: statusColors.warning.ink }} />,
+    icon: (
+      <SearchOutlined
+        className="text-lg"
+        style={{ color: statusColors.warning.ink }}
+      />
+    ),
     label: '生成今日兰溪招投标信息简报',
-    description: '汇总今日兰溪招投标信息',
   },
 ];
 
@@ -58,14 +59,16 @@ const statusTag = {
 } as const;
 
 /**
- * 工作台「问问知识库助手」卡片：结构与「问问小One」一致，提问经 wujie 内嵌的 Octop 发送。
+ * 工作台「问问知识库助手」卡片：问候、输入和推荐问题，提问经 wujie 内嵌的 Octop 发送。
  * 启动时等待 Octop 自动校验登录，确认已登录后允许提问；未登录或服务异常时提供入口。
  */
 export const PlatformOctopConversations = ({
   userId,
+  userName,
   octopPath,
 }: {
   userId?: string;
+  userName?: string;
   /** 当前 Scope 下 Octop 页的路径（由 getAppPath('octop') 生成）。 */
   octopPath: string;
 }) => {
@@ -91,23 +94,28 @@ export const PlatformOctopConversations = ({
 
   return (
     <section
-      aria-labelledby="platform-octop-conversation-title"
-      className={`${platformOverviewCardClassName} @container`}
+      aria-label="问问知识库助手"
+      className="@container flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-[#e0e7d8] bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"
     >
-      <header className={platformOverviewCardHeaderClassName}>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <header className="shrink-0">
+        <div className="flex min-w-0 items-start gap-4">
           <StrobiAvatar
             ariaLabel="知识库助手 Strobi"
-            className="shrink-0"
+            className="mt-1 shrink-0"
             defaultAnimation="listening"
-            size={36}
+            size={42}
           />
-          <h2
-            className="m-0 translate-y-1 truncate text-base font-semibold leading-7 text-zinc-950 dark:text-zinc-50"
-            id="platform-octop-conversation-title"
-          >
-            问问知识库助手
-          </h2>
+          <div className="min-w-0 flex-1">
+            <h2
+              className="!m-0 truncate text-[28px] font-medium leading-9 text-[#263221] dark:text-zinc-50"
+              id="platform-octop-conversation-title"
+            >
+              你好，{userName?.trim() || '用户'}
+            </h2>
+            <p className="!mb-0 !mt-1 text-[13px] leading-5 text-[#637257] dark:text-zinc-400">
+              今天有什么需要我帮忙的？
+            </p>
+          </div>
           {badge ? (
             <Tag className="m-0" color={badge.color}>
               {badge.text}
@@ -118,7 +126,7 @@ export const PlatformOctopConversations = ({
 
       {badge ? (
         <div
-          className="mx-4 mt-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/40"
+          className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/40"
           role="status"
         >
           <span className="text-sm text-amber-900 dark:text-amber-200">
@@ -137,42 +145,16 @@ export const PlatformOctopConversations = ({
         </div>
       ) : null}
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
-        <Prompts
-          aria-label="Octop 对话建议"
-          className="min-w-0 [&_h6]:line-clamp-2 [&_p]:line-clamp-1"
-          fadeIn={false}
-          items={promptItems}
-          title={
-            <span className="inline-flex items-center gap-2">
-              <BulbOutlined aria-hidden style={{ color: '#FFD700' }} />
-              你可以这样提问
-            </span>
-          }
-          classNames={{
-            title: '!mb-2',
-            list: '!m-0 !grid !w-full !grid-cols-1 !gap-x-3 !gap-y-2 @min-[28rem]:!grid-cols-[repeat(2,minmax(0,1fr))]',
-            item: '!min-w-0 !border !border-zinc-200 !bg-white hover:!bg-zinc-50 dark:!border-zinc-700 dark:!bg-zinc-900 dark:hover:!bg-zinc-800',
-            itemContent: 'min-w-0',
-          }}
-          styles={{
-            item: {
-              paddingBlock: 12,
-              paddingInline: 12,
-              opacity: badge ? 0.5 : 1,
-              pointerEvents: blocked ? 'none' : 'auto',
-            },
-          }}
-          onItemClick={({ data }) => {
-            const label = data.label;
-            if (typeof label === 'string') ask(label);
-          }}
-        />
-      </div>
-      <div className="shrink-0 bg-white px-3 pb-3 pt-2 dark:bg-zinc-900">
+      <div className="mt-5 shrink-0">
         <Sender
-          autoSize={{ minRows: 1, maxRows: 4 }}
-          className="shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+          autoSize={{ minRows: 4, maxRows: 6 }}
+          className="!rounded-xl !border-[#d9e1d2] !bg-white shadow-[0_4px_12px_rgba(53,75,37,0.06)] dark:!border-zinc-700 dark:!bg-zinc-900"
+          classNames={{
+            input:
+              'placeholder:!text-[#77846c] dark:placeholder:!text-zinc-500',
+            suffix:
+              '[&_button:not(:disabled)]:!border-[#303b2a] [&_button:not(:disabled)]:!bg-[#303b2a]',
+          }}
           disabled={blocked}
           placeholder={
             offline
@@ -188,13 +170,60 @@ export const PlatformOctopConversations = ({
               node
             )
           }
-          styles={{ input: { outline: 'none' } }}
+          styles={{
+            content: { minHeight: 134, padding: 16 },
+            input: {
+              outline: 'none',
+              fontSize: 16,
+              lineHeight: '24px',
+              paddingBlock: 3,
+            },
+          }}
           value={senderValue}
           onChange={setSenderValue}
           onSubmit={(message) => {
             if (blocked) return;
             ask(message);
             setSenderValue('');
+          }}
+        />
+      </div>
+
+      <div className="mt-auto min-h-0 min-w-0 overflow-y-auto pt-6">
+        <Prompts
+          aria-label="Octop 对话建议"
+          className="min-w-0 [&_h6]:line-clamp-2 [&_h6]:!text-[13px] [&_h6]:!leading-5 [&_h6]:!text-[#56644b] dark:[&_h6]:!text-zinc-200"
+          fadeIn={false}
+          items={promptItems}
+          title={
+            <span className="flex items-center gap-2">
+              <BulbOutlined
+                aria-hidden
+                style={{ color: '#FFD700', fontSize: 14 }}
+              />
+              你可以这样提问
+            </span>
+          }
+          classNames={{
+            title:
+              '!mb-3 !text-xs !leading-[18px] !text-[#637257] dark:!text-zinc-400',
+            list: '!m-0 !grid !w-full !grid-cols-1 !gap-3 @min-[28rem]:!grid-cols-[repeat(2,minmax(0,1fr))]',
+            item: '!min-w-0 !rounded-[9px] !border !border-[#e0e7d8] !bg-white hover:!bg-zinc-50 dark:!border-zinc-700 dark:!bg-zinc-900 dark:hover:!bg-zinc-800',
+            itemContent: 'min-w-0',
+          }}
+          styles={{
+            item: {
+              minHeight: 56,
+              paddingBlock: 10,
+              paddingInline: 12,
+              alignItems: 'center',
+              opacity: badge ? 0.5 : 1,
+              pointerEvents: blocked ? 'none' : 'auto',
+            },
+          }}
+          onItemClick={({ data }) => {
+            const label = data.label;
+            if (typeof label === 'string') ask(label);
           }}
         />
       </div>

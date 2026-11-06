@@ -8,6 +8,7 @@ import PlatformAppCatalog from '../platform/overview/PlatformAppCatalog';
 import PlatformMockCalendar from '../platform/overview/PlatformMockCalendar';
 import PlatformMockChart from '../platform/overview/PlatformMockChart';
 import { PlatformStartConversation } from '../platform/overview/PlatformMockConversations';
+import PlatformNotificationCard from '../platform/overview/PlatformNotificationCard';
 import PlatformNotificationCenter from '../platform/overview/PlatformNotificationCenter';
 import PlatformOctopConversations from '../platform/overview/PlatformOctopConversations';
 import PlatformPowerStation from '../platform/overview/PlatformPowerStation';
@@ -40,13 +41,15 @@ export const WorkspaceHomeModules = ({
   showPowerStation = false,
 }: WorkspaceHomeModulesProps) => {
   const { initialState } = useModel('@@initialState');
-  const userId = initialState?.currentUser?.userId;
+  const currentUser = initialState?.currentUser;
+  const notificationCenterPath = getNotificationCenterPath(
+    getWorkspaceOrganizationId(getAppPath('ai-assistant')),
+  );
   return (
     <>
-      {/* ponytail: 21rem 预留欢迎区+快速入口，22rem 封顶；壳层高度变了再改 calc。 */}
       <div className="@container/home">
         <div
-          className={`grid min-h-0 items-stretch gap-5 lg:auto-rows-[22rem] lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)] xl:h-[min(22rem,_calc(100dvh-56px-21rem))] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_clamp(27.5rem,33.333%,30rem)] ${showPowerStation ? '@[80rem]/home:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)_minmax(0,1fr)]' : ''}`}
+          className={`grid min-h-0 items-stretch gap-5 lg:auto-rows-[28rem] lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)] xl:grid-cols-[minmax(0,1fr)_clamp(27.5rem,33.333%,30rem)] ${showPowerStation ? '@[80rem]/home:grid-cols-[minmax(0,38rem)_minmax(16rem,24rem)_minmax(0,1fr)]' : ''}`}
         >
           {/* 「问问小One」暂时隐藏，组件保留以便恢复。 */}
           <div aria-hidden="true" className="hidden" hidden>
@@ -54,13 +57,18 @@ export const WorkspaceHomeModules = ({
           </div>
           <PlatformOctopConversations
             octopPath={getAppPath('octop')}
-            userId={userId}
+            userId={currentUser?.userId}
+            userName={currentUser?.name}
           />
-          <PlatformNotificationCenter
-            notificationCenterPath={getNotificationCenterPath(
-              getWorkspaceOrganizationId(getAppPath('ai-assistant')),
-            )}
+          <PlatformNotificationCard
+            notificationCenterPath={notificationCenterPath}
           />
+          {/* 旧通知卡片保留，当前首页使用新版。 */}
+          <div aria-hidden="true" className="hidden" hidden>
+            <PlatformNotificationCenter
+              notificationCenterPath={notificationCenterPath}
+            />
+          </div>
           {showPowerStation ? <PlatformPowerStation /> : null}
           {/* 每周目标保留供后续恢复；当前不占用首页网格。 */}
           <div aria-hidden="true" className="hidden" hidden>
